@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+{% load crispy_forms_tags %}
+
+{% block title %}Add new bin {% endblock %}
+
+{% block head %}
+	{{ form.media }}
+{% endblock %}
+
+{% block content %}
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.as_p }} 	
+    <button type="submit" class="btn btn-success">Add</button>
+  </form>
+{% endblock %}
+
+{% block options %}
+   options['point_zoom'] = 9
+   options['default_zoom'] = 2
+{% endblock %}
+
+{% block script %}
+  <script>
+    $(document).ready(function(){
+    });
+  </script>
+{% endblock %}  

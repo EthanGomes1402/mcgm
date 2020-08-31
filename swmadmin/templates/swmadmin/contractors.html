@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+	<h1>contractors</h1>	
+{% endblock %}
+
+{% block content %}
+  <div>
+	  <a href="{% url 'add_contractor' %}" class="vtms_buttons">Add Contractor</a>
+  </div>
+
+  {% if contractors %}
+  <table class="table tablesorter">
+    <thead class="thead-inverse">
+      <tr>
+        <th>Name</th>
+        <th>Company</th>
+        <th>Phone</th>
+	<th>Email</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for contractor in contractors %}
+	<tr>
+	  <td>{{ contractor.name }} </td>
+	  <td>{{ contractor.company_name }}</td>
+	  <td>{{ contractor.telephone }}</td>
+	  <td>{{ contractor.email }} </td>
+	  <td>
+		  <a href="{% url 'edit_contractor' contractor.pk %}" class="vtms_buttons">Edit</a>
+		  <a id="{{ contractor.pk }}" href="#" class="vtms_buttons delete_contractor">Delete</a>
+	  </td>
+	</tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+	<h1>No Contractor Found</h1>      	
+  {% endif %}
+{% endblock %}
+
+{% block js %}
+<script>
+	$(document).ready(function(){
+	$('table').tablesorter({theme:'metro-dark'});
+	$("a.delete_contractor").click(function () {
+		var cntr_id = $(this).attr('id');
+		var $tr = $(this).closest('tr');
+
+		$.ajax({
+			type:'POST',
+			url:'{% url "delete_contractor" %}',
+			data: {
+				'id':cntr_id 
+			},
+			beforeSend: function(xhr) {
+				xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+			},
+			success:function(res){
+				$tr.find('td').fadeOut(1000,function(){
+					$tr.remove();
+				})	
+			},
+			error:function(a,b,c){
+				alert(b);
+				alert(c);
+			}
+		});
+	});
+	});
+</script>
+{% endblock %}

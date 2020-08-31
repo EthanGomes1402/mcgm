@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}Weight History Report {% endblock %}
+
+{% block extrastylesheet %}
+ <style>
+  div.loader {
+    width: 100px;
+    height: 100px;
+    position: absolute;
+    top:0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+ }
+ </style>
+{% endblock %}
+
+{% block content %}
+	<div>
+		<div>
+			<form id="weight_history_report" name="weight_history_report">
+			  <div class="form-row">
+			    <div class="form-group col-md-4">
+			      <label for="selectVehicle">Vehicle</label>
+			      <select id="selectVehicle" class="form-control" name="selectVehicle">
+			      </select>
+			    </div>
+			    <div class="col-md-4">  
+			      <label for="from_date">From Date </label>
+			      <div class="form-group">
+				<div class='input-group date' id='from_time'>
+				  <input type='text' class="form-control" name="from_time"/>
+				    <span class="input-group-addon">
+				      <span class="glyphicon glyphicon-calendar"></span>
+				    </span>
+				</div>
+			      </div>
+			    </div> 
+			    <div class="col-md-4">  
+			      <label for="to_date">To Date </label>
+			      <div class="form-group">
+				<div class='input-group date' id='to_time'>
+				  <input type='text' class="form-control" name="to_time"/>
+				    <span class="input-group-addon">
+				      <span class="glyphicon glyphicon-calendar"></span>
+				    </span>
+				</div>
+			      </div>
+			    </div> 
+			  </div>
+			  <div class="form-row">
+			    <div class="col-md-4">
+			      <div class="form-group">
+				<button type="submit" class="btn btn-primary">Submit</button>
+			      </div>
+			    </div>
+			  </div>
+			</form>
+		</div>
+		<div width="100%" style="display:none;" id="weight_history_data">
+			<div>
+			    <div class="col-md-12" style="text-align:center;border:1px solid red;">  
+				Weight History Report	
+			    </div> 
+			</div>
+			<br>
+			<div>
+				<button id="export_to_excel" style="float: right;">Export To Excel</button>
+				<button id="export_to_csv" style="float: right;">Export To CSV</button>
+				<button id="export_to_pdf" style="float: right;">Export To PDF</button>
+				<table  id="weight_history" width="100%" class="table tablesorter">
+					<thead>
+						<tr>
+							<th>Vehicle</th>
+							<th>Location</th>
+							<th>From Time</th>
+							<th>To Time</th>
+							<th>Weight</th>
+						</tr>
+					</thead>
+					<tbody></tbody>
+				</table>
+			</div>
+		</div>
+		<div id="spinner" style="display: none;" class="loader">
+                        <img src="{% static 'img/loader.gif' %}" class="img-responsive">
+                </div>
+	</div>
+{% endblock %}
+
+{% block js %}
+  <script>
+    var form_data = JSON.parse('{{ form_params | escapejs }}');
+    form_data = form_data.areal_hierarchy_params;
+
+    setAllDefElemValues(form_data);
+
+    $('#from_time').datetimepicker({
+       	useCurrent: false, //Important! See issue #1075
+	format:'YYYY-MM-DD HH:mm:ss'
+    });
+
+    $('#to_time').datetimepicker({
+       	useCurrent: false,
+	format:'YYYY-MM-DD HH:mm:ss'
+    });
+
+    $("#from_time").on("dp.change", function (e) {
+        $('#to_time').data("DateTimePicker").minDate(e.date);
+    });
+
+    $("#to_time").on("dp.change", function (e) {
+        $('#from_time').data("DateTimePicker").maxDate(e.date);
+    });
+
+    $(document).ready(function(){
+	$("#weight_history_report").submit(function(event) {
+		if($("table#weight_history tbody").children().length > 0 ){
+			$('#weight_history tbody tr').remove();
+		}	
+		event.preventDefault();
+		$('#spinner').show();
+		var submitted_form_data = $('#weight_history_report').serialize();
+		$.ajax({
+			type:'POST',
+			url:'{% url "weight_history" %}',
+			data: { 'form_data' : submitted_form_data},
+			beforeSend: function(xhr) {
+				xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+			},
+			success:function(res){
+				var indexcounter = 0;
+				$.each(res.data, function(index, each_wh_record) {
+                                    let eachrow = '<tr class="routerow">';
+                                    eachrow += '<td>' + each_wh_record.vehicle + '</td><td>' + (each_wh_record.location || " ") + '</td>' + '<td>' + each_wh_record.from_time  + '</td><td>' + each_wh_record.to_time  + '</td><td>'+  each_wh_record.weight +'</td></tr>';
+						
+                                    $('#weight_history tbody').append(eachrow);
+				});
+
+				if($("table#weight_history tbody").children().length > 0 ) {
+					$('#weight_history').tablesorter();
+					$('#spinner').hide();
+					$('div#weight_history_data').show();
+				}
+				else {
+					$('#spinner').hide();
+					alert("No Alert Recorded For Mentioned Criteria");
+					return false;
+				}
+			},
+			error:function(a,b,c){
+				alert(b);
+				alert(c);
+			}
+		});
+	});
+
+	$("button#export_to_excel").click(function() {
+	    var dNow = new Date();
+	    var file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+	    $("#weight_history").table2excel({
+		name: "weight_history_report",
+		filename: "vehicle_geofence_alert_report_" + file_time_str + ".xlsx"//do not include extension
+	    });
+	});
+	   
+	$("button#export_to_csv").click(function() {
+	    $("#weight_history").tableHTMLExport({type:'csv',filename:'sample.csv'});
+	});
+
+	$("button#export_to_pdf").click(function() {
+	    $("#weight_history").tableHTMLExport({type:'pdf',filename:'sample.pdf'});
+	});    
+    });
+
+function setAllDefElemValues(form_data) {
+	$('#selectVehicle').empty();
+	$('#selectVehicle').append($('<option></option>').val(0).html('All Vehicles').attr("name", "defvehicle"));
+	$('div#from_time input').val('');
+	$('div#to_time input').val('');
+
+	var alldefvehicles = new Array();
+
+	$.each(form_data, function(each_div, zone_info) {
+		$.each(zone_info, function(each_zone, ward_info) {
+		    $.each(ward_info, function(each_ward,other_info ) {
+			$.each(other_info.vehicles, function(index,each_vehicle ) {
+			    $('#selectVehicle').append($('<option></option>').val(each_vehicle.id).html(each_vehicle.plate_number));
+			    alldefvehicles.push(each_vehicle.id);
+			});
+		    });
+		});
+	});
+
+	if ( alldefvehicles.length ){
+		var alldefaultvehicles = alldefvehicles.join('_');
+		document.getElementsByName('defvehicle')[0].value = alldefaultvehicles;
+	}
+}
+
+  </script>
+{% endblock %}  

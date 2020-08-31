@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+	<h1>Bins</h1>
+{% endblock %}
+
+{% block content %}
+  <div>
+	  <a href="{% url 'add_bin' %}" class="vtms_buttons">Add New Bin</a>
+	  <a href="{% url 'upload_bin_data' %}" class="vtms_buttons">Upload Bins</a>
+  </div>
+  {% if bins %}
+  <table class="table tablesorter">
+    <thead class="thead-inverse">
+      <tr>
+        <th>Bin</th>
+        <th>Code</th>
+	<th>Tag</th>
+        <th>Ward</th>
+	<th>Route</th>
+        <th>Location</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for bin in bins %}
+        <tr>
+          <td>{{ bin.name   }} </td>
+          <td>{{ bin.code | default_if_none:"" }}</td>
+          <td>{{ bin.tag  | default_if_none:"" }}</td>
+	  <td>{% firstof bin.ward bin.route.ward  %}</td>
+          <td>{{ bin.route| default_if_none:"Not Allocated" }}</td>
+	  <td class="area" id="bin_{{bin.pk}}"><img src="{% static 'img/location.png' %}"></td>
+	  <td>
+		  <a href="{% url 'edit_bin' bin.pk %}" class="vtms_buttons">Edit</a>
+		  <a id="{{bin.pk}}" href="#" class="vtms_buttons delete_bin">Delete</a>
+	  </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  	<h1>No Bins Found</h1>
+  {% endif %}
+  <div id="loadpositionmap" style="display: none;" align="center">
+  </div>
+{% endblock %}
+
+{% block js %}
+	<script>
+		let mymap = L.map('loadpositionmap').setView([19.122777, 72.894568],12);
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+		subdomain :['a','b','c']	
+		}).addTo(mymap);
+
+		var bin_icon = L.icon({
+		    iconUrl: '{% static 'img/Bin.jpeg' %}',
+		    iconSize: [24, 34],
+		});
+
+		$(document).ready(function(){
+			$("td.area").click(function () {
+				var bin;
+				$('table').tablesorter({theme:'metro-dark'});
+				if( bin ){
+					mymap.removeLayer(bin);
+				}
+				bin_id= $(this).attr('id').split('_')[1];
+				$.ajax({
+					type:'GET',
+					url:'{% url "get_bin_spot" %}',
+					data: {
+						'id':bin_id 
+					},
+					beforeSend: function(xhr) {
+						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+					},
+					success:function(res){
+						console.log(res.bin_location);
+						let Bin= JSON.parse(res.bin_location);
+						bin = L.geoJSON(Bin,{
+							pointToLayer : function(geoJsonPoint, latlng){
+								return L.marker(latlng,{icon : bin_icon });
+							}
+						}).addTo(mymap)
+						
+						mymap.fitBounds(bin.getBounds());
+						$("#loadpositionmap").dialog({
+							modal: true,
+							autoOpen: false,
+							title: " Bin ",
+							width: 600,
+							height: 600
+						});
+						$("#loadpositionmap").dialog('open');
+						mymap.invalidateSize();
+					},
+					error:function(a,b,c){
+						alert(b);
+						alert(c);
+					}
+				});
+			});
+
+			$("a.delete_bin").click(function () {
+				var bin_id = $(this).attr('id');
+				var $tr = $(this).closest('tr');
+
+				$.ajax({
+					type:'POST',
+					url:'{% url "delete_bin" %}',
+					data: {
+						'id':bin_id 
+					},
+					beforeSend: function(xhr) {
+						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+					},
+					success:function(res){
+						$tr.find('td').fadeOut(1000,function(){
+							$tr.remove();
+						})	
+					},
+					error:function(a,b,c){
+						alert(b);
+						alert(c);
+					}
+				});
+			});
+		});
+	</script>
+{% endblock %}

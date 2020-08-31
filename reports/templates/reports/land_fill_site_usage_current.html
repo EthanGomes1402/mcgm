@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}Landfill site usage Report {% endblock %}
+
+{% block extrastylesheet %}
+ <style>
+  div.loader {
+    width: 100px;
+    height: 100px;
+    position: absolute;
+    top:0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+ }
+ </style>
+{% endblock %}
+
+{% block content %}
+	<div>
+		<div>
+			<form id="land_fill_site_usage_current_report" name="land_fill_site_usage_current_report">
+			  <div class="form-row">
+			    <div class="form-group col-md-4">
+			      <label for="selectDumpingGround">Dumping Ground</label>
+			      <select id="selectDumpingGround" class="form-control" name="selectDumpingGround">
+			      </select>
+			    </div>
+			  </div>  
+			  <div class="form-row">
+			    <div class="col-md-4">
+			      <div class="form-group">
+				<button type="submit" class="btn btn-primary">Submit</button>
+			      </div>
+			    </div>
+			  </div>
+			</form>
+		</div>
+		<div width="100%" style="display:none;" id="land_fill_site_usage_current_data">
+			<div>
+			    <div class="col-md-12" style="text-align:center;border:1px solid red;">  
+				Land Fill Site Usage by Current date	
+			    </div> 
+			</div>
+			<br>
+			<div>
+				<button id="export_to_excel" style="float: right;">Export To Excel</button>
+				<button id="export_to_csv" style="float: right;">Export To CSV</button>
+				<button id="export_to_pdf" style="float: right;">Export To PDF</button>
+				<br>
+				<table  id="land_fill_site_usage_current" width="100%" class="table tablesorter">
+					<thead>
+						<tr>
+							<th>Dumping Ground</th>
+							<th>Vehicle</th>
+							<th>In(Entry Time)</th>
+							<th>Out(Exit Time)</th>
+							<th>In(weight)</th>
+							<th>Out(weight)</th>
+							<th>Net Weight</th>
+						</tr>
+					</thead>
+					<tbody></tbody>
+				</table>
+			</div>
+		</div>
+		<div id="spinner" style="display: none;" class="loader">
+                        <img src="{% static 'img/loader.gif' %}" class="img-responsive">
+                </div>
+	</div>
+{% endblock %}
+
+{% block js %}
+  <script>
+    var form_params= JSON.parse('{{ form_params | escapejs }}');
+
+    setAllDefElemValues(form_params);
+
+    $(document).ready(function(){
+	$("#land_fill_site_usage_current_report").submit(function(event) {
+		if($("table#land_fill_site_usage_current tbody").children().length > 0 ){
+			$('#land_fill_site_usage_current tbody tr').remove();
+		}	
+		event.preventDefault();
+		$('#spinner').show();
+		var submitted_form_data = $('#land_fill_site_usage_current_report').serialize();
+		$.ajax({
+			type:'POST',
+			url:'{% url "land_fill_site_usage_current" %}',
+			data: { 'form_data' : submitted_form_data},
+			beforeSend: function(xhr) {
+				xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+			},
+			success:function(res){
+				var indexcounter = 0;
+				$.each(res.data, function(index, each_entry) {
+                                    let eachrow = '<tr class="routerow">';
+					eachrow += '<td>' + each_entry.dmpgnd + '</td>' + '<td>' + (each_entry.vehicle || " ") + '</td>' + '<td></td><td></td>' + '<td>' + (each_entry.in_weight || "0") + '</td><td>'+  (each_entry.out_weight || "0") +'</td><td>'+  (each_entry.weight || "0") + '</td></tr>';
+                                    $('#land_fill_site_usage_current tbody').append(eachrow);
+				});
+
+				if($("table#land_fill_site_usage_current tbody").children().length > 0 ) {
+					$('#land_fill_site_usage_current').tablesorter();
+					$('#spinner').hide();
+					$('div#land_fill_site_usage_current_data').show();
+				}
+				else {
+					$('#spinner').hide();
+					alert("No Alert Recorded For Mentioned Criteria");
+					return false;
+				}
+			},
+			error:function(a,b,c){
+				alert(b);
+				alert(c);
+			}
+		});
+	});
+
+	$("button#export_to_excel").click(function() {
+	    var dNow = new Date();
+	    var file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+	    $("#land_fill_site_usage_current").table2excel({
+		name: "land_fill_site_usage_current_report",
+		filename: "vehicle_geofence_alert_report_" + file_time_str + ".xlsx"//do not include extension
+	    });
+	});
+	   
+	$("button#export_to_csv").click(function() {
+	    $("#land_fill_site_usage_current").tableHTMLExport({type:'csv',filename:'sample.csv'});
+	});
+
+	$("button#export_to_pdf").click(function() {
+	    $("#land_fill_site_usage_current").tableHTMLExport({type:'pdf',filename:'sample.pdf'});
+	});    
+    });
+
+function setAllDefElemValues(form_params) {
+    	var form_data = form_params.areal_hierarchy_params;
+    	var form_extra_data = form_params.areal_extra_params;
+
+	$('#selectDumpingGround').empty();
+	$('#selectDumpingGround').append($('<option></option>').val(0).html('All').attr("name", "defdmpgnd"));
+
+	var alldefdmpgnds = new Array();
+
+	$.each(form_extra_data.dmpgnds, function(index,each_dmpgnd ) {
+	    $('#selectDumpingGround').append($('<option></option>').val(each_dmpgnd.id).html(each_dmpgnd.name));
+	    alldefdmpgnds.push(each_dmpgnd.id);
+	});
+
+	if ( alldefdmpgnds.length ){
+		var alldefaultdmpgnds = alldefdmpgnds.join('_');
+		document.getElementsByName('defdmpgnd')[0].value = alldefaultdmpgnds;
+	}
+}
+
+  </script>
+{% endblock %}  

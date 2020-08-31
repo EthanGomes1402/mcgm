@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+	<h1>Vehicles</h1>
+{% endblock %}
+
+{% block content %}
+  <div>
+	  <a href="{% url 'add_health_vehicle' %}" class="vtms_buttons">Add New Vehicle</a>
+	  <a href="{% url 'upload_vehicle_data' %}" class="vtms_buttons">Upload Vehicle excel</a>
+  </div>
+  {% if vehicles %}
+  <table class="table tablesorter">
+    <thead class="thead-inverse">
+      <tr>
+        <th>Vehicle</th>
+        <th>Engine</th>
+        <th>Chassis</th>
+	<th>Maker</th>
+        <th>Type</th>
+        <th>Contractor</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for vehicle in vehicles %}
+        <tr>
+          <td>{{ vehicle.plate_number }} </td>
+          <td>{{ vehicle.engine_number}}</td>
+	  <td>{{ vehicle.chassis_number}}</td>
+          <td>{{ vehicle.maker }} </td>
+          <td>{{ vehicle.vehicle_type }}</td>
+          <td>{{ vehicle.contractor }}</td>
+	  <td>
+		  <a href="{% url 'edit_vehicle' vehicle.pk %}" class="vtms_buttons">Edit</a>
+		  <a id="{{vehicle.pk}}" href="#" class="vtms_buttons delete_vehicle">Delete</a>
+	  </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+	<h1>No Vehicle Found</h1>
+  {% endif %}
+{% endblock %}
+
+{% block js %}
+<script>
+	$(document).ready(function(){
+	$('table').tablesorter({theme:'metro-dark'});
+	$("a.delete_vehicle").click(function () {
+		var veh_id = $(this).attr('id');
+		var $tr = $(this).closest('tr');
+
+		$.ajax({
+			type:'POST',
+			url:'{% url "delete_vehicle" %}',
+			data: {
+				'id':veh_id 
+			},
+			beforeSend: function(xhr) {
+				xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+			},
+			success:function(res){
+				$tr.find('td').fadeOut(1000,function(){
+					$tr.remove();
+				})	
+			},
+			error:function(a,b,c){
+				alert(b);
+				alert(c);
+			}
+		});
+	});
+	});
+</script>
+{% endblock %}

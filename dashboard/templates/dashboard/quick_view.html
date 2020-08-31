@@ -1,0 +1,504 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+	<h1>Quick View</h1>
+{% endblock %}
+
+
+{% block extrastylesheet %}
+ <style>
+  div.loader {
+    width: 100px;
+    height: 100px;
+    position: fixed;
+    top:0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+ }
+ </style>
+{% endblock %}
+
+{% block content %}
+  <div>
+	  <div id="map" style="width:75%;height:900px;  border: double; float:left;" class="col-md-9" >
+	  </div>
+
+	  <div id="entity" style="width:25%; border: double; float:left;" class="col-md-3">
+		  <table class="table tablesorter">
+		    <tbody>
+			<tr>
+				<td class="bins"><img src="{% static 'img/bin2.png' %}"></td>
+				<td class="vehicles"><img src="{% static 'img/vehicle2.png' %}"></td>
+				<td class="garages"><img src="{% static 'img/garrage2.png' %}"></td>
+			</tr>
+			<tr>
+				<td class="mlcs"><img src="{% static 'img/mlc2.png' %}"></td>
+				<td class="tnsstns"><img src="{% static 'img/tnsstn2.png' %}"></td>
+				<td class="dmpgnds"><img src="{% static 'img/dmpgnd2.png' %}"></td>
+			</tr>
+		    </tbody>
+		  </table>
+	  </div>
+	  <div class="col-md-3 view_ward_form" style="width:25%; border: double; float:left; display:none;">
+		<form id="view_ward_form">
+		    <div class="form-group select_ward">
+		      <label for="selectWard">Ward</label>
+		      <select id="selectWard" class="form-control" name="selectWard">
+		      </select>
+		    </div>
+		    <div class="form-group">
+			  <button type="submit" class="btn btn-primary">Submit</button>
+		    </div>
+		</form>
+	  </div>
+	  <div class="col-md-3 view_vehicle_form" style="width:25%; border: double; float:left; display:none;">
+		<form id="view_vehicle_form">
+		    <div class="form-group select_veh_type">
+		      <label for="selectVehType">Type :</label>
+		      <select id="selectVehType" class="form-control" name="selectVehType" onchange="onChangeVehType()" >
+		      </select>
+		    </div>
+		    <div class="form-group select_veh">
+		      <label for="selectVehicle">Vehicle :</label>
+		      <select id="selectVehicle" class="form-control" name="selectVehicle">
+		      </select>
+		    </div>
+		    <div>  
+		      <label for="from_date">From Time : </label>
+		      <div class="form-group">
+			<div class='input-group date' id='from_time'>
+			  <input type='text' class="form-control" name="from_time"/>
+			    <span class="input-group-addon">
+			      <span class="glyphicon glyphicon-calendar"></span>
+			    </span>
+			</div>
+		      </div>
+		    </div> 
+		    <div>  
+		      <label for="to_date">To Time : </label>
+		      <div class="form-group">
+			<div class='input-group date' id='to_time'>
+			  <input type='text' class="form-control" name="to_time"/>
+			    <span class="input-group-addon">
+			      <span class="glyphicon glyphicon-calendar"></span>
+			    </span>
+			</div>
+		      </div>
+		    </div> 
+		    <div class="form-group">
+			  <button type="submit" class="btn btn-primary">Submit</button>
+		    </div>
+		</form>
+	  </div>
+	  <div id="spinner" style="display: none;" class="loader">
+                <img src="{% static 'img/loader.gif' %}" class="img-responsive">
+          </div>
+  </div> 
+
+{% endblock %}
+
+{% block js %}
+  	<script src="{% static 'js/MovingMarker.js' %}"></script>
+	<script>
+		let mymap = L.map('map').setView([19.122777, 72.894568 ],12);
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+		subdomain :['a','b','c']	
+		}).addTo(mymap);
+
+		var bin_icon = L.icon({
+		    iconUrl: '{% static 'img/Bin.jpeg' %}',
+		    iconSize: [24, 34],
+		});
+
+		var dmpgnd_icon = L.icon({
+		    iconUrl: '{% static 'img/dmpgnd2.png' %}',
+		});
+
+		var tnsstn_icon = L.icon({
+		    iconUrl: '{% static 'img/tnsstn2.png' %}',
+		});
+
+		var mlc_icon = L.icon({
+		    iconUrl: '{% static 'img/mlc2.png' %}',
+		});
+
+		var garage_icon = L.icon({
+		    iconUrl: '{% static 'img/garrage2.png' %}',
+		});
+		$('div#from_time input').val('');
+		$('div#to_time input').val('');
+
+		var route_line;
+		var moving_marker;
+		$(document).ready(function(){
+			$("td.bins").click(function () {
+				if( route_line ){
+					route_line.remove();
+				}
+
+				if( moving_marker ){
+					moving_marker.remove();
+				}
+				$.ajax({
+					type:'GET',
+					url:'{% url "get_quick_view_form_param" %}',
+					beforeSend: function(xhr) {
+						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+					},
+					success:function(res){
+						$.each(res.form_params.vehicles, function(index,each_vehicle ) {
+						     $('#selectVehicle').append($('<option></option>').val(each_vehicle.id).html(each_vehicle.plate_number));
+						});
+
+						$.each(res.form_params.wards, function(index,each_ward ) {
+						     $('#selectWard').append($('<option></option>').val(each_ward.id).html(each_ward.name));
+						});
+						$("div.view_vehicle_form").hide();
+						$("div.view_ward_form").show();
+					},
+					error:function(a,b,c){
+						alert(b);
+						alert(c);
+					}
+				});
+			})
+
+			$("td.vehicles").click(function () {
+				$('#from_time').datetimepicker({
+					useCurrent: false, //Important! See issue #1075
+					format:'YYYY-MM-DD HH:mm:ss'
+				});
+
+				$('#to_time').datetimepicker({
+					useCurrent: false,
+					format:'YYYY-MM-DD HH:mm:ss'
+				});
+
+				$("#from_time").on("dp.change", function (e) {
+				    $('#to_time').data("DateTimePicker").minDate(e.date);
+				});
+
+				$("#to_time").on("dp.change", function (e) {
+				    $('#from_time').data("DateTimePicker").maxDate(e.date);
+				});
+				$('div#from_time input').val('');
+				$('div#to_time input').val('');
+
+				$.ajax({
+					type:'GET',
+					url:'{% url "get_quick_view_form_param" %}',
+					beforeSend: function(xhr) {
+						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+					},
+					success:function(res){
+						$.each(res.form_params.vehicles, function(veh_type,each_vehicle_info) {
+							$('#selectVehType').append($('<option></option>').val(veh_type).html(veh_type.toUpperCase()));
+							$.each(each_vehicle_info, function(index,each_vehicle ) {
+								$('#selectVehicle').append($('<option></option>').val(each_vehicle.id).html(each_vehicle.plate_number).addClass(veh_type));
+							})
+							var selected_veh_type = $('#selectVehType').val();
+							$('#selectVehicle option').hide();
+							$('#selectVehicle').find('.' + selected_veh_type).show();
+						});
+
+						$.each(res.form_params.wards, function(index,each_ward ) {
+						     $('#selectWard').append($('<option></option>').val(each_ward.id).html(each_ward.name));
+						});
+						$("div.view_vehicle_form").show();
+						$("div.view_ward_form").hide();
+					},
+					error:function(a,b,c){
+						alert(b);
+						alert(c);
+					}
+				});
+			})
+
+			$("td.garages").click(function () {
+				if( route_line ){
+					route_line.remove();
+				}
+
+				if( moving_marker ){
+					moving_marker.remove();
+				}
+				$("div.view_vehicle_form").hide();
+				$("div.view_ward_form").hide();
+				$.ajax({
+					type:'GET',
+					url:'{% url "get_all_garage_spot" %}',
+					beforeSend: function(xhr) {
+						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+					},
+					success:function(res){
+						var garage_locations = res.garage_location;
+						var garage_markers = L.markerClusterGroup();
+						for (var i = 0; i < garage_locations.length; i++) {
+							garage_markers.addLayer(L.marker([garage_locations[i][2], garage_locations[i][1]],{icon : garage_icon }).bindPopup(garage_locations[i][0]));
+						}
+						mymap.addLayer(garage_markers);
+						mymap.fitBounds(garage_markers.getBounds());
+					},
+					error:function(a,b,c){
+						alert(b);
+						alert(c);
+					}
+				});
+			});
+
+			$("td.mlcs").click(function () {
+				if( route_line ){
+					route_line.remove();
+				}
+
+				if( moving_marker ){
+					moving_marker.remove();
+				}
+				$("div.view_vehicle_form").hide();
+				$("div.view_ward_form").hide();
+				$.ajax({
+					type:'GET',
+					url:'{% url "get_all_mlc_spot" %}',
+					beforeSend: function(xhr) {
+						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+					},
+					success:function(res){
+						var mlc_locations = res.mlc_location;
+						var mlc_markers = L.markerClusterGroup();
+						for (var i = 0; i < mlc_locations.length; i++) {
+							mlc_markers.addLayer(L.marker([mlc_locations[i][2], mlc_locations[i][1]],{icon : mlc_icon }).bindPopup(mlc_locations[i][0]));
+						}
+						mymap.addLayer(mlc_markers);
+						mymap.fitBounds(mlc_markers.getBounds());
+					},
+					error:function(a,b,c){
+						alert(b);
+						alert(c);
+					}
+				});
+			});
+
+			$("td.tnsstns").click(function () {
+				if( route_line ){
+					route_line.remove();
+				}
+
+				if( moving_marker ){
+					moving_marker.remove();
+				}
+				$("div.view_vehicle_form").hide();
+				$("div.view_ward_form").hide();
+				$.ajax({
+					type:'GET',
+					url:'{% url "get_all_tnsstn_spot" %}',
+					beforeSend: function(xhr) {
+						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+					},
+					success:function(res){
+						var tnsstn_locations = res.tnsstn_location;
+						var tnsstn_markers = L.markerClusterGroup();
+						for (var i = 0; i < tnsstn_locations.length; i++) {
+							tnsstn_markers.addLayer(L.marker([tnsstn_locations[i][2], tnsstn_locations[i][1]],{icon : tnsstn_icon }).bindPopup(tnsstn_locations[i][0]));
+						}
+						mymap.addLayer(tnsstn_markers);
+						mymap.fitBounds(tnsstn_markers.getBounds());
+					},
+					error:function(a,b,c){
+						alert(b);
+						alert(c);
+					}
+				});
+			});
+
+			$("td.dmpgnds").click(function () {
+				if( route_line ){
+					route_line.remove();
+				}
+
+				if( moving_marker ){
+					moving_marker.remove();
+				}
+				$("div.view_vehicle_form").hide();
+				$("div.view_ward_form").hide();
+				$.ajax({
+					type:'GET',
+					url:'{% url "get_all_dmpgnd_spot" %}',
+					beforeSend: function(xhr) {
+						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+					},
+					success:function(res){
+						var dmpgnds_locations = res.dmpgnd_location;
+						var dmpgnds_markers = L.markerClusterGroup();
+						for (var i = 0; i < dmpgnds_locations.length; i++) {
+							dmpgnds_markers.addLayer(L.marker([dmpgnds_locations[i][2], dmpgnds_locations[i][1]],{icon : dmpgnd_icon }).bindPopup(dmpgnds_locations[i][0]));
+						}
+						mymap.addLayer(dmpgnds_markers);
+						mymap.fitBounds(dmpgnds_markers.getBounds());
+					},
+					error:function(a,b,c){
+						alert(b);
+						alert(c);
+					}
+				});
+			});
+
+			$("a.delete_bin").click(function () {
+				var bin_id = $(this).attr('id');
+				var $tr = $(this).closest('tr');
+
+				$.ajax({
+					type:'POST',
+					url:'{% url "delete_bin" %}',
+					data: {
+						'id':bin_id 
+					},
+					beforeSend: function(xhr) {
+						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+					},
+					success:function(res){
+						$tr.find('td').fadeOut(1000,function(){
+							$tr.remove();
+						})
+					},
+					error:function(a,b,c){
+						alert(b);
+						alert(c);
+					}
+				});
+			});
+
+			$("form#view_ward_form").submit(function(e) {
+				e.preventDefault();
+				var selected_ward = $('#selectWard').val();
+				$.ajax({
+					type:'GET',
+					url:'{% url "get_all_bin_spot_from_ward" %}',
+					data: {
+						'id':selected_ward 
+					},
+					beforeSend: function(xhr) {
+						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+					},
+					success:function(res){
+			  			if( res.bin_location.length < 1 ){
+			  				alert("No Bins Found");
+			  				return false;
+			  			}
+						let bin_locations = res.bin_location;
+						let bin_markers = L.markerClusterGroup();
+						for (var i = 0; i < bin_locations.length; i++) {
+							bin_markers.addLayer(L.marker([bin_locations[i][2],bin_locations[i][1]],{icon : bin_icon }).bindPopup(bin_locations[i][0]));
+						}
+						mymap.addLayer(bin_markers);
+						mymap.fitBounds(bin_markers.getBounds());
+					},
+					error:function(a,b,c){
+						alert(b);
+						alert(c);
+					}
+				});
+			});
+
+			$("form#view_vehicle_form").submit(function(e) {
+				var vehicle_positions = new Array();
+				$('#spinner').show();
+				e.preventDefault();
+				if ( ! $('#selectVehicle').val() ){
+					alert('Please select vehicle');
+					return false;
+				}
+				if ( ! $('div#from_time input').val() ){
+			  		alert($('#from_time').val());
+					alert('Please Enter From Time');
+					return false;
+				}
+				if ( ! $('div#to_time input').val() ){
+					alert('Please Enter To Time');
+					return false;
+				}
+
+				if( route_line ){
+					route_line.remove();
+				}
+
+				if( moving_marker ){
+					moving_marker.remove();
+				}
+ 
+				var submitted_form_data = $('#view_vehicle_form').serialize();
+
+				$.ajax({
+					type:'POST',
+					url:'{% url "get_vehicle_travel_history" %}',
+					data: {
+						'form_data'  : submitted_form_data 
+					},
+					beforeSend: function(xhr) {
+						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+					},
+					success:function(res){
+			  			route_line = L.polyline([]).addTo(mymap);
+			  			var stat_pos = res.data[0]; 
+						var earlier_position = L.latLng(res.data[0].lat,res.data[0].lon);
+						for (var i = 1; i < res.data.length; i++) {
+							var position = L.latLng(res.data[i].lat,res.data[i].lon);
+			 				if( position.equals(earlier_position)){
+			  					continue;
+			  				}
+			  				else{
+								vehicle_positions.push(position);
+			  					route_line.addLatLng(position);
+								earlier_position = position; 
+			  				}
+							console.log(position);
+						}
+
+						moving_marker = L.Marker.movingMarker(vehicle_positions, 20000,{icon : bin_icon }).addTo(mymap);
+						moving_marker.start();
+			  			mymap.fitBounds(route_line.getBounds());
+
+			  			/*
+
+						if(res.data.length > 1 ) {
+							$('#spinner').hide();
+							alert("No Vehicle history found");
+							return false;
+						}
+						*/
+
+						/*
+			  			if( res.bin_location.length < 1 ){
+			  				alert("No Bins Found");
+			  				return false;
+			  			}
+						let bin_locations = res.bin_location;
+						let bin_markers = L.markerClusterGroup();
+						for (var i = 0; i < bin_locations.length; i++) {
+							bin_markers.addLayer(L.marker([bin_locations[i][2],bin_locations[i][1]],{icon : bin_icon }).bindPopup(bin_locations[i][0]));
+						}
+						mymap.addLayer(bin_markers);
+						mymap.fitBounds(bin_markers.getBounds());
+						*/
+					},
+					error:function(a,b,c){
+						alert(b);
+						alert(c);
+					}
+				});
+
+			});
+		});
+
+function onChangeVehType() {
+    	var selected_veh_type = $('#selectVehType').val();
+	$('#selectVehicle option').hide();
+	$('#selectVehicle').find('.' + selected_veh_type).show();
+	$('#selectVehicle').val('');
+}
+		  
+	</script>
+{% endblock %}

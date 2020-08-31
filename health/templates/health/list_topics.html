@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+{% endblock %}
+
+{% block breadcrumb %}
+	<li class="breadcrumb-item"><a href="{% url 'home' %}">Boards</a></li>
+{% endblock %}
+
+{% block content %}
+  <table class="table">
+    <thead class="thead-inverse">
+      <tr>
+        <th>Topic</th>
+        <th>Starter</th>
+        <th>Replies</th>
+        <th>Views</th>
+        <th>Last Update</th>
+        <th>Last Position</th>
+        <th>Last Traced Path</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for topic in topics %}
+        <tr>
+	  <td><a href=""{# url 'edit_topic' topic.pk }>{{ topic.subject }}</a></td>
+          <td>{{ topic.starter.username }}</td>
+          <td>0000000000000000</td>
+          <td>0</td>
+          <td>{{ topic.last_updated }}</td>
+	  <td class="last_positions" align="center"><img src="{% static 'img/location.png' %}"><span style="display:none;"> {{ topic.get_location }}</span></td>
+	  <td class="last_path1" align="center"><img src="{% static 'img/location.png' %}"><span style="display:none;">{{ topic.get_path }}</span></td>
+	  <td class="delete_topic" id="{{ topic.id }}">delete</a></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div id="loadpositionmap">
+  </div>
+{% endblock %}
+
+{% block script %}
+<script>
+var llatlng = L.latLng( 19.122777, 72.894568 );
+let mymap = L.map('loadpositionmap').setView(llatlng,16);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+subdomain :['a','b','c']	
+}).addTo(mymap);
+$(document).ready(function(){
+	var marker;		
+	var path;		
+	$("td.last_positions").click(function () {
+		if( marker ){
+			mymap.removeLayer(marker);
+		}
+		if( path ){
+			mymap.removeLayer(path);
+		}
+		let a= JSON.parse($(this).find('span').text());
+		//$('#loadpositionmap').html('<div id="map" style="visiblity:hidden;" align="center"></div>');
+		$.each(a.features, function(index, elem) {
+			  if(elem.geometry.type === 'Point'){
+			  	mymap.panTo([elem.geometry.coordinates[1] , elem.geometry.coordinates[0]]);
+			  	marker = L.marker([elem.geometry.coordinates[1] , elem.geometry.coordinates[0] ]).addTo(mymap);
+			   }
+			$("#loadpositionmap").dialog({
+				modal: true,
+				autoOpen: false,
+				title: " Last Position of vehicle ",
+				width: 800,
+				height: 800
+			});
+		})
+		$("#loadpositionmap").dialog('open');
+		mymap.invalidateSize();
+      	});
+
+	$("td.last_path1").click(function () {
+		if( marker ){
+			mymap.removeLayer(marker);
+		}
+		if( path ){
+			mymap.removeLayer(path);
+		}
+		let a= JSON.parse($(this).find('span').text());
+		console.log(a);							
+
+		$.each(a.features, function(index, elem) {
+			var geojsonMarkerOptions = {
+			radius: 5,
+			fillColor: "blue",
+			color: "yellow",
+			weight: 1,
+			opacity: 1,
+			fillOpacity: 0.8
+			};
+			if(elem.geometry.type === 'LineString'){
+				path=L.geoJSON(elem,{
+					pointToLayer: function (feature, latlng) {
+					mymap.panTo(latlng);
+					return L.circleMarker(latlng, geojsonMarkerOptions);
+					}
+				}).addTo(mymap);
+			}  
+			$("#loadpositionmap").dialog({
+				modal: true,
+				autoOpen: false,
+				title: " Last Position of vehicle ",
+				width: 800,
+				height:800
+			});
+		})
+		$("#loadpositionmap").dialog('open');
+		console.log(mymap.getBounds());							
+		mymap.invalidateSize();
+	});		  
+
+	$("td.delete_topic").click(function () {
+		var topic_id = $(this).attr('id');
+		$.ajax({
+			type:'POST',						
+			url:'{% url "delete_topic" %}',
+			data: {
+				'id':topic_id 
+			},
+		        beforeSend: function(xhr) {
+				xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+            		},
+			success:function(res){
+				alert(res.status);
+			},
+			error:function(a,b,c){
+				alert(b);
+				alert(c);					
+			}						
+
+		});							
+	});								
+});
+</script>
+{% endblock %}

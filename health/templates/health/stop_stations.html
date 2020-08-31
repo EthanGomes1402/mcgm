@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+	<h1>Stop Stations</h1>
+{% endblock %}
+
+{% block content %}
+  <div>
+	  <a href="{% url 'add_stop_station' %}" class="vtms_buttons">Add New Stop station</a>
+  </div>
+  {% if stop_stations %}
+  <table class="table tablesorter">
+    <thead class="thead-inverse">
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Area</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for stop_station in stop_stations %}
+        <tr>
+	  <td>{{ stop_station.name }}</td>
+	  {% if stop_station.is_mlc and  stop_station.is_chkpst %}
+	  	<td>MLC/CHKPST</td>
+          {% elif stop_station.is_mlc %}
+	        <td>MLC</td>
+	  {% elif stop_station.is_chkpst %}
+	  	<td>Checkpost</td>
+	  {% elif stop_station.is_tnsstn %}
+	  	<td>Transfer Station</td>
+	  {% elif stop_station.is_dmpgnd %}
+	  	<td>Dumping Ground</td>
+	  {% elif stop_station.is_garage %}
+	  	<td>Garage</td>
+	  {% else %}
+	  	<td></td>
+	  {% endif %}
+	  <td>this is stop station {{ stop_station.name | upper }}</td>
+	  <td class="area" id="stopstation_{{  stop_station.pk}}"><img src="{% static 'img/location.png' %}"></td>
+	  <td>
+		  <a href="{% url 'edit_stop_station' stop_station.pk %}" class="vtms_buttons">Edit</a>
+		  <a id="{{stop_station.pk}}" href="#" class="vtms_buttons delete_stop_station">Delete</a>
+	  </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+	<h1>No Stop stations Found</h1>
+  {% endif %}
+  <div id="loadpositionmap" style="display: none;" align="center">
+  </div>
+{% endblock %}
+
+{% block js %}
+<script>
+	let mymap = L.map('loadpositionmap').setView([ 19.122777 ,72.894568] ,12);
+	L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+	attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+	subdomain :['a','b','c']	
+	}).addTo(mymap);
+
+	$(document).ready(function(){
+		var area;
+		$('table').tablesorter({theme:'metro-dark'});
+		$("td.area").click(function () {
+			if( area ){
+				mymap.removeLayer(area);
+			}
+			stop_station_id= $(this).attr('id').split('_')[1];
+			$.ajax({
+				type:'GET',
+				url:'{% url "get_stop_station_area" %}',
+				data: {
+					'id':stop_station_id 
+				},
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+				},
+				success:function(res){
+					let stop_station = JSON.parse(res.stop_station_fence);
+					area = L.geoJSON(stop_station,{
+						style: function(feature){
+							return {
+								color  : 'red',
+								weight : 3,
+								fillColor: 'black'
+							}
+						},
+						onEachFeature: function(feature,layer){
+							layer.bindPopup("<b>stop station : </b>");
+						}
+					}).addTo(mymap)
+
+					mymap.fitBounds(area.getBounds());
+					$("#loadpositionmap").dialog({
+						modal: true,
+						autoOpen: false,
+						title: " Ward ",
+						width: 800,
+						height:800
+					});
+					$("#loadpositionmap").dialog('open');
+					mymap.invalidateSize();
+				},
+				error:function(a,b,c){
+					alert(b);
+					alert(c);
+				}
+			});
+		});
+
+		$("a.delete_stop_station").click(function () {
+			var stop_station_id = $(this).attr('id');
+			var $tr = $(this).closest('tr');
+
+			$.ajax({
+				type:'POST',
+				url:'{% url "delete_stop_station" %}',
+				data: {
+					'id':stop_station_id 
+				},
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+				},
+				success:function(res){
+					$tr.find('td').fadeOut(1000,function(){
+						$tr.remove();
+					})	
+				},
+				error:function(a,b,c){
+					alert(b);
+					alert(c);
+				}
+			});
+		});
+	});
+</script>
+{% endblock %}

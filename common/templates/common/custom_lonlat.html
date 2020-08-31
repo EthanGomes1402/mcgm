@@ -1,0 +1,8 @@
+{% extends 'floppyforms/gis/osm.html' %}
+
+{% block options %}{{ block.super }}
+options['default_lon'] = {{ lon }};
+options['default_lat'] = {{ lat }};
+options['default_zoom'] = 12;
+{% endblock %}
+

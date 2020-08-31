@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Upload student data {% endblock %}
+
+{% block breadcrumb %}
+	<li class="breadcrumb-item"><a href="{% url 'home' %}">Boards</a></li>
+	<li class="breadcrumb-item active"></li>
+{% endblock %}
+
+{% block content %}
+  <form method="post" novalidate enctype="multipart/form-data">
+    {% csrf_token %}
+                <input type="file"
+                   title="Upload excel file"
+                   name="excel_file"
+                   style="border: 1px solid black; padding: 5px;"
+                   required="required">
+
+    <button type="submit" class="btn btn-success">Upload</button>
+  </form>
+{% endblock %}
+
+
+{% block script %}
+  <script>
+    $(document).ready(function(){
+    });
+  </script>
+{% endblock %}  

@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+	<h1>Zone From Mumbai</h1>
+{% endblock %}
+
+{% block content %}
+  <div>
+	  <a href="{% url 'add_zone' %}" class="vtms_buttons">Add New zone</a>
+  </div>
+  {% if zones %}
+  <table class="table tablesorter">
+    <thead class="thead-inverse">
+      <tr>
+        <th>Zone</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th align="center">Area</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for zone in zones %}
+        <tr>
+	  <td>{{ zone.name }}</td>
+	  <td>{{ zone.short_name }}</td>
+	  <td>this is zone {{ zone.name }}</td>
+	  <td class="area" id="area_{{zone.pk}}"><img src="{% static 'img/location.png' %}"></td>
+	  <td>
+		  <a href="{% url 'edit_zone' zone.pk %}" class="vtms_buttons">Edit</a>
+		  <a id="{{zone.pk}}" href="#" class="vtms_buttons delete_zone">Delete</a>
+	  </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  	<h1>No Zones Found</h1>
+  {% endif %}
+  <div id="loadpositionmap" style="display: none;" align="center">
+  </div>
+{% endblock %}
+
+{% block js %}
+	<script>
+		let mymap = L.map('loadpositionmap').setView([ 19.122777 ,72.894568] ,12);
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+		subdomain :['a','b','c']	
+		}).addTo(mymap);
+
+		$(document).ready(function(){
+			var area;
+			$('table').tablesorter({theme:'metro-dark'});
+			$("td.area").click(function () {
+				if( area ){
+					mymap.removeLayer(area);
+				}
+				zone_id= $(this).attr('id').split('_')[1];
+				$.ajax({
+					type:'GET',
+					url:'{% url "get_zone_area" %}',
+					data: {
+						'id':zone_id 
+					},
+					beforeSend: function(xhr) {
+						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+					},
+					success:function(res){
+						let zone = JSON.parse(res.zone_fence);
+						area = L.geoJSON(zone,{
+							style: function(feature){
+								return {
+									color  : 'red',
+									weight : 3,
+									fillColor: 'black'
+								}
+							},
+							onEachFeature: function(feature,layer){
+								layer.bindPopup("<b>zone : </b>");
+							}
+						}).addTo(mymap)
+
+						mymap.fitBounds(area.getBounds());
+						$("#loadpositionmap").dialog({
+							modal: true,
+							autoOpen: false,
+							title: " Ward ",
+							width: 800,
+							height:800
+						});
+						$("#loadpositionmap").dialog('open');
+						mymap.invalidateSize();
+					},
+					error:function(a,b,c){
+						alert(b);
+						alert(c);
+					}
+				});
+			});
+		});
+
+		$("a.delete_zone").click(function () {
+			var zone_id = $(this).attr('id');
+			$.ajax({
+				type:'POST',
+				url:'{% url "delete_zone" %}',
+				data: {
+					'id':zone_id 
+				},
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+				},
+				success:function(res){
+					alert(res.status);
+				},
+				error:function(a,b,c){
+					alert(b);
+					alert(c);
+				}
+			});
+		});
+	</script>
+{% endblock %}

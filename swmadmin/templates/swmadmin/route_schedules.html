@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+	Route schedules 
+{% endblock %}
+
+{% block content %}
+  <div>
+	  <a href="{% url 'add_route_schedule' %}" class="vtms_buttons">Add New Route schedule</a>
+  </div>
+  {% if route_schedules %}
+  <table class="table tablesorter">
+    <thead class="thead-inverse">
+      <tr>
+        <th>Name</th>
+        <th>Shift</th>
+        <th>Route</th>
+	<th>Vehicle</th>
+	<th>Map</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for route_schedule in route_schedules %}
+        <tr>
+          <td>{{ route_schedule.name }} </td>
+          <td>{{ route_schedule.shift }}</td>
+          <td>{{ route_schedule.route }} </td>
+          <td>{{ route_schedule.vehicle }}</td>
+	  <td class="route_path"><img src="{% static 'img/location.png' %}"><span style="display:none;">{{route_schedule.route.bins_from_route}} -- {{ route_schedule.route.route_serialized }}</span></td>
+	  <td>
+		  <a href="{% url 'edit_route_schedule' route_schedule.pk %}" class="vtms_buttons">Edit</a>
+		  <a id="{{ route_schedule.pk }}" href="#" class="vtms_buttons delete_route_schedule">Delete</a>
+	  </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  	<h1>No Route Schedule Found</h1>
+  {% endif %}
+  <div id="loadpositionmap" style="display: none;" align="center">
+  </div>
+{% endblock %}
+
+{% block js %}
+<script>
+	let mymap = L.map('loadpositionmap').setView([19.122777, 72.894568],16);
+	L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+	attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+	subdomain :['a','b','c']	
+	}).addTo(mymap);
+
+	var bin_icon = L.icon({
+	    iconUrl: '{% static 'img/Bin.jpeg' %}',
+	    iconSize: [24, 41],
+	});
+
+	$(document).ready(function(){
+		$('table').tablesorter({theme:'metro-dark'});
+		$("a.delete_route_schedule").click(function () {
+			var route_schedule_id = $(this).attr('id');
+			var $tr = $(this).closest('tr');
+
+			$.ajax({
+				type:'POST',
+				url:'{% url "delete_route_schedule" %}',
+				data: {
+					'id':route_schedule_id 
+				},
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+				},
+				success:function(res){
+					$tr.find('td').fadeOut(1000,function(){
+						$tr.remove();
+					})	
+				},
+				error:function(a,b,c){
+					alert(b);
+					alert(c);
+				}
+			});
+		});
+	});
+</script>
+{% endblock %}

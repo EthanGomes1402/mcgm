@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+{% endblock %}
+
+{% block breadcrumb %}
+	<li class="breadcrumb-item"><a href="{% url 'home' %}">Boards</a></li>
+{% endblock %}
+
+{% block content %}
+  <table class="table">
+    <thead class="thead-inverse">
+      <tr>
+        <th>Vehicle</th>
+        <th>Contractor</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for vcm in vcms %}
+        <tr>
+          <td>{{ vcm.vehicle.plate_number }} </td>
+          <td>{{ vcm.contractor.username }}</td>
+	  <td class="delete_route" id="{{ vcm.id }}">Delete</a></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div id="loadpositionmap">
+  </div>
+{% endblock %}
+
+{% block script %}
+<script>
+	$(document).ready(function(){
+	});
+</script>
+{% endblock %}

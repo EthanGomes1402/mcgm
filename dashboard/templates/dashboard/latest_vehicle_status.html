@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+	<h1>Bins</h1>
+{% endblock %}
+
+{% block content %}
+  {% if all_entries %}
+  <table class="table tablesorter">
+    <thead class="thead-inverse">
+      <tr>
+        <th>Vehicle</th>
+        <th>Type</th>
+	<th>Ward</th>
+        <th>Time</th>
+	<th>Trip Status</th>
+        <th>Vehicle Status</th>
+        <th>Speed Status</th>
+        <th>Tracking Status</th>
+        <th>Map View</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for each_entry in all_entries %}
+        <tr>
+	  <td>{{ each_entry.veh  }}</td>
+	  <td>{{ each_entry.type }}</td>
+          <td>{{ each_entry.ward  }} </td>
+          <td>{{ each_entry.time | default_if_none:"" }}</td>
+          <td>{{ each_entry.trip_status }}</td>
+	  <!--<td>{% firstof bin.ward bin.route.ward  %}</td>-->
+          <td bgcolor="{{ each_entry.veh_class }}">{{ each_entry.veh_status }}</td>
+          <td bgcolor="{{ each_entry.speed_class }}">{{ each_entry.speed_status }}</td>
+          <td></td>
+	  <td class="area"><img src="{% static 'img/location.png' %}"><span style="display:none;">{{  each_entry.lat }},{{each_entry.lon }}</span> </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  	<h1>No Bins Found</h1>
+  {% endif %}
+  <div id="loadpositionmap" style="display: none;" align="center">
+  </div>
+{% endblock %}
+
+{% block js %}
+    <!-- Load Esri Leaflet from CDN -->
+	<script src="https://unpkg.com/esri-leaflet@2.4.1/dist/esri-leaflet.js"
+  integrity="sha512-xY2smLIHKirD03vHKDJ2u4pqeHA7OQZZ27EjtqmuhDguxiUvdsOuXMwkg16PQrm9cgTmXtoxA6kwr8KBy3cdcw=="
+  crossorigin=""></script>
+
+
+  <!-- Load Esri Leaflet Geocoder from CDN -->
+	  <link rel="stylesheet" href="https://unpkg.com/esri-leaflet-geocoder@2.3.3/dist/esri-leaflet-geocoder.css"
+    integrity="sha512-IM3Hs+feyi40yZhDH6kV8vQMg4Fh20s9OzInIIAc4nx7aMYMfo+IenRUekoYsHZqGkREUgx0VvlEsgm7nCDW9g=="
+    crossorigin="">
+	<script src="https://unpkg.com/esri-leaflet-geocoder@2.3.3/dist/esri-leaflet-geocoder.js"
+    integrity="sha512-HrFUyCEtIpxZloTgEKKMq4RFYhxjJkCiF5sDxuAokklOeZ68U2NPfh4MFtyIVWlsKtVbK5GD2/JzFyAfvT5ejA=="
+    crossorigin=""></script>
+
+	<script>
+		let mymap = L.map('loadpositionmap').setView([19.122777, 72.894568],19);
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+		subdomain :['a','b','c']	
+		}).addTo(mymap);
+
+		var bin_icon = L.icon({
+		    iconUrl: '{% static 'img/Bin.jpeg' %}',
+		    iconSize: [24, 34],
+		});
+		var geocodeService = L.esri.Geocoding.geocodeService();
+
+		var marker;
+		$(document).ready(function(){
+			$('table').tablesorter({theme:'metro-dark'});
+			$("td.area").click(function () {
+		                if( marker ){
+                      			mymap.removeLayer(marker);
+				}
+
+				var [lat,lon] = $(this).children().text().split(',');
+				var latlng = L.latLng(lat,lon);
+                                mymap.panTo(latlng);
+			    	geocodeService.reverse().latlng(latlng).run(function (error, result) {
+      					if (error) {
+				        	return;
+					}
+					marker = L.marker(result.latlng).addTo(mymap).bindPopup(result.address.Match_addr).openPopup();
+				});
+
+				$("#loadpositionmap").dialog({
+					modal: true,
+					autoOpen: false,
+					title: " Bin ",
+					width: 600,
+					height: 600
+				});
+				$("#loadpositionmap").dialog('open');
+				mymap.invalidateSize();
+				return false;
+			});
+
+			$("a.delete_bin").click(function () {
+				var bin_id = $(this).attr('id');
+				var $tr = $(this).closest('tr');
+
+				$.ajax({
+					type:'POST',
+					url:'{% url "delete_bin" %}',
+					data: {
+						'id':bin_id 
+					},
+					beforeSend: function(xhr) {
+						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+					},
+					success:function(res){
+						$tr.find('td').fadeOut(1000,function(){
+							$tr.remove();
+						})	
+					},
+					error:function(a,b,c){
+						alert(b);
+						alert(c);
+					}
+				});
+			});
+		});
+	</script>
+{% endblock %}

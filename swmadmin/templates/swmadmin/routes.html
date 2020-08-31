@@ -1,0 +1,376 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+	<h1>Routes<h1>
+{% endblock %}
+
+{% block content %}
+  <div>
+	  <a href="{% url 'add_route' %}" class="vtms_buttons">Add Route</a>
+	  <a href="{% url 'upload_routes_and_bin_data' %}" class="vtms_buttons">Upload Routes</a>
+  </div>
+  {% if routes %}
+  <table class="table tablesorter">
+    <thead class="thead-inverse">
+      <tr>
+        <th>Route</th>
+        <th>Code</th>
+        <th>Area</th>
+	<th>Bins</th>
+        <th>Ward</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for route in routes %}
+        <tr>
+          <td>{{ route.name }} </td>
+          <td>{{ route.code }}</td>
+	  <td class="route_path" id="route_path_{{ route.id }}"><img src="{% static 'img/location.png' %}"><span style="display:none;">{{route.bins_from_route}} -- {{route.route_serialized}}</span></td>
+	  <td id="bins">
+		  <div id="add_view_reorder_bins_route_{{ route.id }}" class="add_view_bins">
+			  <!--<a href="#" class="add_bin_to_route_{{ route.id }}_{{ route.ward.id }}">Add Bins</a>-->
+                        <a href="#" class="bins_from_{{route.id}}_{{route.ward.id}}">View bins</a>
+		  </div>
+		  <div style="display:none;" class="bins">
+			  <table class="table table-striped table-hover bins_belong_to_route" id="bins_from_{{route.id}}_{{route.ward.id}}">
+				<thead class="thead-dark">
+					<th style="text-align:center">Index</th>
+					<th style="text-align:center">Bin</th>
+					<th style="text-align:center">Action</th>
+				</thead> 
+				<tbody class="bins_info">
+					{% for bn in route.bins.all %}
+						<tr id={{ bn.id }}>
+							<td>{{ forloop.counter }}</td>
+							<td style="text-align:center">{{ bn.name }}</td>
+							<td><input type="button" value="Deallocate" id="{{ bn.id }}" class="deallocate_bins float-right"></td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			  </table>
+		  	  <div class="add_bins" style="text-align: right;">	
+		  	  	<a href="#" class="add_bin_to_route_{{ route.id }}_{{ route.ward.id }}">Add Bins</a>
+			  </div>
+		  	  <!--<div class="reorder_bins" style="text-align: center;">	
+		  	  	<input type="button" value="REORDER" class="reorder_bins_from_{{ route.id }}_{{ route.ward.id }}">
+			  </div>-->
+			  <div id="allocate_bin_to_route_{{ route.id }}" style="display:none;" class="allocate_bin_to_route">
+				  <select id="bins_route_{{ route.id }}_{{ route.ward.id }}" multiple style="width:100%"></select> 
+				  <input type="button" value="ADD" class="bins_route_{{ route.id }}_{{ route.ward.id }}"> 
+				  <input type="button" value="CANCEL" class="cancel"> 
+			  </div>
+		  </div>
+		  <!--<div id="add_view_reorder_bins_route_{{ route.id }}" class="add_view_bins">
+			  <a href="#" class="add_bin_to_route_{{ route.id }}_{{ route.ward.id }}">Add Bins</a>
+                        <a href="#" class="bins_from_{{route.id}}_{{route.ward.id}}">View bins</a>
+		  </div>-->
+	  </td>
+          <td>{{ route.ward }}</td>
+	  <td>
+		  <a id="{{route.id}}" href="#" class="vtms_buttons delete_route">Delete</a>
+	  </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  	<h1>No Routes Found</h1>
+  {% endif %}
+  <div id="loadpositionmap" style="display: none;" align="center">
+  </div>
+{% endblock %}
+
+{% block js %}
+<script>
+	let mymap = L.map('loadpositionmap').setView([19.122777, 72.894568],16);
+	L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+	attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+	subdomain :['a','b','c']	
+	}).addTo(mymap);
+
+	var bin_icon = L.icon({
+	    iconUrl: '{% static 'img/Bin.jpeg' %}',
+	    iconSize: [24, 30],
+	});
+
+	$(document).ready(function(){
+		$('tbody.bins_info').sortable();
+		$( "ul.sortable" ).sortable();
+		var marker;
+		var route_path;
+		var control;
+		$("td.route_path").click(function () {
+			var a = new Array();
+			var rt_name = $(this).prev().text();
+			alert(rt_name);
+			if( marker ){
+				mymap.removeLayer(marker);
+			}
+			if( route_path ){
+				mymap.removeLayer(route_path);
+			}
+			if( control ){
+				mymap.removeLayer(control);
+			}
+			var geom = $(this).find('span').text().split("--");
+			let all_bins = JSON.parse(geom[0]);
+			let route_geom = JSON.parse(geom[1]);
+			route_path = L.geoJSON(all_bins,{
+				pointToLayer : function(geoJsonPoint, latlng){
+					a.push(latlng);
+					return L.marker(latlng,{icon : bin_icon });
+				}
+			}).addTo(mymap);
+			//route_path.addData(route_geom);
+			console.log(route_path);
+			var control = L.Routing.control({
+  waypoints: a,
+  show: false,
+  waypointMode: 'snap',
+  createMarker: function() {}
+}).addTo(mymap);
+			mymap.fitBounds(route_path.getBounds());
+			/*
+			//$('#loadpositionmap').html('<div id="map" style="visiblity:hidden;" align="center"></div>');
+			$.each(a.features, function(index, elem) {
+				  if(elem.geometry.type === 'Point'){
+					mymap.panTo([elem.geometry.coordinates[1] , elem.geometry.coordinates[0]]);
+					marker = L.marker([elem.geometry.coordinates[1] , elem.geometry.coordinates[0] ]).addTo(mymap);
+				   }
+				$("#loadpositionmap").dialog({
+					modal: true,
+					autoOpen: false,
+					title: " Last Position of vehicle ",
+					width: 800,
+					height: 800
+				});
+			})
+			*/
+
+			$("#loadpositionmap").dialog({
+				modal: true,
+				autoOpen: false,
+				width: 800,
+				height: 800
+			});
+
+			$("#loadpositionmap").dialog('option', 'title', 'Route ' +  rt_name);
+			$("#loadpositionmap").dialog('open');
+
+			mymap.invalidateSize();
+		});
+
+
+		$("a[class^='add_bin_to_route_']").click(function(event) {
+			event.preventDefault();
+			$('div.allocate_bin_to_route').hide();
+			//$(this).closest('div.allocate_bin_to_route').show();
+			$div = $(this).parent().next();
+			$current_div = $(this).parent();
+			var info = $(this).attr('class').split("_");
+			var ward_id  = info[5];
+			var route_id = info[4];
+			var ward_route = route_id + '_' + ward_id;
+
+
+			$('#bins_route_'+ ward_route).empty();
+
+			if (!$('#bins_route_'+ ward_route).has('option').length) {
+				$.ajax({
+					type:'GET',						
+					url:'{% url "get_unallocated_bins_from_ward" %}',
+					data: {
+						'id':ward_id 
+					},
+					beforeSend: function(xhr) {
+						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+					},
+					success:function(res){
+						var resp = JSON.parse(res.data);
+						if (! resp.length){
+							 alert('No Unallocated bins in ward');
+							 return false;
+						}
+						else{
+							 $.each(resp, function(i, bin) {
+								 $('#bins_route_'+ ward_route).append($('<option></option>').val(bin.pk).html(bin.fields.name));
+								 $current_div.hide();
+								 $div.show();
+							 })
+						}	
+					},
+					error:function(a,b,c){
+						alert(b);
+						alert(c);					
+					}						
+
+				});
+			}
+			else{
+				return false;
+			}
+		});
+
+		$("input[class^='reorder_bins_from_']").click(function(event) {
+			event.preventDefault();
+			var info = $(this).attr('class').split("_");
+			var route_id = info[3];
+			var ward_id  = info[4];
+			var ward_route = route_id + '_' + ward_id;
+			var reordered_bins = [];
+
+			if ($("table#bins_from_"+ ward_route + " tbody").children().length !== '0') {
+				var updateInfo ={};
+				$("table#bins_from_"+ ward_route + " tbody tr").each(function(index,elem){
+					var bn_id = $(this).attr('id'); 
+					reordered_bins.push(bn_id)
+				})
+
+				$.ajax({
+					type:'GET',						
+					url:'{% url "reorder_bins" %}',
+					data: {
+						'bins[]':reordered_bins 
+					},
+					beforeSend: function(xhr) {
+						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+					},
+					success:function(res){
+						/*
+						 $.each(resp, function(i, bin) {
+							 $('#add_bins_from_route_'+ ward_route).append($('<option></option>').val(bin.pk).html(bin.fields.name));
+						 })
+						*/
+					},
+					error:function(a,b,c){
+						alert(b);
+						alert(c);					
+					}						
+
+				});
+			}
+			else{
+				return false;
+			}
+		});
+
+		$("input[class^='bins_route_']").click(function(event) {
+			var select_id = $(this).attr('class');
+			var bin_info = $(this).attr('class').split("_");
+			var ward_id  = bin_info[3];
+			var route_id = bin_info[2];
+			var bins = $("#"+ select_id ).val().join(",");
+
+			var bin_data = {
+					bins:bins, 
+					ward:ward_id,
+					route:route_id
+				       };
+
+			$.ajax({
+				type:'GET',						
+				url:'{% url "allocate_bins_to_route" %}',
+				data: bin_data,
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+				},
+				success:function(res){
+					 var resp = res.data;
+				},
+				error:function(a,b,c){
+					alert(b);
+					alert(c);					
+				}						
+			});
+		});
+
+		$("input[class='cancel']").click(function(event) {
+			$(this).parent().hide();
+		});
+
+		$("input[class^='deallocate_bins']").click(function(event) {
+			var bin = $(this).attr('id');
+			var $tr = $(this).closest('tr');
+
+			$.ajax({
+				type:'GET',						
+				url:'{% url "deallocate_bin_from_route" %}',
+				data: {
+					'id':bin 
+				},
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+				},
+				success:function(res){
+					 var resp = res.data;
+					 $tr.find('td').fadeOut(1000,function(){
+						 $tr.remove();
+					 })
+				},
+				error:function(a,b,c){
+					alert(b);
+					alert(c);					
+				}						
+
+			});
+		})
+
+		$("div.add_view_bins").click(function(e){
+			e.preventDefault();
+			if( $(this).next().is(":visible") ){
+				$(this).next().hide();
+				$(this).find('a:first').text('View bins');
+			}
+			else{
+				$("div.bins").each(function(i,elem){
+					if($(elem).is(":visible")){
+						$(elem).hide();
+						//alert($(elem).find('a:first').text());
+						//$(elem).find('a:first').text('View bins');
+						//alert($(elem).find('a:first').text());
+					}
+				});
+				$(this).next().show();
+				$(this).find('a:first').text('Hide bins');
+			}
+		})
+/*
+
+		$("a[class^='bins_from_']").click(function(event) {
+			event.preventDefault();
+			$("div.bins").hide();
+			$(this).parent().prev().show()
+			$(this).parent().hide()
+			return false;
+		});
+*/		
+
+		$("a.delete_route").click(function () {
+			var route_id = $(this).attr('id');
+			var $tr = $(this).closest('tr');
+
+			$.ajax({
+				type:'POST',
+				url:'{% url "delete_route" %}',
+				data: {
+					'id':route_id 
+				},
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+				},
+				success:function(res){
+					$tr.find('td').fadeOut(1000,function(){
+						$tr.remove();
+					})
+				},
+				error:function(a,b,c){
+					alert(b);
+					alert(c);
+				}
+			});
+		});
+	});
+</script>
+{% endblock %}

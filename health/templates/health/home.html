@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}add new topic {% endblock %}
+{% block options %}
+{{ block.super }}
+options['default_lon']={{ lon }}	
+options['default_lat']={{ lat }}
+{% endblock %}
+{% block head %}
+	{{ form.media }}
+{% endblock %}
+
+{% block content %}
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.as_p }} 	
+    <button type="submit" class="btn btn-success">Post</button>
+  </form>
+  <h1> hello therekkkkkk</h1>
+{% endblock %}
+
+
+{% block script %}
+  <script>
+    options.map_srid=4326;		  
+    $(document).ready(function(){
+	    alert(options.map_srid);
+    });
+  </script>
+{% endblock %}  

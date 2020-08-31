@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+	Ward Contractor Mapping 
+{% endblock %}
+
+{% block content %}
+  <div>
+	  <a href="{% url 'add_wcm' %}" class="vtms_buttons">Assign Contractor To Ward</a>
+	  <a href="{% url 'upload_ward_contractor_mapping' %}" class="vtms_buttons">Upload Ward Contractor Mapping</a>
+  </div>
+  {% if wcms %}
+  <table class="table tablesorter">
+    <thead class="thead-inverse">
+      <tr>
+        <th>Ward</th>
+        <th>Contractor</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for wcm in wcms %}
+        <tr>
+          <td>{{ wcm.ward }} </td>
+          <td>{{ wcm.contractor }} </td>
+	  <td>
+		  <a href="{% url 'edit_wcm' wcm.pk %}" class="vtms_buttons">Edit</a>
+		  <a id="{{ wcm.pk }}" href="#" class="vtms_buttons delete_wcm">Delete</a>
+	  </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  	<h1>No Ward Contractor Mapping Found</h1>
+  {% endif %}
+{% endblock %}
+
+{% block js %}
+<script>
+	$(document).ready(function(){
+		$('table').tablesorter({theme:'metro-dark'});
+		$("a.delete_wcm").click(function () {
+			var wcm_id = $(this).attr('id');
+			var $tr = $(this).closest('tr');
+
+			$.ajax({
+				type:'POST',
+				url:'{% url "delete_wcm" %}',
+				data: {
+					'id':wcm_id 
+				},
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+				},
+				success:function(res){
+					$tr.find('td').fadeOut(1000,function(){
+						$tr.remove();
+					})	
+				},
+				error:function(a,b,c){
+					alert(b);
+					alert(c);
+				}
+			});
+		});
+	});
+</script>
+{% endblock %}

@@ -1,0 +1,431 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}Bin Collection Status Report {% endblock %}
+
+{% block extrastylesheet %}
+ <style>
+  div.loader {
+    width: 100px;
+    height: 100px;
+    position: absolute;
+    top:0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+ }
+ </style>
+{% endblock %}
+
+{% block content %}
+	<div>
+		<div>
+			<form id="bin_collection_status_report" name="bin_collection_status_report">
+			  <div class="form-row">
+			    <div class="form-group col-md-4">
+			      <label for="selectDiv">Div</label>
+			      <select id="selectDiv" class="form-control" name="selectDiv" onchange="onChangeDiv()">
+			      </select>
+			    </div>
+			    <div class="form-group col-md-4">
+			      <label for="selectZone">Zone</label>
+			      <select id="selectZone" class="form-control" name="selectZone" onchange="onChangeZone()">
+			      </select>
+			    </div>
+			    <div class="form-group col-md-4 wardwise">
+			      <label for="selectWard">Ward</label>
+			      <select id="selectWard" class="form-control" name="selectWard" onchange="onChangeWard()">
+			      </select>
+			    </div>
+			  </div>
+			  <div class="form-row">
+			    <div class="form-group col-md-4">
+			      <label for="selectMlc">Mlc</label>
+			      <select id="selectMlc" class="form-control" name="selectMlc">
+			      </select>
+			    </div>
+			    <div class="form-group col-md-4">
+			      <label for="selectShift">Shift</label>
+			      <select id="selectShift" class="form-control" name="selectShift">
+				<option value="0">All</option>
+				<option value="1">First</option>
+				<option value="2">Second</option>
+                                <option value="3">Third</option>
+			      </select>
+			    </div>
+			    <div class="form-group col-md-4">
+			      <label for="from_date">From Date </label>
+			      <div class="form-group">
+				<div class='input-group date' id='from_date'>
+				  <input type='text' class="form-control" name="from_date"/>
+				    <span class="input-group-addon">
+				      <span class="glyphicon glyphicon-calendar"></span>
+				    </span>
+				</div>
+			      </div>
+			    </div>
+			  </div>
+			  <div class="form-row">
+			    <div class="col-md-4">
+			      <div class="form-group">
+				<button type="submit" class="btn btn-primary">Submit</button>
+			      </div>
+			    </div>
+			  </div>
+			</form>
+		</div>
+		<div width="100%" style="display:none;" id="bin_collection_status_data">
+			<div>
+			    <div class="col-md-12" style="text-align:center;border:1px solid red;">  
+				abc
+			    </div> 
+			    <div class="col-md-12" style="text-align:center;border:1px solid red;">  
+				abc
+			    </div> 
+			    <div class="col-md-12" style="text-align:center;border:1px solid red;">  
+				abc
+			    </div> 
+			</div>
+			<div>
+				<button id="export_to_excel" style="float: right;">Export To Excel</button>
+				<button id="export_to_csv" style="float: right;">Export To CSV</button>
+				<button id="export_to_pdf" style="float: right;">Export To PDF</button>
+				<table  id="bin_collection_status" width="100%" class="table tablesorter">
+					<thead>
+						<tr>
+							<th>Index</th>
+							<th>MLC</th>
+							<th>Shift</th>
+							<th>Vehicle</th>
+							<th>Category</th>
+							<th>Route</th>
+							<th>Bins(T)</th>
+							<th>Bins(C)</th>
+							<th>Bin(Entry Time)</th>
+							<th>Bin(Exit Time)</th>
+							<th>Time</th>
+						</tr>
+					</thead>
+					<tbody></tbody>
+				</table>
+			</div>
+		</div>
+		<div id="spinner" style="display: none;" class="loader">
+                        <img src="{% static 'img/loader.gif' %}" class="img-responsive">
+                </div>
+	</div>
+{% endblock %}
+
+{% block js %}
+  <script>
+    var form_data = JSON.parse('{{ form_params | escapejs }}');
+    form_data = form_data.areal_hierarchy_params;
+    var div_additional_info = {};
+    var zone_additional_info = {};
+    var ward_additional_info = {};
+
+    setAllDefElemValues(form_data);
+
+    $('#from_date').datetimepicker({
+       	useCurrent: false, //Important! See issue #1075
+	format:'YYYY-MM-DD'
+    });
+
+    $(document).ready(function(){
+	$("#bin_collection_status_report").submit(function(event) {
+		if($("table#bin_collection_status tbody").children().length > 0 ){
+			$('#bin_collection_status tbody tr').remove();
+		}	
+		event.preventDefault();
+		$('#spinner').show();
+		var submitted_form_data = $('#bin_collection_status_report').serialize();
+		$.ajax({
+			type:'POST',
+			url:'{% url "bin_collection_status" %}',
+			data: { 'form_data' : submitted_form_data},
+			beforeSend: function(xhr) {
+				xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+			},
+			success:function(res){
+				var indexcounter = 0;
+				$.each(res.data, function(index, each_entry) {
+                                    let eachrow = '<tr class="routerow">';
+					eachrow += '<td>' + (++indexcounter) + '</td><td>' + each_entry.mlc + '</td><td>'+ each_entry.shift +'</td><td>' + each_entry.vehicle + '</td>' + '<td>' + each_entry.veh_category + '</td>' + '<td>' + each_entry.route  + '</td><td>'+ each_entry.bins_to_be_collected + '</td><td>' + (each_entry.bins_collected || "0") + '</td>' + '<td>' + (each_entry.in_time || " ") + '</td><td>'+  each_entry.out_time +'</td><td>'+ each_entry.bin_status  +'</td></tr>';
+                                    $('#bin_collection_status tbody').append(eachrow);
+				});
+
+				if($("table#bin_collection_status tbody").children().length > 0 ) {
+					$('#bin_collection_status').tablesorter();
+					$('#spinner').hide();
+					$('div#bin_collection_status_data').show();
+				}
+				else {
+					$('#spinner').hide();
+					alert("No Alert Recorded For Mentioned Criteria");
+					return false;
+				}
+			},
+			error:function(a,b,c){
+				alert(b);
+				alert(c);
+			}
+		});
+	});
+
+	$("button#export_to_excel").click(function() {
+	    var dNow = new Date();
+	    var file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+	    $("#bin_collection_status").table2excel({
+		name: "bin_collection_status_report",
+		filename: "vehicle_geofence_alert_report_" + file_time_str + ".xlsx"//do not include extension
+	    });
+	});
+	   
+	$("button#export_to_csv").click(function() {
+	    $("#bin_collection_status").tableHTMLExport({type:'csv',filename:'sample.csv'});
+	});
+
+	$("button#export_to_pdf").click(function() {
+	    $("#bin_collection_status").tableHTMLExport({type:'pdf',filename:'sample.pdf'});
+	});    
+    });
+
+function setAllDefElemValues(form_data) {
+	$('#selectDiv').empty();
+	$('#selectDiv').append($('<option></option>').val(0).html('All Divisions').attr("name", "defdiv"));
+	$('#selectZone').empty();
+	$('#selectZone').append($('<option></option>').val(0).html('All Zones').attr("name", "defzone"));
+	$('#selectWard').empty();
+	$('#selectWard').append($('<option></option>').val(0).html('All Wards').attr("name", "defward"));
+	$('#selectMlc').empty();
+	$('#selectMlc').append($('<option></option>').val(0).html('All Mlcs').attr("name", "defmlc"));
+	$('div#from_date input').val('');
+
+	var alldefdivs = new Array();
+	var alldefzones = new Array();
+	var alldefwards = new Array();
+	var alldefmlcs = new Array();
+
+	$.each(form_data, function(each_div, zone_info) {
+		div_additional_info[each_div] = zone_info;
+		div_properties = each_div.split('_'); 
+		$('#selectDiv').append($('<option></option>').val(div_properties[1]).html(div_properties[0]).attr("name",div_properties[0]))
+		alldefdivs.push(div_properties[1]);
+		$.each(zone_info, function(each_zone, ward_info) {
+		    zone_additional_info[each_zone] = ward_info; 
+		    zone_properties = each_zone.split('_');
+		    $('#selectZone').append($('<option></option>').val(zone_properties[1]).html(zone_properties[0]).attr("name",zone_properties[0]))
+		    alldefzones.push(zone_properties[1]);
+		    $.each(ward_info, function(each_ward,other_info ) {
+			ward_additional_info[each_ward]=other_info;
+			ward_properties = each_ward.split('_');
+			$('#selectWard').append($('<option></option>').val(ward_properties[1]).html(ward_properties[0]).attr("name",ward_properties[0]));
+			alldefwards.push(ward_properties[1]);
+
+			$.each(other_info.mlcs, function(index,each_mlc ) {
+			    $('#selectMlc').append($('<option></option>').val(each_mlc.id).html(each_mlc.name));
+			    alldefmlcs.push(each_mlc.id);
+			});
+		    });
+		});
+	});
+
+	if( alldefdivs.length ){
+		var alldefaultdivs = alldefdivs.join('_');
+		document.getElementsByName('defdiv')[0].value = alldefaultdivs;
+	}
+
+	if( alldefzones.length ){
+		var alldefaultzones = alldefzones.join('_');
+		document.getElementsByName('defzone')[0].value = alldefaultzones;
+	}
+
+	if ( alldefwards.length ){
+		var alldefaultwards = alldefwards.join('_');
+		document.getElementsByName('defward')[0].value = alldefaultwards;
+	}
+
+	if ( alldefmlcs.length ){
+		var alldefaultmlcs = alldefmlcs.join('_');
+		document.getElementsByName('defmlc')[0].value = alldefaultmlcs;
+	}
+}
+
+function onChangeDiv() {
+    	var selected_div = $("#selectDiv").find('option:selected').attr("name") + '_' + $("#selectDiv").val();
+	if (!selected_div.includes("def")) {
+		$('#selectZone').empty();
+		$('#selectZone').append($('<option></option>').val(0).html('All Zones').attr("name", "defzone"));
+		$('#selectWard').empty();
+		$('#selectWard').append($('<option></option>').val(0).html('All Wards').attr("name", "defward"));
+		$('#selectMlc').empty();
+		$('#selectMlc').append($('<option></option>').val(0).html('All Mlcs').attr("name", "defmlc"));
+
+		var alldefzones = new Array();
+		var alldefwards = new Array();
+		var alldefmlcs = new Array();
+
+		$.each(form_data[selected_div], function(each_zone, ward_info) {
+		    zone_properties = each_zone.split('_');
+		    $('#selectZone').append($('<option></option>').val(zone_properties[1]).html(zone_properties[0]).attr("name",zone_properties[0]))
+		    alldefzones.push(zone_properties[1]);
+		    $.each(ward_info, function(each_ward,other_info ) {
+			ward_properties = each_ward.split('_');
+			$('#selectWard').append($('<option></option>').val(ward_properties[1]).html(ward_properties[0]).attr("name",ward_properties[0]));
+			alldefwards.push(ward_properties[1]);
+			if(form_data[selected_div][each_zone][each_ward]['mlcs'].length ){
+				$.each(form_data[selected_div][each_zone][each_ward]['mlcs'], function(each_mlc_index,mlc_info) {
+					$('#selectMlc').append($('<option></option>').val(mlc_info.id).html(mlc_info.name).attr("name",mlc_info.name));
+					alldefmlcs.push(mlc_info.id);
+				});
+			}
+		    });
+		});
+
+		if( alldefzones.length ){
+			var alldefaultzones = alldefzones.join('_');
+			document.getElementsByName('defzone')[0].value = alldefaultzones;
+		}
+
+		if ( alldefwards.length ){
+			var alldefaultwards = alldefwards.join('_');
+			document.getElementsByName('defward')[0].value = alldefaultwards;
+		}
+
+		if ( alldefmlcs.length ){
+			var alldefaultmlcs = alldefmlcs.join('_');
+			document.getElementsByName('defmlc')[0].value = alldefaultmlcs;
+		}
+	}
+	else{
+		setAllDefElemValues(form_data);
+	}
+}
+
+function onChangeZone() {
+    	var selected_div = $("#selectDiv").find('option:selected').attr("name") + '_' + $("#selectDiv").val();
+	var selected_zone = $("#selectZone").find('option:selected').attr("name") + '_'+ $("#selectZone").val();
+
+	if (!selected_zone.includes("def")) {
+		$('#selectWard').empty();
+		$('#selectWard').append($('<option></option>').val(0).html('All Wards').attr("name", "defward"));
+		$('#selectMlc').empty();
+		$('#selectMlc').append($('<option></option>').val(0).html('All Mlcs').attr("name", "defmlc"));
+
+		var alldefwards = new Array();
+		var alldefmlcs = new Array();
+
+		$.each(zone_additional_info[selected_zone], function(each_ward,ward_info) {
+			ward_properties = each_ward.split('_');
+			$('#selectWard').append($('<option></option>').val(ward_properties[1]).html(ward_properties[0]).attr("name",ward_properties[0]));
+			alldefwards.push(ward_properties[1]);
+			if(zone_additional_info[selected_zone][each_ward]['mlcs'].length ){
+				$.each(zone_additional_info[selected_zone][each_ward]['mlcs'], function(each_mlc_index,mlc_info) {
+					$('#selectMlc').append($('<option></option>').val(mlc_info.id).html(mlc_info.name).attr("name",mlc_info.name));
+					alldefmlcs.push(mlc_info.id);
+				});
+			}
+		});
+
+		if ( alldefwards.length ){
+			var alldefaultwards = alldefwards.join('_');
+			document.getElementsByName('defward')[0].value = alldefaultwards;
+		}
+
+		if ( alldefmlcs.length ){
+			var alldefaultmlcs = alldefmlcs.join('_');
+			document.getElementsByName('defmlc')[0].value = alldefaultmlcs;
+		}
+	}
+	else{
+		var default_zones = $("#selectZone").val().split('_');
+		$('#selectWard').empty();
+		$('#selectWard').append($('<option></option>').val(0).html('All Wards').attr("name", "defward"));
+		$('#selectMlc').empty();
+		$('#selectMlc').append($('<option></option>').val(0).html('All Mlcs').attr("name", "defmlc"));
+
+		var alldefwards = new Array();
+		var alldefmlcs = new Array();
+
+		$.each(zone_additional_info, function(each_zone,ward_info) {
+			zone_id = each_zone.split('_')[1]; 
+			if(default_zones.includes(zone_id)){
+				$.each(zone_additional_info[each_zone], function(each_ward,ward_info) {
+					ward_properties = each_ward.split('_');
+					$('#selectWard').append($('<option></option>').val(ward_properties[1]).html(ward_properties[0]).attr("name",ward_properties[0]));
+					alldefwards.push(ward_properties[1]);
+					if(zone_additional_info[each_zone][each_ward]['mlcs'].length ){
+						$.each(zone_additional_info[each_zone][each_ward]['mlcs'], function(each_mlc_index,mlc_info) {
+							$('#selectMlc').append($('<option></option>').val(mlc_info.id).html(mlc_info.name).attr("name",mlc_info.name));
+							alldefmlcs.push(mlc_info.id);
+						});
+					}
+				});
+			}
+		});
+
+		if ( alldefwards.length ){
+			var alldefaultwards = alldefwards.join('_');
+			document.getElementsByName('defward')[0].value = alldefaultwards;
+		}
+
+		if ( alldefmlcs.length ){
+			var alldefaultmlcs = alldefmlcs.join('_');
+			document.getElementsByName('defmlc')[0].value = alldefaultmlcs;
+		}
+	}
+}
+
+function onChangeWard() {
+    	var selected_div  = $("#selectDiv").find('option:selected').attr("name") + '_' + $("#selectDiv").val() ;
+	var selected_zone = $("#selectZone").find('option:selected').attr("name") + '_'+ $("#selectZone").val();
+	var selected_ward = $("#selectWard").find('option:selected').attr("name") + '_'+ $("#selectWard").val();
+
+	if (!selected_ward.includes("def")) {
+		$('#selectMlc').empty();
+		$('#selectMlc').append($('<option></option>').val(0).html('All Mlcs').attr("name", "defmlc"));
+
+		var alldefmlcs = new Array();
+
+		if(ward_additional_info[selected_ward]['mlcs'].length ){
+			$.each(ward_additional_info[selected_ward]['mlcs'], function(each_mlc_index,mlc_info) {
+				$('#selectMlc').append($('<option></option>').val(mlc_info.id).html(mlc_info.name).attr("name",mlc_info.name));
+				alldefmlcs.push(mlc_info.id);
+			});
+		}
+
+		if ( alldefmlcs.length){
+			var alldefaultmlcs = alldefmlcs.join('_');
+			document.getElementsByName('defmlc')[0].value = alldefaultmlcs;
+		}
+	}
+	else{
+		var default_wards = $("#selectWard").val().split('_');
+		$('#selectMlc').empty();
+		$('#selectMlc').append($('<option></option>').val(0).html('All Mlcs').attr("name", "defmlc"));
+
+		var alldefmlcs = new Array();
+
+		$.each(ward_additional_info, function(each_ward,detail_info) {
+			ward_id = each_ward.split('_')[1]; 
+			if(default_wards.includes(ward_id)){
+				if(ward_additional_info[each_ward]['mlcs'].length ){
+					$.each(ward_additional_info[each_ward]['mlcs'], function(each_mlc_index,mlc_info) {
+						$('#selectMlc').append($('<option></option>').val(mlc_info.id).html(mlc_info.name).attr("name",mlc_info.name));
+						alldefmlcs.push(mlc_info.id);
+					});
+				}
+			}
+		});
+
+		if ( alldefmlcs.length){
+			var alldefaultmlcs = alldefmlcs.join('_');
+			document.getElementsByName('defmlc')[0].value = alldefaultmlcs;
+		}
+	}
+}
+
+  </script>
+{% endblock %}  

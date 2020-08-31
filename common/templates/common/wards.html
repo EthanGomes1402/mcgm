@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+	<h1>Wards List</h1>
+{% endblock %}
+
+{% block content %}
+  <div>
+	  <a href="{% url 'add_ward' %}" class="vtms_buttons">Add New Ward</a>
+	  <a href="{% url 'upload_wards' %}" class="vtms_buttons">Upload Ward KML</a>
+  </div>
+
+  {% if wards %}
+  <table class="table tablesorter">
+    <thead class="thead-inverse">
+      <tr>
+        <th>Ward</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th align="center">Area</th>
+        <th align="center">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ward in wards %}
+        <tr>
+	  <td>{{ ward.name }}</td>
+	  <td>{{ ward.code }}</td>
+	  <td>this is ward {{ ward.name }}</td>
+	  <td class="area" id="area_{{ward.pk}}"><img src="{% static 'img/location.png' %}"></td>
+	  <td>
+		  <a href="{% url 'edit_ward' ward.pk %}" class="vtms_buttons">Edit</a>
+		  <a id="{{ward.pk}}" href="#" class="vtms_buttons delete_ward">Delete</a>
+	  </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+	<h1>No Ward Found</h1>
+  {% endif %}
+  <div id="loadpositionmap" style="display: none;" align="center">
+  </div>
+{% endblock %}
+
+{% block js %}
+	<script>
+		let mymap = L.map('loadpositionmap').setView([ 19.122777 ,72.894568] ,12);
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+		subdomain :['a','b','c']	
+		}).addTo(mymap);
+
+		$(document).ready(function(){
+			var area;
+			$('table').tablesorter({theme:'metro-dark'});
+			$("td.area").click(function () {
+				if( area ){
+					mymap.removeLayer(area);
+				}
+				ward_id= $(this).attr('id').split('_')[1];
+				$.ajax({
+					type:'GET',
+					url:'{% url "get_ward_area" %}',
+					data: {
+						'id':ward_id 
+					},
+					beforeSend: function(xhr) {
+						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+					},
+					success:function(res){
+						let ward= JSON.parse(res.ward_fence);
+						area = L.geoJSON(ward,{
+							style: function(feature){
+								return {
+									color  : 'red',
+									weight : 3,
+									fillColor: 'black'
+								}
+							},
+							onEachFeature: function(feature,layer){
+								layer.bindPopup("<b>ward : </b>");
+							}
+						}).addTo(mymap)
+
+						mymap.fitBounds(area.getBounds());
+						$("#loadpositionmap").dialog({
+							modal: true,
+							autoOpen: false,
+							title: " Ward ",
+							width: 800,
+							height:800
+						});
+						$("#loadpositionmap").dialog('open');
+						mymap.invalidateSize();
+					},
+					error:function(a,b,c){
+						alert(b);
+						alert(c);
+					}
+				});
+			});
+		});
+
+		$("a.delete_ward").click(function () {
+			var ward_id = $(this).attr('id');
+			$.ajax({
+				type:'POST',
+				url:'{% url "delete_ward" %}',
+				data: {
+					'id':ward_id 
+				},
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+				},
+				success:function(res){
+					alert(res.status);
+				},
+				error:function(a,b,c){
+					alert(b);
+					alert(c);
+				}
+			});
+		});
+
+	</script>
+{% endblock %}

@@ -1,0 +1,394 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}Bin RFID Tag Status Report {% endblock %}
+
+{% block extrastylesheet %}
+ <style>
+  div.loader {
+    width: 100px;
+    height: 100px;
+    position: absolute;
+    top:0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+ }
+ </style>
+{% endblock %}
+
+{% block content %}
+	<div>
+		<div>
+			<form id="bin_rfid_tag_status_report" name="bin_rfid_tag_status_report">
+			  <div class="form-row">
+			    <div class="form-group col-md-3">
+			      <label for="selectDiv">Div</label>
+			      <select id="selectDiv" class="form-control" name="selectDiv" onchange="onChangeDiv()">
+			      </select>
+			    </div>
+			    <div class="form-group col-md-3">
+			      <label for="selectZone">Zone</label>
+			      <select id="selectZone" class="form-control" name="selectZone" onchange="onChangeZone()">
+			      </select>
+			    </div>
+			    <div class="form-group col-md-3 wardwise">
+			      <label for="selectWard">Ward</label>
+			      <select id="selectWard" class="form-control" name="selectWard">
+			      </select>
+			    </div>
+			    <div class="form-group col-md-3">
+			      <label for="selectStatus">Status</label>
+			      <select id="selectStatus" class="form-control" name="selectStatus">
+				<option value="0">All</option>
+				<option value="active">Active</option>
+				<option value="inactive">Inactive</option>
+			      </select>
+			    </div>
+			  </div>
+			  <div class="form-row">
+			    <div class="col-md-4">
+			      <div class="form-group">
+				<button type="submit" class="btn btn-primary">Submit</button>
+			      </div>
+			    </div>
+			  </div>
+			</form>
+		</div>
+		<div width="100%" style="display:none;" id="bin_rfid_tag_status_data">
+			<div>
+			    <div class="col-md-12" style="text-align:center;border:1px solid red;">  
+				abc
+			    </div> 
+			    <div class="col-md-12" style="text-align:center;border:1px solid red;">  
+				abc
+			    </div> 
+			    <div class="col-md-12" style="text-align:center;border:1px solid red;">  
+				abc
+			    </div> 
+			</div>
+			<div>
+				<button id="export_to_excel" style="float: right;">Export To Excel</button>
+				<button id="export_to_csv" style="float: right;">Export To CSV</button>
+				<button id="export_to_pdf" style="float: right;">Export To PDF</button>
+				<table  id="bin_rfid_tag_status" width="100%" class="table tablesorter">
+					<thead>
+						<tr>
+							<th>Index</th>
+							<th>Bin</th>
+							<th>Location</th>
+							<th>RFID Tag</th>
+							<th>Status</th>
+						</tr>
+					</thead>
+					<tbody></tbody>
+				</table>
+			</div>
+		</div>
+  		<div id="loadpositionmap" style="display: none;" align="center">
+  		</div>
+		<div id="spinner" style="display: none;" class="loader">
+                        <img src="{% static 'img/loader.gif' %}" class="img-responsive">
+                </div>
+	</div>
+{% endblock %}
+
+{% block js %}
+  <script>
+    var form_data = JSON.parse('{{ form_params | escapejs }}');
+    form_data = form_data.areal_hierarchy_params;
+    var div_additional_info = {};
+    var zone_additional_info = {};
+    var ward_additional_info = {};
+
+    setAllDefElemValues(form_data);
+	let mymap = L.map('loadpositionmap').setView([19.122777, 72.894568],12);
+	L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+	attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+	subdomain :['a','b','c']	
+	}).addTo(mymap);
+
+	var bin_icon = L.icon({
+	    iconUrl: '{% static 'img/Bin.jpeg' %}',
+	    iconSize: [24, 34],
+	});
+
+	function show_bin(el){
+		bin_id= el.id;
+		$.ajax({
+			type:'GET',
+			url:'{% url "get_bin_spot" %}',
+			data: {
+				'id':bin_id 
+			},
+			beforeSend: function(xhr) {
+				xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+			},
+			success:function(res){
+				let Bin= JSON.parse(res.bin_location);
+				bin = L.geoJSON(Bin,{
+					pointToLayer : function(geoJsonPoint, latlng){
+						return L.marker(latlng,{icon : bin_icon });
+					}
+				}).addTo(mymap)
+				
+				mymap.fitBounds(bin.getBounds());
+				$("#loadpositionmap").dialog({
+					modal: true,
+					autoOpen: false,
+					title: " Bin ",
+					width: 600,
+					height: 600
+				});
+				$("#loadpositionmap").dialog('open');
+				mymap.invalidateSize();
+			},
+			error:function(a,b,c){
+				alert(b);
+				alert(c);
+			}
+		});
+	}
+
+    $(document).ready(function(){
+	$("#bin_rfid_tag_status_report").submit(function(event) {
+		if($("table#bin_rfid_tag_status tbody").children().length > 0 ){
+			$('#bin_rfid_tag_status tbody tr').remove();
+		}	
+		event.preventDefault();
+		$('#spinner').show();
+		var submitted_form_data = $('#bin_rfid_tag_status_report').serialize();
+		$.ajax({
+			type:'POST',
+			url:'{% url "bin_rfid_tag_status" %}',
+			data: { 'form_data' : submitted_form_data},
+			beforeSend: function(xhr) {
+				xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+			},
+			success:function(res){
+				var indexcounter = 0;
+				$.each(res.data, function(index, each_bin) {
+                                    let eachrow = '<tr class="routerow">';
+                                    eachrow += '<td>' + (++indexcounter) + '</td><td>' + each_bin.name + '</td><td class="area" id="'+ each_bin.id +'" onclick="show_bin(this);"><img src="{% static 'img/location.png' %}">' + '</td><td>' + (each_bin.rfid || " " ) + '</td>' + '<td>' + each_bin.bin_status + '</td></tr>';
+                                    $('#bin_rfid_tag_status tbody').append(eachrow);
+				});
+
+				if($("table#bin_rfid_tag_status tbody").children().length > 0 ) {
+					$('#bin_rfid_tag_status').tablesorter();
+					$('#spinner').hide();
+					$('div#bin_rfid_tag_status_data').show();
+				}
+				else {
+					$('#spinner').hide();
+					alert("No Alert Recorded For Mentioned Criteria");
+					return false;
+				}
+			},
+			error:function(a,b,c){
+				alert(b);
+				alert(c);
+			}
+		});
+	});
+
+	$("button#export_to_excel").click(function() {
+	    var dNow = new Date();
+	    var file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+	    $("#bin_rfid_tag_status").table2excel({
+		name: "bin_rfid_tag_status_report",
+		filename: "vehicle_geofence_alert_report_" + file_time_str + ".xlsx"//do not include extension
+	    });
+	});
+	   
+	$("button#export_to_csv").click(function() {
+	    $("#bin_rfid_tag_status").tableHTMLExport({type:'csv',filename:'sample.csv'});
+	});
+
+	$("button#export_to_pdf").click(function() {
+	    $("#bin_rfid_tag_status").tableHTMLExport({type:'pdf',filename:'sample.pdf'});
+	});    
+    });
+
+function setAllDefElemValues(form_data) {
+	$('#selectDiv').empty();
+	$('#selectDiv').append($('<option></option>').val(0).html('All Divisions').attr("name", "defdiv"));
+	$('#selectZone').empty();
+	$('#selectZone').append($('<option></option>').val(0).html('All Zones').attr("name", "defzone"));
+	$('#selectWard').empty();
+	$('#selectWard').append($('<option></option>').val(0).html('All Wards').attr("name", "defward"));
+
+	var alldefdivs = new Array();
+	var alldefzones = new Array();
+	var alldefwards = new Array();
+
+	$.each(form_data, function(each_div, zone_info) {
+		div_additional_info[each_div] = zone_info;
+		div_properties = each_div.split('_'); 
+		$('#selectDiv').append($('<option></option>').val(div_properties[1]).html(div_properties[0]).attr("name",div_properties[0]))
+		alldefdivs.push(div_properties[1]);
+		$.each(zone_info, function(each_zone, ward_info) {
+		    zone_additional_info[each_zone] = ward_info; 
+		    zone_properties = each_zone.split('_');
+		    $('#selectZone').append($('<option></option>').val(zone_properties[1]).html(zone_properties[0]).attr("name",zone_properties[0]))
+		    alldefzones.push(zone_properties[1]);
+		    $.each(ward_info, function(each_ward,other_info ) {
+			ward_additional_info[each_ward]=other_info;
+			ward_properties = each_ward.split('_');
+			$('#selectWard').append($('<option></option>').val(ward_properties[1]).html(ward_properties[0]).attr("name",ward_properties[0]));
+			alldefwards.push(ward_properties[1]);
+		    });
+		});
+	});
+
+	if( alldefdivs.length ){
+		var alldefaultdivs = alldefdivs.join('_');
+		document.getElementsByName('defdiv')[0].value = alldefaultdivs;
+	}
+
+	if( alldefzones.length ){
+		var alldefaultzones = alldefzones.join('_');
+		document.getElementsByName('defzone')[0].value = alldefaultzones;
+	}
+
+	if ( alldefwards.length ){
+		var alldefaultwards = alldefwards.join('_');
+		document.getElementsByName('defward')[0].value = alldefaultwards;
+	}
+}
+
+function onChangeDiv() {
+    	var selected_div = $("#selectDiv").find('option:selected').attr("name") + '_' + $("#selectDiv").val();
+	if (!selected_div.includes("def")) {
+		$('#selectZone').empty();
+		$('#selectZone').append($('<option></option>').val(0).html('All Zones').attr("name", "defzone"));
+		$('#selectWard').empty();
+		$('#selectWard').append($('<option></option>').val(0).html('All Wards').attr("name", "defward"));
+
+		var alldefzones = new Array();
+		var alldefwards = new Array();
+
+		$.each(form_data[selected_div], function(each_zone, ward_info) {
+		    zone_properties = each_zone.split('_');
+		    $('#selectZone').append($('<option></option>').val(zone_properties[1]).html(zone_properties[0]).attr("name",zone_properties[0]))
+		    alldefzones.push(zone_properties[1]);
+		    $.each(ward_info, function(each_ward,other_info ) {
+			ward_properties = each_ward.split('_');
+			$('#selectWard').append($('<option></option>').val(ward_properties[1]).html(ward_properties[0]).attr("name",ward_properties[0]));
+			alldefwards.push(ward_properties[1]);
+		    });
+		});
+
+		if( alldefzones.length ){
+			var alldefaultzones = alldefzones.join('_');
+			document.getElementsByName('defzone')[0].value = alldefaultzones;
+		}
+
+		if ( alldefwards.length ){
+			var alldefaultwards = alldefwards.join('_');
+			document.getElementsByName('defward')[0].value = alldefaultwards;
+		}
+	}
+	else{
+		setAllDefElemValues(form_data);
+	}
+}
+
+function onChangeZone() {
+    	var selected_div = $("#selectDiv").find('option:selected').attr("name") + '_' + $("#selectDiv").val();
+	var selected_zone = $("#selectZone").find('option:selected').attr("name") + '_'+ $("#selectZone").val();
+
+	if (!selected_zone.includes("def")) {
+		$('#selectWard').empty();
+		$('#selectWard').append($('<option></option>').val(0).html('All Wards').attr("name", "defward"));
+
+		var alldefwards = new Array();
+
+		$.each(zone_additional_info[selected_zone], function(each_ward,ward_info) {
+			ward_properties = each_ward.split('_');
+			$('#selectWard').append($('<option></option>').val(ward_properties[1]).html(ward_properties[0]).attr("name",ward_properties[0]));
+			alldefwards.push(ward_properties[1]);
+		});
+
+		if ( alldefwards.length ){
+			var alldefaultwards = alldefwards.join('_');
+			document.getElementsByName('defward')[0].value = alldefaultwards;
+		}
+	}
+	else{
+		var default_zones = $("#selectZone").val().split('_');
+		$('#selectWard').empty();
+		$('#selectWard').append($('<option></option>').val(0).html('All Wards').attr("name", "defward"));
+
+		var alldefwards = new Array();
+
+		$.each(zone_additional_info, function(each_zone,ward_info) {
+			zone_id = each_zone.split('_')[1]; 
+			if(default_zones.includes(zone_id)){
+				$.each(zone_additional_info[each_zone], function(each_ward,ward_info) {
+					ward_properties = each_ward.split('_');
+					$('#selectWard').append($('<option></option>').val(ward_properties[1]).html(ward_properties[0]).attr("name",ward_properties[0]));
+					alldefwards.push(ward_properties[1]);
+				});
+			}
+		});
+
+		if ( alldefwards.length ){
+			var alldefaultwards = alldefwards.join('_');
+			document.getElementsByName('defward')[0].value = alldefaultwards;
+		}
+	}
+}
+
+function onChangeWard() {
+    	var selected_div  = $("#selectDiv").find('option:selected').attr("name") + '_' + $("#selectDiv").val() ;
+	var selected_zone = $("#selectZone").find('option:selected').attr("name") + '_'+ $("#selectZone").val();
+	var selected_ward = $("#selectWard").find('option:selected').attr("name") + '_'+ $("#selectWard").val();
+
+	if (!selected_ward.includes("def")) {
+		$('#selectMlc').empty();
+		$('#selectMlc').append($('<option></option>').val(0).html('All Mlcs').attr("name", "defmlc"));
+
+		var alldefmlcs = new Array();
+
+		if(ward_additional_info[selected_ward]['mlcs'].length ){
+			$.each(ward_additional_info[selected_ward]['mlcs'], function(each_mlc_index,mlc_info) {
+				$('#selectMlc').append($('<option></option>').val(mlc_info.id).html(mlc_info.name).attr("name",mlc_info.name));
+				alldefmlcs.push(mlc_info.id);
+			});
+		}
+
+		if ( alldefmlcs.length){
+			var alldefaultmlcs = alldefmlcs.join('_');
+			document.getElementsByName('defmlc')[0].value = alldefaultmlcs;
+		}
+	}
+	else{
+		var default_wards = $("#selectWard").val().split('_');
+		$('#selectMlc').empty();
+		$('#selectMlc').append($('<option></option>').val(0).html('All Mlcs').attr("name", "defmlc"));
+
+		var alldefmlcs = new Array();
+
+		$.each(ward_additional_info, function(each_ward,detail_info) {
+			ward_id = each_ward.split('_')[1]; 
+			if(default_wards.includes(ward_id)){
+				$.each(ward_additional_info[each_ward], function(each_ward,ward_info) {
+					if(ward_additional_info[each_ward]['mlcs'].length ){
+						$.each(ward_additional_info[each_ward]['mlcs'], function(each_mlc_index,mlc_info) {
+							$('#selectMlc').append($('<option></option>').val(mlc_info.id).html(mlc_info.plate_number).attr("name",mlc_info.plate_number));
+							alldefmlcs.push(mlc_info.id);
+						});
+					}
+				});
+			}
+		});
+
+		var alldefaultmlcs = alldefmlcs.join('_');
+		document.getElementsByName('defmlc')[0].value = alldefaultmlcs;
+	}
+}
+
+  </script>
+{% endblock %}  

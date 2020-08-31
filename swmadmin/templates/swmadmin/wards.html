@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+	<h1>Wards From Mumbai</h1>
+{% endblock %}
+
+{% block content %}
+  <div>
+	  <a href="{% url 'add_ward' %}" class="vtms_buttons">Add New Ward</a>
+  </div>
+  <table class="table tablesorter">
+    <thead class="thead-inverse">
+      <tr>
+        <th>Ward</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th align="center">Area</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ward in wards %}
+        <tr>
+	  <td>{{ ward.name }}</td>
+	  <td>{{ ward.code }}</td>
+	  <td>this is ward {{ ward.name }}</td>
+	  <td class="area"><img src="{% static 'img/location.png' %}"><span style="display:none;">{{ ward.ward_fence.geojson }}</span></td>
+	  <td>
+		  <a href="{% url 'edit_ward' ward.pk %}" class="vtms_buttons">Edit</a>
+		  <a href="#" class="vtms_buttons">Delete</a>
+	  </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div id="loadpositionmap">
+  </div>
+{% endblock %}
+
+{% block js %}
+	<script>
+		let mymap = L.map('loadpositionmap').setView([ 19.122777 ,72.894568] ,12);
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+		subdomain :['a','b','c']	
+		}).addTo(mymap);
+
+		$('table').tablesorter({theme:'metro-dark'});
+		$(document).ready(function(){
+			var area;
+			$("td.area").click(function () {
+				if( area ){
+					mymap.removeLayer(area);
+				}
+
+				let ward= JSON.parse($(this).find('span').text());
+				area = L.geoJSON(ward,{
+					style: function(feature){
+						return {
+							color  : 'red',
+							weight : 3,
+							fillColor: 'black'
+						}
+					},
+					onEachFeature: function(feature,layer){
+						layer.bindPopup("<b>ward : </b>");
+					}
+				}).addTo(mymap)
+
+				mymap.fitBounds(area.getBounds());
+				$("#loadpositionmap").dialog({
+					modal: true,
+					autoOpen: false,
+					title: " Ward ",
+					width: 800,
+					height:800
+				});
+				$("#loadpositionmap").dialog('open');
+				mymap.invalidateSize();
+			});
+		});
+	</script>
+{% endblock %}

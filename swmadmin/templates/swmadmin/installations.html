@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+	<h1>Installations</h1>
+{% endblock %}
+
+{% block content %}
+  <div>
+	  <a href="{% url 'add_installation' %}" class="vtms_buttons">Add New Installation</a>
+	  <a href="{% url 'upload_installation_data' %}" class="vtms_buttons">Upload Installation</a>
+  </div>
+  <div>
+	  {% if installations %}
+	  <button id="export_to_excel" style="float: right;">Export To Excel</button>
+	  <button id="export_to_csv" style="float: right;">Export To CSV</button>
+	  <button id="export_to_pdf" style="float: right;">Export To PDF</button>
+	  </br>
+	  <table class="table tablesorter" id="installation">
+	    <thead class="thead-inverse">
+	      <tr>
+		<th>Vehicle</th>
+		<th>IMEI</th>
+		<th>Sim</th>
+		<th>Type</th>
+		<th>Company</th>
+		<th>Wnld. Tag</th>
+		<th>Action</th>
+	      </tr>
+	    </thead>
+	    <tbody>
+	      {% for installation in installations %}
+		<tr>
+		  <td>{{ installation.vehicle }} </td>
+		  <td>{{ installation.imei }}</td>
+		  <td>{{ installation.sim }}</td>
+		  <td>{{ installation.vehicle.vehicle_type }} </td>
+		  <td>{{ installation.vehicle.contractor }}</td>
+		  <td>{{ installation.wnld_tag  | default_if_none:"" }}</td>
+		  <td>
+			  <a href="{% url 'edit_installation' installation.pk %}" class="vtms_buttons">Edit</a>
+			  <a id="{{installation.pk}}" href="#" class="vtms_buttons delete_installation">Delete</a>
+		  </td>
+		</tr>
+	      {% endfor %}
+	    </tbody>
+	  </table>
+  </div>
+  {% else %}
+	<h1>No Installation Found</h1>
+  {% endif %}
+{% endblock %}
+
+{% block js %}
+<script>
+	$(document).ready(function(){
+		$('table').tablesorter({theme:'metro-dark'});
+		$("a.delete_installation").click(function () {
+			var veh_id = $(this).attr('id');
+			var $tr = $(this).closest('tr');
+
+			$.ajax({
+				type:'POST',
+				url:'{% url "delete_installation" %}',
+				data: {
+					'id':veh_id 
+				},
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+				},
+				success:function(res){
+					$tr.find('td').fadeOut(1000,function(){
+						$tr.remove();
+					})	
+				},
+				error:function(a,b,c){
+					alert(b);
+					alert(c);
+				}
+			});
+		});
+
+		$("button#export_to_excel").click(function() {
+			var dNow = new Date();
+			var file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+			$("#installation").table2excel({
+				name: "installation_report",
+				filename: "installation_" + file_time_str + ".xlsx"//do not include extension
+			});
+		});
+	   
+		$("button#export_to_csv").click(function() {
+			$("#installation").tableHTMLExport({type:'csv',filename:'installations.csv'});
+		});
+
+		$("button#export_to_pdf").click(function() {
+			$("#installation").tableHTMLExport({type:'pdf',filename:'installations.pdf'});
+		});
+	});
+</script>
+{% endblock %}

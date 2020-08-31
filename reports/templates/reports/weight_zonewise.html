@@ -1,0 +1,450 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}Zone Traction Report {% endblock %}
+
+{% block extrastylesheet %}
+ <style>
+  div.loader {
+    width: 100px;
+    height: 100px;
+    position: absolute;
+    top:0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+ }
+ </style>
+{% endblock %}
+
+{% block content %}
+	<div>
+		<div>
+			<form id="weight_zonewise_report" name="weight_zonewise_report">
+			  <div class="form-row">
+			    <div class="form-group col-md-4">
+			      <label for="selectDiv">Div</label>
+			      <select id="selectDiv" class="form-control" name="selectDiv" onchange="onChangeDiv()">
+			      </select>
+			    </div>
+			    <div class="form-group col-md-4">
+			      <label for="selectZone">Zone</label>
+			      <select id="selectZone" class="form-control" name="selectZone">
+			      </select>
+			    </div>
+			    <div class="form-group col-md-4">
+			      <label for="selectShift">Shift</label>
+			      <select id="selectShift" class="form-control" name="selectShift">
+				<option value="0">All</option>
+				<option value="1">First</option>
+				<option value="2">Second</option>
+                                <option value="3">Third</option>
+			      </select>
+			    </div>
+			  </div>
+			  <div class="form-row">
+			    <div class="col-md-4">  
+			      <label for="from_date">From Date </label>
+			      <div class="form-group">
+				<div class='input-group date' id='from_time'>
+				  <input type='text' class="form-control" name="from_time"/>
+				    <span class="input-group-addon">
+				      <span class="glyphicon glyphicon-calendar"></span>
+				    </span>
+				</div>
+			      </div>
+			    </div> 
+			    <div class="col-md-4">  
+			      <label for="to_date">To Date </label>
+			      <div class="form-group">
+				<div class='input-group date' id='to_time'>
+				  <input type='text' class="form-control" name="to_time"/>
+				    <span class="input-group-addon">
+				      <span class="glyphicon glyphicon-calendar"></span>
+				    </span>
+				</div>
+			      </div>
+			    </div> 
+			  </div>  
+                          <div class="form-row">
+			    <div class="col-md-4">
+			      <div class="form-group">
+				<button type="submit" class="btn btn-primary">Submit</button>
+			      </div>
+			    </div>
+			  </div>
+			</form>
+		</div>
+		<div width="100%" style="display:none;" id="weight_zonewise_data">
+			<div>
+			    <div class="col-md-12" style="text-align:center;border:1px solid red;">  
+				Weight History Report Zonewise	
+			    </div> 
+			</div>
+			<br>
+			<div>
+				<button id="export_to_excel" style="float: right;">Export To Excel</button>
+				<button id="export_to_csv" style="float: right;">Export To CSV</button>
+				<button id="export_to_pdf" style="float: right;">Export To PDF</button>
+				<table  id="weight_zonewise" width="100%" class="table tablesorter">
+					<thead>
+						<tr>
+							<th>Zone</th>
+							<th>Vehicle(Type)</th>
+							<th>Shift</th>
+							<th>Indents</th>
+							<th>Recieved</th>
+							<th>Trips</th>
+							<th>Bins(To Collect)</th>
+							<th>Bins(Collected)</th>
+							<th>Weight(KGs)</th>
+						</tr>
+					</thead>
+					<tbody></tbody>
+				</table>
+			</div>
+		</div>
+		<div id="spinner" style="display: none;" class="loader">
+                        <img src="{% static 'img/loader.gif' %}" class="img-responsive">
+                </div>
+	</div>
+{% endblock %}
+
+{% block js %}
+  <script>
+    var form_data = JSON.parse('{{ form_params | escapejs }}');
+    form_data = form_data.areal_hierarchy_params;
+    var div_additional_info = {};
+    var zone_additional_info = {};
+
+    setAllDefElemValues(form_data);
+
+    $('#from_time').datetimepicker({
+       	useCurrent: false, //Important! See issue #1075
+	format:'YYYY-MM-DD HH:mm:ss'
+    });
+
+    $('#to_time').datetimepicker({
+       	useCurrent: false,
+	format:'YYYY-MM-DD HH:mm:ss'
+    });
+
+    $("#from_time").on("dp.change", function (e) {
+        $('#to_time').data("DateTimePicker").minDate(e.date);
+    });
+
+    $("#to_time").on("dp.change", function (e) {
+        $('#from_time').data("DateTimePicker").maxDate(e.date);
+    });
+
+    $(document).ready(function(){
+	$("#weight_zonewise_report").submit(function(event) {
+		if($("table#weight_zonewise tbody").children().length > 0 ){
+			$('#weight_zonewise tbody tr').remove();
+		}	
+		event.preventDefault();
+		$('#spinner').show();
+		var submitted_form_data = $('#weight_zonewise_report').serialize();
+		$.ajax({
+			type:'POST',
+			url:'{% url "weight_zonewise" %}',
+			data: { 'form_data' : submitted_form_data},
+			beforeSend: function(xhr) {
+				xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+			},
+			success:function(res){
+				var indexcounter = 0;
+
+				$.each(res.data, function(each_zone,each_zone_data) {
+					$.each(each_zone_data, function(each_veh_type,each_veh_type_data) {
+						$.each(each_veh_type_data, function(each_shift,each_record) {
+						    let eachrow = '<tr class="routerow">';
+							eachrow += '<td>' + each_zone + '</td><td>' + each_veh_type + '</td><td>'+ each_shift +'</td><td>' + each_record.total_trip  + '</td><td>' + each_record.total_trip  + '</td><td>' + each_record.total_trip  + '</td><td>' + each_record.total_bins  + '</td>' + '<td>' + each_record.collected_bins + '</td><td>'+  each_record.total_weight +'</td></tr>';
+						    $('#weight_zonewise tbody').append(eachrow);
+						});
+					});	
+				});
+
+				if($("table#weight_zonewise tbody").children().length > 0 ) {
+					$('#weight_zonewise').tablesorter();
+					$('#spinner').hide();
+					$('div#weight_zonewise_data').show();
+				}
+				else {
+					$('#spinner').hide();
+					alert("No Alert Recorded For Mentioned Criteria");
+					return false;
+				}
+			},
+			error:function(a,b,c){
+				alert(b);
+				alert(c);
+			}
+		});
+	});
+
+	$("button#export_to_excel").click(function() {
+	    var dNow = new Date();
+	    var file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+	    $("#weight_zonewise").table2excel({
+		name: "weight_zonewise_report",
+		filename: "vehicle_geofence_alert_report_" + file_time_str + ".xlsx"//do not include extension
+	    });
+	});
+	   
+	$("button#export_to_csv").click(function() {
+	    $("#weight_zonewise").tableHTMLExport({type:'csv',filename:'weight_zonewise.csv'});
+	});
+
+	$("button#export_to_pdf").click(function() {
+	    $("#weight_zonewise").tableHTMLExport({type:'pdf',filename:'weight_zonewise.pdf'});
+	});    
+    });
+
+function setAllDefElemValues(form_data) {
+	$('#selectDiv').empty();
+	$('#selectDiv').append($('<option></option>').val(0).html('All Divisions').attr("name", "defdiv"));
+	$('#selectZone').empty();
+	$('#selectZone').append($('<option></option>').val(0).html('All Zones').attr("name", "defzone"));
+	$('div#from_time input').val('');
+	$('div#to_time input').val('');
+
+	var alldefdivs = new Array();
+	var alldefzones = new Array();
+
+	$.each(form_data, function(each_div, zone_info) {
+		div_additional_info[each_div] = zone_info;
+		div_properties = each_div.split('_'); 
+		$('#selectDiv').append($('<option></option>').val(div_properties[1]).html(div_properties[0]).attr("name",div_properties[0]))
+		alldefdivs.push(div_properties[1]);
+		$.each(zone_info, function(each_zone, ward_info) {
+		    zone_additional_info[each_zone] = ward_info; 
+		    zone_properties = each_zone.split('_');
+		    $('#selectZone').append($('<option></option>').val(zone_properties[1]).html(zone_properties[0]).attr("name",zone_properties[0]))
+		    alldefzones.push(zone_properties[1]);
+
+		});
+	});
+
+	if( alldefdivs.length ){
+		var alldefaultdivs = alldefdivs.join('_');
+		document.getElementsByName('defdiv')[0].value = alldefaultdivs;
+	}
+
+	if( alldefzones.length ){
+		var alldefaultzones = alldefzones.join('_');
+		document.getElementsByName('defzone')[0].value = alldefaultzones;
+	}
+}
+
+function onChangeDiv() {
+    	var selected_div = $("#selectDiv").find('option:selected').attr("name") + '_' + $("#selectDiv").val();
+	if (!selected_div.includes("def")) {
+		$('#selectZone').empty();
+		$('#selectZone').append($('<option></option>').val(0).html('All Zones').attr("name", "defzone"));
+
+		var alldefzones = new Array();
+
+		$.each(form_data[selected_div], function(each_zone, ward_info) {
+		    zone_properties = each_zone.split('_');
+		    $('#selectZone').append($('<option></option>').val(zone_properties[1]).html(zone_properties[0]).attr("name",zone_properties[0]))
+		    alldefzones.push(zone_properties[1]);
+		});
+
+		if( alldefzones.length ){
+			var alldefaultzones = alldefzones.join('_');
+			document.getElementsByName('defzone')[0].value = alldefaultzones;
+		}
+	}
+	else{
+		setAllDefElemValues(form_data);
+	}
+}
+
+function onChangeZone() {
+    	var selected_div = $("#selectDiv").find('option:selected').attr("name") + '_' + $("#selectDiv").val();
+	var selected_zone = $("#selectZone").find('option:selected').attr("name") + '_'+ $("#selectZone").val();
+
+	if (!selected_zone.includes("def")) {
+		$('#selectWard').empty();
+		$('#selectWard').append($('<option></option>').val(0).html('All Wards').attr("name", "defward"));
+		$('#selectVehicle').empty();
+		$('#selectVehicle').append($('<option></option>').val(0).html('All Vehicles').attr("name", "defvehicle"));
+		$('#selectCheckpost').empty();
+		$('#selectCheckpost').append($('<option></option>').val(0).html('All Checkposts').attr("name", "defcheckpost"));
+
+		var alldefwards = new Array();
+		var alldefcheckposts = new Array();
+		var alldefvehicles = new Array();
+
+		$.each(zone_additional_info[selected_zone], function(each_ward,ward_info) {
+			ward_properties = each_ward.split('_');
+			$('#selectWard').append($('<option></option>').val(ward_properties[1]).html(ward_properties[0]).attr("name",ward_properties[0]));
+			alldefwards.push(ward_properties[1]);
+			if(zone_additional_info[selected_zone][each_ward]['checkposts'].length ){
+				$.each(zone_additional_info[selected_zone][each_ward]['checkposts'], function(each_checkpost_index,checkpost_info) {
+					$('#selectCheckpost').append($('<option></option>').val(checkpost_info.id).html(checkpost_info.name).attr("name",checkpost_info.name));
+					alldefcheckposts.push(checkpost_info.id);
+				});
+			}
+
+			if(zone_additional_info[selected_zone][each_ward]['vehicles'].length ){
+				$.each(zone_additional_info[selected_zone][each_ward]['vehicles'], function(each_vehicle_index,vehicle_info) {
+					$('#selectVehicle').append($('<option></option>').val(vehicle_info.id).html(vehicle_info.plate_number).attr("name",vehicle_info.plate_number));
+					alldefvehicles.push(vehicle_info.id);
+				});
+			}
+		});
+
+		if ( alldefwards.length ){
+			var alldefaultwards = alldefwards.join('_');
+			document.getElementsByName('defward')[0].value = alldefaultwards;
+		}
+
+		if ( alldefcheckposts.length ){
+			var alldefaultcheckposts = alldefcheckposts.join('_');
+			document.getElementsByName('defcheckpost')[0].value = alldefaultcheckposts;
+		}
+
+		if ( alldefvehicles.length){
+			var alldefaultvehicles = alldefvehicles.join('_');
+			document.getElementsByName('defvehicle')[0].value = alldefaultvehicles;
+		}
+	}
+	else{
+		var default_zones = $("#selectZone").val().split('_');
+		$('#selectWard').empty();
+		$('#selectWard').append($('<option></option>').val(0).html('All Wards').attr("name", "defward"));
+		$('#selectVehicle').empty();
+		$('#selectVehicle').append($('<option></option>').val(0).html('All Vehicles').attr("name", "defvehicle"));
+		$('#selectCheckpost').empty();
+		$('#selectCheckpost').append($('<option></option>').val(0).html('All Checkposts').attr("name", "defcheckpost"));
+
+		var alldefwards = new Array();
+		var alldefvehicles = new Array();
+		var alldefcheckposts = new Array();
+
+		$.each(zone_additional_info, function(each_zone,ward_info) {
+			zone_id = each_zone.split('_')[1]; 
+			if(default_zones.includes(zone_id)){
+				$.each(zone_additional_info[each_zone], function(each_ward,ward_info) {
+					ward_properties = each_ward.split('_');
+					$('#selectWard').append($('<option></option>').val(ward_properties[1]).html(ward_properties[0]).attr("name",ward_properties[0]));
+					alldefwards.push(ward_properties[1]);
+					if(zone_additional_info[each_zone][each_ward]['checkposts'].length ){
+						$.each(zone_additional_info[each_zone][each_ward]['checkposts'], function(each_checkpost_index,checkpost_info) {
+							$('#selectCheckpost').append($('<option></option>').val(checkpost_info.id).html(checkpost_info.name).attr("name",checkpost_info.name));
+							alldefcheckposts.push(checkpost_info.id);
+						});
+					}
+					if(zone_additional_info[each_zone][each_ward]['vehicles'].length ){
+						$.each(zone_additional_info[each_zone][each_ward]['vehicles'], function(each_vehicle_index,vehicle_info) {
+							$('#selectVehicle').append($('<option></option>').val(vehicle_info.id).html(vehicle_info.plate_number).attr("name",vehicle_info.plate_number));
+							alldefvehicles.push(vehicle_info.id);
+						});
+					}
+				});
+			}
+		});
+
+		if ( alldefwards.length ){
+			var alldefaultwards = alldefwards.join('_');
+			document.getElementsByName('defward')[0].value = alldefaultwards;
+		}
+
+		if ( alldefcheckposts.length ){
+			var alldefaultcheckposts = alldefcheckposts.join('_');
+			document.getElementsByName('defcheckpost')[0].value = alldefaultcheckposts;
+		}
+
+		if ( alldefvehicles.length){
+			var alldefaultvehicles = alldefvehicles.join('_');
+			document.getElementsByName('defvehicle')[0].value = alldefaultvehicles;
+		}
+	}
+}
+
+function onChangeWard() {
+    	var selected_div  = $("#selectDiv").find('option:selected').attr("name") + '_' + $("#selectDiv").val() ;
+	var selected_zone = $("#selectZone").find('option:selected').attr("name") + '_'+ $("#selectZone").val();
+	var selected_ward = $("#selectWard").find('option:selected').attr("name") + '_'+ $("#selectWard").val();
+
+	if (!selected_ward.includes("def")) {
+		$('#selectVehicle').empty();
+		$('#selectVehicle').append($('<option></option>').val(0).html('All Vehicles').attr("name", "defvehicle"));
+		$('#selectCheckpost').empty();
+		$('#selectCheckpost').append($('<option></option>').val(0).html('All Checkposts').attr("name", "defcheckpost"));
+
+		var alldefcheckposts = new Array();
+		var alldefvehicles = new Array();
+
+		if(ward_additional_info[selected_ward]['checkposts'].length ){
+			$.each(ward_additional_info[selected_ward]['checkposts'], function(each_checkpost_index,checkpost_info) {
+				$('#selectCheckpost').append($('<option></option>').val(checkpost_info.id).html(checkpost_info.name).attr("name",checkpost_info.name));
+				alldefcheckposts.push(checkpost_info.id);
+			});
+		}
+		if(ward_additional_info[selected_ward]['vehicles'].length ){
+			$.each(ward_additional_info[selected_ward]['vehicles'], function(each_vehicle_index,vehicle_info) {
+				$('#selectVehicle').append($('<option></option>').val(vehicle_info.id).html(vehicle_info.plate_number).attr("name",vehicle_info.plate_number));
+				alldefvehicles.push(vehicle_info.id);
+			});
+		}
+
+		if ( alldefcheckposts.length){
+			var alldefaultcheckposts = alldefcheckposts.join('_');
+			document.getElementsByName('defcheckpost')[0].value = alldefaultcheckposts;
+		}
+
+		if ( alldefvehicles.length){
+			var alldefaultvehicles = alldefvehicles.join('_');
+			document.getElementsByName('defvehicle')[0].value = alldefaultvehicles;
+		}
+	}
+	else{
+		var default_wards = $("#selectWard").val().split('_');
+		$('#selectCheckpost').empty();
+		$('#selectCheckpost').append($('<option></option>').val(0).html('All Checkposts').attr("name", "defcheckpost"));
+		$('#selectVehicle').empty();
+		$('#selectVehicle').append($('<option></option>').val(0).html('All Vehicles').attr("name", "defvehicle"));
+
+		var alldefcheckposts = new Array();
+		var alldefvehicles = new Array();
+
+		$.each(ward_additional_info, function(each_ward,detail_info) {
+			ward_id = each_ward.split('_')[1]; 
+			if(default_wards.includes(ward_id)){
+				$.each(ward_additional_info[each_ward], function(each_ward,ward_info) {
+					if(ward_additional_info[each_ward]['checkposts'].length ){
+						$.each(ward_additional_info[each_ward]['checkposts'], function(each_checkpost_index,checkpost_info) {
+							$('#selectCheckpost').append($('<option></option>').val(checkpost_info.id).html(checkpost_info.plate_number).attr("name",checkpost_info.plate_number));
+							alldefcheckposts.push(checkpost_info.id);
+						});
+					}
+
+					if(ward_additional_info[each_ward]['vehicles'].length ){
+						$.each(ward_additional_info[each_ward]['vehicles'], function(each_vehicle_index,vehicle_info) {
+							$('#selectVehicle').append($('<option></option>').val(vehicle_info.id).html(vehicle_info.plate_number).attr("name",vehicle_info.plate_number));
+							alldefvehicles.push(vehicle_info.id);
+						});
+					}
+				});
+			}
+		});
+
+		if ( alldefcheckposts.length){
+			var alldefaultcheckposts = alldefcheckposts.join('_');
+			document.getElementsByName('defcheckpost')[0].value = alldefaultcheckposts;
+		}
+
+		if ( alldefvehicles.length){
+			var alldefaultvehicles = alldefvehicles.join('_');
+			document.getElementsByName('defvehicle')[0].value = alldefaultvehicles;
+		}	
+	}
+}
+
+  </script>
+{% endblock %}  

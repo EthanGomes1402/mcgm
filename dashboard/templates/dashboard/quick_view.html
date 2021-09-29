@@ -441,6 +441,12 @@
 						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
 					},
 					success:function(res){
+						if( res.data.length < 1 ) {
+							$('#spinner').hide();
+							alert("No Vehicle history found");
+							return false;
+						}
+
 			  			route_line = L.polyline([]).addTo(mymap);
 			  			var stat_pos = res.data[0]; 
 						var earlier_position = L.latLng(res.data[0].lat,res.data[0].lon);
@@ -454,21 +460,11 @@
 			  					route_line.addLatLng(position);
 								earlier_position = position; 
 			  				}
-							console.log(position);
 						}
 
 						moving_marker = L.Marker.movingMarker(vehicle_positions, 20000,{icon : bin_icon }).addTo(mymap);
 						moving_marker.start();
 			  			mymap.fitBounds(route_line.getBounds());
-
-			  			/*
-
-						if(res.data.length > 1 ) {
-							$('#spinner').hide();
-							alert("No Vehicle history found");
-							return false;
-						}
-						*/
 
 						/*
 			  			if( res.bin_location.length < 1 ){

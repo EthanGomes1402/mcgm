@@ -8,6 +8,7 @@
 {% block content %}
   <div>
 	  <a href="{% url 'add_stop_station' %}" class="vtms_buttons">Add New Stop station</a>
+          <a href="{% url 'upload_stop_station_data' %}" class="vtms_buttons">Upload Stop station</a>
   </div>
   {% if stop_stations %}
   <table class="table tablesorter">

@@ -120,10 +120,11 @@ class NewVehicleForm(forms.ModelForm):
     maker = forms.CharField(label = 'Maker :')
     vehicle_type = forms.ChoiceField(choices=VEHICLE_TYPE)
     manufactured_year = forms.ChoiceField(choices=YEARS)
+    ward = forms.ModelChoiceField(queryset = Ward.objects.filter(is_active='t').order_by('name'),required=False)
 
     class Meta:
         model= Vehicle 
-        fields=['plate_number','engine_number','chassis_number','maker','vehicle_type','manufactured_year', 'contractor']
+        fields=['plate_number','engine_number','chassis_number','maker','vehicle_type','manufactured_year', 'contractor','ward']
 
 class VehicleEditForm(NewVehicleForm):
     pass
@@ -135,10 +136,11 @@ class NewStopStationForm(forms.ModelForm):
     is_tnsstn = forms.BooleanField(required=False)
     is_dmpgnd = forms.BooleanField(required=False)
     is_garage = forms.BooleanField(required=False)
+    ward = forms.ModelChoiceField(queryset = Ward.objects.filter(is_active='t').order_by('name'),required=False)
     stop_station_fence =forms1.gis.PolygonField(widget=PolygonWidget(attrs={ 'map_width': 1050,'map_height': 1050 }),required=False) 
     class Meta:
         model= Stop_station 
-        fields=['name','is_mlc','is_chkpst','is_tnsstn','is_dmpgnd','is_garage','stop_station_fence']
+        fields=['name','is_mlc','is_chkpst','is_tnsstn','is_dmpgnd','is_garage','ward','stop_station_fence']
 
 class StopStationEditForm(NewStopStationForm):
     pass

@@ -8,6 +8,7 @@
 {% block content %}
   <div>
 	  <a href="{% url 'add_route_schedule' %}" class="vtms_buttons">Add New Route schedule</a>
+      <a href="{% url 'upload_route_schedule_data' %}" class="vtms_buttons">Upload Route Schedule</a>
   </div>
   {% if route_schedules %}
   <table class="table tablesorter">

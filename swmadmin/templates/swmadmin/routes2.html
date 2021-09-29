@@ -6,7 +6,19 @@
 {% endblock %}
 
 {% block extrastylesheet %}
-  <link rel="stylesheet" href="{% static 'css/leaflet_routing_machine.css' %}"/>
+ <link rel="stylesheet" href="{% static 'css/leaflet_routing_machine.css' %}"/>
+ <style>
+  div.loader {
+    width: 100px;
+    height: 100px;
+    position: fixed;
+    top:0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+ }
+ </style>
 {% endblock %}
 
 {% block content %}
@@ -21,7 +33,7 @@
         <th>Route</th>
         <th>Code</th>
         <th>Area</th>
-	<th>Bins</th>
+	    <th>Bins</th>
         <th>Ward</th>
         <th>Action</th>
       </tr>
@@ -34,7 +46,7 @@
 	  <td class="route_path" id="route_path_{{ route.id }}"><img src="{% static 'img/location.png' %}"></td>
 	  <td id="bins_{{ route.id }}">
 		<div id="add_view_reorder_bins_route_{{ route.id }}" class="view_bins">
-			<a href="#" class="bins_from_{{route.id}}_{{route.ward.id}}">View bins</a>
+			<a class="bins_from_{{route.id}}_{{route.ward.id}}">View bins</a>
 		</div>
 		<div style="display:none;" class="bin_info">
 			<img src="{% static 'img/close.png' %}" class="close_bins">
@@ -81,6 +93,9 @@
   {% endif %}
   <div id="loadpositionmap" style="display: none;" align="center">
   </div>
+  <div id="spinner" style="display: none;" class="loader">
+        <img src="{% static 'img/loader.gif' %}" class="img-responsive">
+  </div>
 {% endblock %}
 
 {% block js %}
@@ -98,6 +113,7 @@
 	});
 
 	$(document).ready(function(){
+        $('table').tablesorter({theme:'metro-dark'});
 		$("div.view_bins").click(function(){
 			$("div.bin_info").each(function(i,elem){
 				if($(elem).is(":visible")){
@@ -110,15 +126,10 @@
 			$(this).next().show();
 		})
 		$("img.close_bins").click(function(){
-			$(this).parent().hide();
-			$(this).parent().prev().show();
+			$(this).parent().fadeOut();
+			$(this).parent().prev().fadeIn();
 		})
-		/*
-		$("div.bins").click(function(){
-			$(this).next().show();
-			$(this).show();
-		})
-		*/
+
 		$("div.add_bins_link").click(function(){
 			$(this).next().show();
 			$(this).hide();
@@ -142,6 +153,7 @@
 	var added_markers = new Array();
 
 	$("td.route_path").click(function () {
+        $('#spinner').show();
 		var route_name = new Array();
 		var bins_from_route = new Array();
 		route_name = $(this).attr('id').split("_");
@@ -176,7 +188,7 @@
 					bin = L.geoJSON(Bin,{
 						pointToLayer : function(geoJsonPoint, latlng){
 							bins_from_route.push(latlng);
-							return L.marker(latlng,{icon : bin_icon });
+							return L.marker(latlng,{icon : bin_icon }).bindPopup('<b>' + bin.code.split('_').pop() + '  ' + bin.name + '</b>' );
 						}
 					}).addTo(mymap);
 					 
@@ -194,13 +206,14 @@
 				 $("#loadpositionmap").dialog({
 					 modal: true,
 					 autoOpen: false,
-					 width: 800,
-					 height: 800
+					 width: 1000,
+					 height: 1000
 				 });
 
 				 $("#loadpositionmap").dialog('open');
+                 $('#spinner').hide();
 
-			         mymap.invalidateSize();
+			     mymap.invalidateSize();
 			},
 			error:function(a,b,c){
 				alert(b);
@@ -232,7 +245,7 @@
 					xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
 				},
 				success:function(res){
-					var resp = JSON.parse(res.data);
+					var resp = res.data;
 					if (! resp.length){
 						$div.hide();
 						$current_div.show();
@@ -240,8 +253,9 @@
 						return false;
 					}
 					else{
+						 console.log(resp);
 						 $.each(resp, function(i, bin) {
-							 $('#bins_route_'+ ward_route).append($('<option></option>').val(bin.pk).html(bin.fields.name));
+							 $('#bins_route_'+ ward_route).append($('<option></option>').val(bin.id).html(bin.name));
 							 $current_div.hide();
 							 $div.show();
 						 })
@@ -339,7 +353,12 @@
 
 	$("input[class^='deallocate_bins']").click(function(event) {
 		var bin = $(this).attr('id');
-		var $tr = $(this).closest('tr');
+		var tr  = $(this).closest('tr');
+
+        if (tr.siblings().length < 2 ){
+            alert("Bins deallocation is not possible for 2 bins route")
+            return false;
+        }
 
 		$.ajax({
 			type:'GET',						
@@ -352,9 +371,14 @@
 			},
 			success:function(res){
 				 var resp = res.data;
-				 $tr.find('td').fadeOut(1000,function(){
-					 $tr.remove();
-				 })
+				 tr.find('td').fadeOut(1000,function(){
+					if( tr.is(":not(:last-child)") ){
+						tr.nextAll().each(function(index,each_tr){
+							console.log(each_tr);
+						});
+					}
+					tr.remove();
+				 });
 			},
 			error:function(a,b,c){
 				alert(b);

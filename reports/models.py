@@ -73,14 +73,14 @@ class Tracklog_history(models.Model):
     location = models.PointField(null=True, blank=True)
     ignition_status = models.BooleanField(default=1)
     emergency_status = models.CharField(max_length=4,null=True, blank=True)
-    digital_io_status = models.CharField(max_length=25,null=True, blank=True)
+    digital_io_status = models.CharField(max_length=150,null=True, blank=True)
     created_at = models.DateTimeField(auto_now=True,null=True,blank=True)
 
     def __str__(self):
         return (",".join([str(self.vehicle),str(self.datetime)]))
 
     class Meta:
-        db_table = "tracklog_history"
+        db_table = "tracklog_historys"
         ordering = ['created_at','datetime'] 
 
 class Weight_history(models.Model):
@@ -99,7 +99,7 @@ class Weight_history(models.Model):
         return (",".join([str(self.vehicle),str(self.datetime),str(self.weight),str(self.stop_station)]))
 
     class Meta:
-        db_table = "weight_history"
+        db_table = "weight_historys"
         ordering = ['datetime']
 
 class Tag_read_history(models.Model):
@@ -119,7 +119,7 @@ class Tag_read_history(models.Model):
         return (",".join([str(self.vehicle),str(self.read_at),str(self.tag),str(self.tag_type)]))
 
     class Meta:
-        db_table = "tag_read_history"
+        db_table = "tag_read_historys"
 
 
 class Route_status(models.Model):
@@ -152,4 +152,4 @@ class Activity_log_history(models.Model):
         return (",".join([str(self.vehicle),str(self.time),str(self.speed),str(self.tag_type)]))
 
     class Meta:
-        db_table = "activity_log_history"
+        db_table = "activity_log_historys"

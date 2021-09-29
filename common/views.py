@@ -68,7 +68,7 @@ def upload_wards(request):
         for layer in ds:
             for feat in layer:
                 geom = feat.geom
-                Ward.objects.create(
+                ward = Ward.objects.create(
                     name=feat.get('name'),
                     code=feat.get('name'),
                     ward_fence=geom.geos,

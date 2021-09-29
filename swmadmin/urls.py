@@ -46,10 +46,12 @@ urlpatterns = [
 
     #all file upload and populate data urls
     path('upload_vehicle_data/',views.upload_vehicle_data,name='upload_vehicle_data'),
+    path('upload_stop_station_data/',views.upload_stop_station_data,name='upload_stop_station_data'),
     path('upload_routes_and_bin_data/',views.upload_routes_and_bin_data,name='upload_routes_and_bin_data'),
     path('upload_bin_data/',views.upload_bin_data,name='upload_bin_data'),
     path('upload_wcm_data/',views.upload_ward_contractor_mapping,name='upload_ward_contractor_mapping'),
     path('upload_installation_data/',views.upload_installation_data,name='upload_installation_data'),
+    path('upload_route_schedule_data/',views.upload_route_schedule_data,name='upload_route_schedule_data'),
 
 #    #all add urls    
     path('bin/add/',views.BinCreateView.as_view(),name='add_bin'),

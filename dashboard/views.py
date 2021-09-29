@@ -13,8 +13,8 @@ def latest_vehicle_status(request):
     response_data['status'] = 'success'
     response_data['data'] = list()
 
-#   for each_th_record in Tracklog_history.objects.raw().values('vehicle').annotate(last_updated=Max('datetime')): 
-    for each_th_record in Tracklog_history.objects.all()[:500]:
+    for each_th_record_dict in Tracklog_history.objects.values('vehicle').annotate(max_id=Max('id')).order_by('max_id'): 
+        each_th_record = Tracklog_history.objects.get(id=each_th_record_dict['max_id']) 
         each_vehicle_record_data = dict()
         each_vehicle_record_data['veh'] = str(each_th_record.vehicle)
         each_vehicle_record_data['type'] = str(each_th_record.vehicle.vehicle_type)

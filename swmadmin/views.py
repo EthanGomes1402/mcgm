@@ -100,7 +100,7 @@ def get_unallocated_bins_from_ward(request):
     ward = Ward.objects.get(pk=request.GET['id'])
     response_data=dict()
     response_data['status'] = 'success'
-    response_data['data'] = serialize('json', Bin.objects.filter(ward_id=ward).filter(is_active=True).filter(route_id__isnull=True)) 
+    response_data['data'] = list( Bin.objects.filter(ward_id=ward).filter(is_active=True).filter(route_id__isnull=True).filter(code__isnull=True).values('id','name') ) 
     return HttpResponse(json.dumps(response_data),content_type="application/json") 
 
 def allocate_bins_to_route(request):
@@ -139,7 +139,18 @@ def deallocate_bin_from_route(request):
     bn.route= None
     bn.save()
     rt.save()
+    
+    for each_bin in rt.bins.all():
+        each_bin.code = None 
+        each_bin.save()
 
+    sequence = 0  
+    for each_bin in rt.bins.all():
+        sequence = sequence + 1 
+        bn_code_changed =  rt.code + '_' + str(sequence).zfill(3)
+        each_bin.code = bn_code_changed 
+        each_bin.save()
+        
     response_data=dict()
     response_data['status'] = 'success'
     response_data['data'] = 'Deallocated bin from route successfully' 
@@ -152,6 +163,7 @@ def get_bin_location_from_route(request):
     for each_bin in rt.bins.all(): 
         each_bin_data = dict()
         each_bin_data['name'] = each_bin.name
+        each_bin_data['code'] = each_bin.code
         each_bin_data['location'] =each_bin.bin_location.geojson
         all_bins_from_route.append(each_bin_data)
 
@@ -240,10 +252,14 @@ def upload_routes_and_bin_data(request):
     if request.method == 'POST':
         excel_file = request.FILES["bin_excel_file"]
         wb = load_workbook(filename = excel_file)
-        ws = wb['Sheet1']
+        ws = wb['routes']
         bins = list()
         routes = list()
         routes_from_file= list()
+        routes_from_excel= dict()
+        all_wards = dict()
+        route_failure_geo = 0
+        route_failure_ward= 0
         bin_header= ['name','latitude','longitude','code','tag','bin_location','bin_fence','route'] 
         route_header= ['name','code','route_fence'] 
 
@@ -260,14 +276,25 @@ def upload_routes_and_bin_data(request):
             name,lon,lat = [row_content[2],row_content[4],row_content[3]]
             route_name,route_code,ward = [row_content[0],row_content[0],row_content[5]]
 
+            if route_code not in routes_from_excel:
+                routes_from_excel[route_code]=0
+
             if lat and lon: 
+                routes_from_excel[route_code]+=1 
                 lat = re.sub(r'[^\.\d]','',str(lat))
                 lon = re.sub(r'[^\.\d]','',str(lon))
-                rt_for_bin='_'.join(row_content[1].split('_')[:-1])
-                seq_number= row_content[1].split('_').pop().zfill(3) 
-                bin_with_seq_number= str(rt_for_bin) + '_' + str(seq_number)
-                bin_code = bin_with_seq_number
-                bin_tag = ''
+                if re.match("[a-z][A-Z]+ ",row_content[1]): 
+                    rt_for_bin='_'.join(row_content[1].split('_')[:-1])
+                    seq_number= row_content[1].split('_').pop().zfill(3) 
+                    bin_with_seq_number= str(rt_for_bin) + '_' + str(seq_number)
+                    bin_code = bin_with_seq_number
+                    bin_tag = ''
+                else:
+                    rt_for_bin=row_content[0]
+                    seq_number= str(routes_from_excel[route_code]).zfill(3) 
+                    bin_with_seq_number= str(rt_for_bin) + '_' + str(seq_number)
+                    bin_code = bin_with_seq_number
+                    bin_tag = ''
 
                 try:
                     location =Point(float(lon),float(lat))
@@ -299,9 +326,12 @@ def upload_routes_and_bin_data(request):
         for each_bin in bins:
             route_for_bin='_'.join(each_bin['code'].split('_')[:-1])
             rt = Route.objects.get(code=route_for_bin)
-            ward_of_bin = Ward.objects.filter(is_active=True).filter(ward_fence__contains=each_bin['location']).get()
-            each_bin['route']= rt
-            each_bin['ward'] = ward_of_bin
+            try:
+                ward_of_bin = Ward.objects.filter(is_active=True).filter(ward_fence__contains=each_bin['bin_location']).get()
+                each_bin['route']= rt
+                each_bin['ward'] = ward_of_bin
+            except Exception as e: 
+                print (f"Error while getting ward for bin {each_bin['bin_location']}")
 
             try:
                 bn =  Bin.objects.create(**each_bin);
@@ -319,44 +349,105 @@ def upload_routes_and_bin_data(request):
                 each_route.ward=ward_of_route
                 each_route.save()
             except Exception as e:
-                print ("Error occurred while creating route " + str(e))
+                geometry_error = 'LineString requires at least 2 points'
+                invalid_ward_error ='Ward matching query does not exist'
+                ocurred_error = str(e)
+                if re.match(geometry_error,ocurred_error): 
+                    route_failure_geo = route_failure_geo + 1 
+                    each_route.bins.clear()
+                    each_route.delete()
+
+                if re.match(invalid_ward_error,ocurred_error): 
+                    route_failure_ward = route_failure_ward + 1
+                    ward_of_route      = re.sub(r'W$','',each_route.code.split('_')[0])
+
+                    if len(ward_of_route) > 1: 
+                        ward_of_route      = ward_of_route[:1] + '/' + ward_of_route[1:]
+                    rt_ward            = Ward.objects.get(code=ward_of_route)
+
+                    if ward_of_route in all_wards:
+                        all_wards[ward_of_route] = all_wards[ward_of_route] + 1
+                    else:
+                        all_wards[ward_of_route] = 1
+
+                    each_route.ward    = rt_ward
+                    each_route.save()
             else:
-                pass   
+                pass
 
         return redirect('/routes') 
     return render(request,'swmadmin/upload_bin_data.html',{})
 
-def upload_wards(request):
+def upload_stop_station_data(request):
     if request.method == 'POST':
         mykmlfile = request.FILES["excel_file"]
-        with open('/tmp/wards.kml','wb+') as destination:
+        with open('/tmp/stop_stations.kml','wb+') as destination:
             for chunk in mykmlfile.chunks():
                 destination.write(chunk)
 
-        ds = DataSource('/tmp/wards.kml')
+        ds = DataSource('/tmp/stop_stations.kml')
         for layer in ds:
             for feat in layer:
+                st_name = feat.get('name')
                 geom = feat.geom
-                Ward.objects.create(
-                    name=feat.get('name'),
-                    code=feat.get('name'),
-                    ward_fence=geom.geos  # <- and here
-                )
-#            print ("layer =>" + str(layer.name))
-#            geoms = layer.get_geoms(geos=True)
-#            print ("No of fetaures" + str(len(geoms)))
-#            for each_geom in geoms:
-#                if each_geom.geom_typeid == 6: 
-#                    print ('-------------------------')
-#                    print ('-------------------------')
-#                    print (each_geom.dims)
-#                    print (each_geom.geom_type)
-#                    print (each_geom.geom_typeid)
-#                    print (each_geom.json)
-#                    #print (each_geom) 
-            pass
-    return render(request,'swmadmin/upload_wards.html',{})
+                if layer.name == 'MLC': 
+                    try:
+                        st_ward = Ward.objects.get(code=feat.get('ward'))
+                    except Exception as e:
+                        print ("error occurred while adding installation" + str(e))
 
+                    st = Stop_station.objects.create(
+                        name   = st_name,
+                        is_mlc = True,
+                        ward = st_ward,
+                        stop_station_fence = geom.geos,
+                        created_by = request.user,
+                        created_at = timezone.now()
+                        )
+
+                elif layer.name == 'CHKPST':
+                    try:
+                        st_ward = Ward.objects.get(code=feat.get('ward'))
+                    except Exception as e:
+                        print ("error occurred while adding installation" + str(e))
+                        
+                    st = Stop_station.objects.create(
+                        name   = st_name,
+                        is_chkpst = True,
+                        ward = st_ward,
+                        stop_station_fence = geom.geos,
+                        created_by = request.user,
+                        created_at = timezone.now()
+                        )
+                elif layer.name == 'TNSSTN':
+                    st = Stop_station.objects.create(
+                        name   = st_name,
+                        is_tnsstn = True,
+                        stop_station_fence = geom.geos,
+                        created_by = request.user,
+                        created_at = timezone.now()
+                        )
+                elif layer.name == 'DMPGND':
+                    st = Stop_station.objects.create(
+                        name   = st_name,
+                        is_dmpgnd = True,
+                        stop_station_fence = geom.geos,
+                        created_by = request.user,
+                        created_at = timezone.now()
+                        )
+                elif layer.name == 'GARAGE':
+                    st = Stop_station.objects.create(
+                        name        = st_name,
+                        is_garage   = True,
+                        stop_station_fence = geom.geos,
+                        created_by = request.user,
+                        created_at = timezone.now()
+                        )
+                else:
+                    pass
+			
+        return redirect('stop_stations')
+    return render(request,'swmadmin/upload_stop_stations.html',{})
 
 def upload_vehicle_data(request):
     if request.method == 'POST':
@@ -364,9 +455,9 @@ def upload_vehicle_data(request):
         wb = load_workbook(filename = excel_file)
         ws = wb['vehicle']
         excel_data = list()
-        header= ['plate_number','engine_number','chassis_number','maker','manufactured_year','vehicle_type','contractor'] 
+        header= ['plate_number','engine_number','chassis_number','maker','manufactured_year','vehicle_type','contractor','ward'] 
 
-        for row in ws.iter_rows(min_row=2,max_col=7):
+        for row in ws.iter_rows(min_row=2,max_col=8):
             row_content = list()
             for cell in row:
                 row_content.append(cell.value)
@@ -378,8 +469,11 @@ def upload_vehicle_data(request):
             if row_content[2] and row_content[1] and row_content[6]: 
                 contractor = Contractor.objects.get(company_name=row_content[6]) 
                 row_content[6] = contractor
+                if row_content[7]:
+                    row_content[7] = Ward.objects.get(code=row_content[7])
+                    
                 excel_data.append(dict(zip(header,row_content))) 
-
+                
         for each_record in excel_data:
             try:
                 each_record['created_by'] = request.user 
@@ -429,6 +523,56 @@ def upload_installation_data(request):
         #print(installation_data)
         return redirect('installations') 
     return render(request,'swmadmin/upload_installation_data.html',{})
+
+def upload_route_schedule_data(request):
+    if request.method == 'POST':
+        excel_file = request.FILES["route_schedule_excel_file"]
+        wb = load_workbook(filename = excel_file)
+        ws = wb['route_schedule']
+        route_schedule_data = list()
+        header= ['route','vehicle','shift'] 
+
+        for row in ws.iter_rows(min_row=1,max_col=3):
+            row_content = list()
+            for cell in row:
+                row_content.append(cell.value)
+                
+            if not row_content[0]:
+                continue
+
+            if row_content[0] and row_content[1] and row_content[2]: 
+                try:
+                    vehicle = Vehicle.objects.get(plate_number=row_content[1]) 
+                except Vehicle.DoesNotExist:
+                    vehicle = None
+
+                try:
+                    rt = Route.objects.get(code=row_content[0]) 
+                except Route.DoesNotExist:
+                    rt = None                   
+
+                if not vehicle:
+                    print(f"vehice {row_content[1]} does not exists")
+                    continue
+
+                if not rt:
+                    print(f"route {row_content[0]} does not exists")
+                    continue
+
+                row_content[0] = rt
+                row_content[1] = vehicle 
+                route_schedule_data.append(dict(zip(header,row_content))) 
+
+        for each_route_schedule in route_schedule_data:
+            try:
+                each_route_schedule['created_by'] = request.user 
+                each_route_schedule['created_at']= timezone.now()
+                Route_schedule.objects.create(**each_route_schedule);
+            except Exception as e:
+                print ("error occurred while adding route schedule" + str(e))
+
+        return redirect('route_schedules') 
+    return render(request,'swmadmin/upload_route_schedule_data.html',{})
 
 def upload_student_data(request):
     if request.method == 'POST':
@@ -535,7 +679,6 @@ def upload_ward_contractor_mapping(request):
                 print ("error occurred while creating ward" + str(e))
 
         return redirect('wcms')
-        #return HttpResponse('---------'+ str(tuple(ws.rows)) + '----------') 
     return render(request,'swmadmin/upload_wcm_data.html',{})
 
 #########################################ward############################################Done 

@@ -82,9 +82,15 @@ def set_session_reporting_form_params(request):
                 geo_heirarchy[div_key][zone_key][ward_key]['checkposts']=[]
                 geo_heirarchy[div_key][zone_key][ward_key]['bins']=[]
                 geo_heirarchy[div_key][zone_key][ward_key]['routes']=[]
-                if Ward_Contractor_Mapping.objects.filter(ward=each_ward):
-                    ward_contractor_map = Ward_Contractor_Mapping.objects.filter(ward=each_ward).get() 
-                    for each_vehicle in Vehicle.objects.filter(contractor= ward_contractor_map.contractor):
+#                if Ward_Contractor_Mapping.objects.filter(ward=each_ward):
+#                    ward_contractor_map = Ward_Contractor_Mapping.objects.filter(ward=each_ward).get() 
+#                    for each_vehicle in Vehicle.objects.filter(contractor= ward_contractor_map.contractor):
+#                        vehicle_info = dict()
+#                        vehicle_info['id'] = each_vehicle.id
+#                        vehicle_info['plate_number'] = each_vehicle.plate_number
+#                        geo_heirarchy[div_key][zone_key][ward_key]['vehicles'].append(vehicle_info)
+
+                for each_vehicle in each_ward.vehicles.all():
                         vehicle_info = dict()
                         vehicle_info['id'] = each_vehicle.id
                         vehicle_info['plate_number'] = each_vehicle.plate_number

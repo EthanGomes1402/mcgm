@@ -1085,12 +1085,13 @@ def weight_wardwise(request):
             if not Ward_Contractor_Mapping.objects.filter(ward=each_ward):
                 continue
             #get contractor for ward
-            ward_contractor_map = Ward_Contractor_Mapping.objects.filter(ward=each_ward).get()
+            #ward_contractor_map = Ward_Contractor_Mapping.objects.filter(ward=each_ward).get()
 
             if each_ward.name not in wardwise_weight_data:
                 wardwise_weight_data[each_ward.name]=dict()
-            for each_vehicle in Vehicle.objects.filter(contractor= ward_contractor_map.contractor):
-                if each_vehicle.vehicle_type not in  wardwise_weight_data[each_ward.name]:
+
+            for each_vehicle in Vehicle.objects.filter(ward = each_ward ):
+                if each_vehicle.vehicle_type not in wardwise_weight_data[each_ward.name]:
                     wardwise_weight_data[each_ward.name][each_vehicle.vehicle_type] = dict()
                 if int(shift):
                     whs=each_vehicle.weight_historys.filter(datetime__range=(from_time,to_time)).filter(shift=shift).values('shift').annotate(total_weight=Sum('weight')).annotate(total_count=Count('id')).order_by()
@@ -1144,12 +1145,12 @@ def weight_zonewise(request):
                 if not Ward_Contractor_Mapping.objects.filter(ward=each_ward):
                     continue
                 #get contractor for ward
-                ward_contractor_map = Ward_Contractor_Mapping.objects.filter(ward=each_ward).get()
+                #ward_contractor_map = Ward_Contractor_Mapping.objects.filter(ward=each_ward).get()
 
                 if each_ward.name not in wardwise_weight_data:
                     wardwise_weight_data[each_ward.name]=dict()
 
-                for each_vehicle in Vehicle.objects.filter(contractor= ward_contractor_map.contractor):
+                for each_vehicle in Vehicle.objects.filter(ward=each_ward):
                     if each_vehicle.vehicle_type not in  zonewise_weight_data[each_zone.short_name]:
                         zonewise_weight_data[each_zone.short_name][each_vehicle.vehicle_type] = dict()
                     if int(shift):

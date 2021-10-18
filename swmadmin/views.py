@@ -467,8 +467,9 @@ def upload_vehicle_data(request):
             row_content[1] =  random_string(20)
             row_content[2] =  random_string(20)
             if row_content[2] and row_content[1] and row_content[6]: 
-                contractor = Contractor.objects.get(company_name=row_content[6]) 
-                row_content[6] = contractor
+                user_cntr  = User.objects.get(username=row_content[6])
+                row_content[6] = user_cntr.contractor
+
                 if row_content[7]:
                     row_content[7] = Ward.objects.get(code=row_content[7])
                     

@@ -24,6 +24,7 @@ from django.contrib.gis.geos import GEOSGeometry,Point,LineString
 from django.contrib.gis.gdal import SpatialReference, CoordTransform
 from django.contrib import messages
 from django.contrib.gis import geos
+from django.db import connection
 
 gcoord = SpatialReference(3857)
 mycoord = SpatialReference(4326)
@@ -245,7 +246,13 @@ class WardListView(ListView):
     context_object_name='wards'
     template_name = 'common/wards.html'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tenant'] = self.request.tenant.name
+        return context
+
     def get_queryset(self):
+        print(self.request.tenant.name)
         qs = super(WardListView,self).get_queryset().filter(is_active=True).order_by('name')
         return qs
 

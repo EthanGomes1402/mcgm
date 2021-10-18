@@ -15,9 +15,9 @@ trans = CoordTransform(gcoord, mycoord)
 VEHICLE_TYPE = (
         ("mc","Mini Compactor"),
         ("lc","Large Compactor"),
-        ("swm","Sweeper Vehicle Machine"),
         ("scv","Small Compactor Vehicle"),
-        ("sl","Sleeper Vehicle"),
+        ("sw","Sweeper Vehicle"),
+        ("ww","Watch & Ward"),
     )
 
 SHIFT = (
@@ -148,7 +148,7 @@ class Route_schedule(models.Model):
         db_table = "route_schedules"
 
 class Ward_Contractor_Mapping(models.Model):
-    ward        = models.OneToOneField(Ward,on_delete=models.CASCADE,null=True)
+    ward        = models.ForeignKey(Ward,on_delete=models.CASCADE,null=True)
     contractor  = models.ForeignKey(Contractor,on_delete=models.CASCADE,null=True)
     is_active   = models.BooleanField(default=1)
     created_at  = models.DateTimeField(auto_now_add=True,verbose_name ='Created at')

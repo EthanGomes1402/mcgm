@@ -71,9 +71,16 @@ class Tracklog_history(models.Model):
     miv = models.FloatField(default=0.0, blank=True)
     ibv = models.FloatField(default=0.0, blank=True)
     location = models.PointField(null=True, blank=True)
-    ignition_status = models.BooleanField(default=1)
-    emergency_status = models.CharField(max_length=4,null=True, blank=True)
-    digital_io_status = models.CharField(max_length=150,null=True, blank=True)
+    ignition = models.BooleanField(default=1)
+    emergency= models.CharField(max_length=4,null=True, blank=True)
+    dio = models.CharField(max_length=150,null=True, blank=True)
+    dod = models.DateField(auto_now=True,null=True)
+    shift_choices = [
+        ('1','Morning'),
+        ('2','Afternoon'),
+        ('3','Night')
+    ]
+    shift= models.CharField(max_length=1,choices=shift_choices,default='1')
     created_at = models.DateTimeField(auto_now=True,null=True,blank=True)
 
     def __str__(self):
@@ -81,7 +88,7 @@ class Tracklog_history(models.Model):
 
     class Meta:
         db_table = "tracklog_historys"
-        ordering = ['created_at','datetime'] 
+        ordering = ['vehicle','datetime'] 
 
 class Weight_history(models.Model):
     vehicle = models.ForeignKey(Vehicle, related_name='weight_historys',on_delete=models.CASCADE)

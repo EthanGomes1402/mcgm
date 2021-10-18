@@ -39,6 +39,8 @@ SHARED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.gis',
+    'django.contrib.postgres',
+    'psqlextra',
     'departments',
     'common',
     'accounts',
@@ -57,6 +59,8 @@ TENANT_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.gis',
+    'django.contrib.postgres',
+    'psqlextra',
     'accounts',
     'swmadmin',
     'reports',
@@ -109,7 +113,7 @@ WSGI_APPLICATION = 'mcgm.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'tenant_schemas.postgresql_backend',
+        'ENGINE': 'psqlextra.backend',
         'NAME': 'mcgm_testing_sample',
         'USER': 'mcgm',
         'PASSWORD':'mcgm'
@@ -119,6 +123,8 @@ DATABASES = {
 DATABASE_ROUTERS = (
     'tenant_schemas.routers.TenantSyncRouter',
 )
+
+POSTGRES_EXTRA_DB_BACKEND_BASE ='tenant_schemas.postgresql_backend'
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators

@@ -10,6 +10,7 @@
   <table class="table tablesorter">
     <thead class="thead-inverse">
       <tr>
+        <th>From Ward</th>
         <th>Vehicle</th>
         <th>Type</th>
 	<th>Ward</th>
@@ -24,6 +25,7 @@
     <tbody>
       {% for each_entry in all_entries %}
         <tr>
+	  <td>{{ each_entry.veh_ward }}</td>
 	  <td>{{ each_entry.veh  }}</td>
 	  <td>{{ each_entry.type }}</td>
           <td>{{ each_entry.ward  }} </td>
@@ -75,6 +77,10 @@
 
 		var marker;
 		$(document).ready(function(){
+		        setTimeout(function () {
+				location.reload(true);
+		        },15000); 
+
 			$('table').tablesorter({theme:'metro-dark'});
 			$("td.area").click(function () {
 		                if( marker ){

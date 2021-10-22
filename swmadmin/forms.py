@@ -183,7 +183,7 @@ class WCMEditForm(NewWCMForm):
     pass
 
 class NewVGMForm(forms.ModelForm):
-    vehicle  = forms.ModelChoiceField(queryset = Vehicle.objects.filter(is_active='t').filter(contractor_id=31).order_by('plate_number'))
+    vehicle  = forms.ModelChoiceField(queryset = Vehicle.objects.filter(is_active='t').order_by('plate_number'))
     garage   = forms.ModelChoiceField(queryset = Stop_station.objects.filter(is_active='t').filter(is_garage=True))
 
     class Meta:

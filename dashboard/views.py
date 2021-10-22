@@ -3,7 +3,7 @@ from django.http import HttpResponse,JsonResponse
 import json,re,string,random,inspect
 from common.models import Ward
 from swmadmin.models import Vehicle
-from reports.models import Tracklog_history
+from reports.models import Current_tracklog_history
 from django.db.models.aggregates import Max
 from django.contrib.gis.geos import GEOSGeometry,Point,LineString
 
@@ -13,15 +13,19 @@ def latest_vehicle_status(request):
     response_data['status'] = 'success'
     response_data['data'] = list()
 
-    for each_th_record_dict in Tracklog_history.objects.values('vehicle').annotate(max_id=Max('id')).order_by('max_id'): 
-        each_th_record = Tracklog_history.objects.get(id=each_th_record_dict['max_id']) 
+    for each_th_record_dict in Current_tracklog_history.objects.values('vehicle').annotate(max_id=Max('id')).order_by('max_id'): 
+        each_th_record = Current_tracklog_history.objects.get(id=each_th_record_dict['max_id']) 
         each_vehicle_record_data = dict()
         each_vehicle_record_data['veh'] = str(each_th_record.vehicle)
+        each_vehicle_record_data['veh_ward'] = str(each_th_record.vehicle.ward)
         each_vehicle_record_data['type'] = str(each_th_record.vehicle.vehicle_type)
         each_vehicle_record_data['lat'] = str(each_th_record.latitude)
         each_vehicle_record_data['lon'] = str(each_th_record.longitude)
         each_vehicle_record_data['location']=Point(float(each_th_record.longitude), float(each_th_record.latitude))
-        each_vehicle_record_data['ward'] = Ward.objects.filter(is_active=True).filter(ward_fence__contains=each_vehicle_record_data['location']).get()
+        try:
+            each_vehicle_record_data['ward'] = Ward.objects.filter(is_active=True).filter(ward_fence__contains=each_vehicle_record_data['location']).get()
+        except:
+            each_vehicle_record_data['ward'] = None 
         each_vehicle_record_data['time'] = str(each_th_record.datetime.strftime("%Y-%m-%d %H:%M:%S"))
         #logic will check if current time is in assigned route schedule for a vehicle
         each_vehicle_record_data['trip_status'] = 'In trip'
@@ -52,9 +56,9 @@ def latest_vehicle_status(request):
         each_vehicle_record_data['miv'] = str(each_th_record.miv)
         each_vehicle_record_data['ibv'] = str(each_th_record.ibv)
         #each_vehicle_record_data['location'] = str(each_th_record.location)
-        each_vehicle_record_data['ignition_status'] = str(each_th_record.ignition_status)
-        each_vehicle_record_data['emergency_status'] = str(each_th_record.emergency_status)
-        each_vehicle_record_data['digital_io_status'] = str(each_th_record.digital_io_status)
+        each_vehicle_record_data['ignition_status'] = str(each_th_record.ignition)
+        each_vehicle_record_data['emergency_status'] = str(each_th_record.emergency)
+        each_vehicle_record_data['digital_io_status'] = str(each_th_record.dio)
         response_data['data'].append(each_vehicle_record_data)
     #vehicles  = list(map(lambda vehicle : Vehicle.objects.get(pk=vehicle) , form_data['selectVehicle'].split("_")))
     return render(request,'dashboard/latest_vehicle_status.html',{ 'all_entries' : response_data['data'] })

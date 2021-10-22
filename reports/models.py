@@ -4,6 +4,8 @@ from django.core.serializers import serialize
 from django.contrib.auth.models import User
 from swmadmin.models import Vehicle,Route,Bin
 from swmadmin.models import Stop_station 
+from psqlextra.types import PostgresPartitioningMethod
+from psqlextra.models import PostgresPartitionedModel
 
 # Create your models here.
 class Alert(models.Model):
@@ -88,6 +90,40 @@ class Tracklog_history(models.Model):
 
     class Meta:
         db_table = "tracklog_historys"
+        ordering = ['vehicle','datetime'] 
+
+class Current_tracklog_history(PostgresPartitionedModel):
+    class PartitioningMeta:
+        method = PostgresPartitioningMethod.LIST
+        key = ["shift"]
+
+    vehicle = models.ForeignKey(Vehicle, related_name='current_tracklog_historys',on_delete=models.CASCADE)
+    datetime = models.DateTimeField(auto_now=True,null=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6,default=0,blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6,default=0,blank=True)
+    speed = models.FloatField(default=0.0, blank=True)
+    heading = models.IntegerField(null=True, blank=True)
+    mps = models.BooleanField(default=0,null=True)
+    miv = models.FloatField(default=0.0, blank=True)
+    ibv = models.FloatField(default=0.0, blank=True)
+    location = models.PointField(null=True, blank=True)
+    ignition = models.BooleanField(default=1)
+    emergency= models.CharField(max_length=4,null=True, blank=True)
+    dio = models.CharField(max_length=150,null=True, blank=True)
+    dod = models.DateField(auto_now=True,null=True)
+    shift_choices = [
+        ('1','Morning'),
+        ('2','Afternoon'),
+        ('3','Night')
+    ]
+    shift= models.CharField(max_length=1,choices=shift_choices,default='1')
+    created_at = models.DateTimeField(auto_now=True,null=True,blank=True)
+
+    def __str__(self):
+        return (",".join([str(self.vehicle),str(self.datetime)]))
+
+    class Meta:
+        db_table = "current_tracklog_historys"
         ordering = ['vehicle','datetime'] 
 
 class Weight_history(models.Model):

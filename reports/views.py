@@ -26,6 +26,7 @@ from django.db.models import Sum,Count
 import dateutil.parser
 from geopy.geocoders import Nominatim
 from datetime import date,timedelta 
+from itertools import chain
 
 gcoord = SpatialReference(3857)
 mycoord = SpatialReference(4326)
@@ -1239,8 +1240,9 @@ def get_vehicle_travel_history(request):
     from_time = dateutil.parser.parse(form_data['from_time']) 
     to_time = dateutil.parser.parse(form_data['to_time']) 
     vehicle = Vehicle.objects.get(pk=form_data['selectVehicle']) 
+    vc = chain(vehicle.tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime') , vehicle.current_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime'))
 
-    for each_vehicle_record in vehicle.tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime'): 
+    for each_vehicle_record in set(vc): 
         each_vehicle_record_data = dict()
         each_vehicle_record_data['lat'] = str(each_vehicle_record.latitude)
         each_vehicle_record_data['lon'] = str(each_vehicle_record.longitude)

@@ -384,6 +384,7 @@
 						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
 					},
 					success:function(res){
+console.log(res);
 			  			if( res.bin_location.length < 1 ){
 			  				alert("No Bins Found");
 			  				return false;
@@ -391,7 +392,7 @@
 						let bin_locations = res.bin_location;
 						let bin_markers = L.markerClusterGroup();
 						for (var i = 0; i < bin_locations.length; i++) {
-							bin_markers.addLayer(L.marker([bin_locations[i][2],bin_locations[i][1]],{icon : bin_icon }).bindPopup(bin_locations[i][0]));
+							bin_markers.addLayer(L.marker([bin_locations[i][1],bin_locations[i][2]],{icon : bin_icon }).bindPopup(bin_locations[i][0]));
 						}
 						mymap.addLayer(bin_markers);
 						mymap.fitBounds(bin_markers.getBounds());

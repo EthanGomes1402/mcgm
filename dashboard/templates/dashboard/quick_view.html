@@ -150,6 +150,8 @@
 						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
 					},
 					success:function(res){
+						$('#selectWard').empty();
+						$('#selectVehicle').empty();
 						$.each(res.form_params.vehicles, function(index,each_vehicle ) {
 						     $('#selectVehicle').append($('<option></option>').val(each_vehicle.id).html(each_vehicle.plate_number));
 						});
@@ -185,8 +187,8 @@
 				$("#to_time").on("dp.change", function (e) {
 				    $('#from_time').data("DateTimePicker").maxDate(e.date);
 				});
-				$('div#from_time input').val('');
-				$('div#to_time input').val('');
+				//$('div#from_time input').val('');
+				//$('div#to_time input').val('');
 
 				$.ajax({
 					type:'GET',
@@ -195,6 +197,9 @@
 						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
 					},
 					success:function(res){
+						$('#selectVehType').empty();
+						$('#selectVehicle').empty();
+						$('#selectWard').empty();
 						$.each(res.form_params.vehicles, function(veh_type,each_vehicle_info) {
 							$('#selectVehType').append($('<option></option>').val(veh_type).html(veh_type.toUpperCase()));
 							$.each(each_vehicle_info, function(index,each_vehicle ) {

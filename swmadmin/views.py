@@ -54,13 +54,13 @@ def upload_vehicle_contractor_mapping(request):
         wb = load_workbook(filename = excel_file)
         ws = wb['vehicle']
         excel_data = list()
-        header= ['vehicle','contractor' ] 
+        header= ['vehicle','contractor' ]
 
         for row in ws.iter_rows(min_row=2,max_col=2):
             row_content = list()
             for cell in row:
                 row_content.append(cell.value)
-                
+
             if not row_content[0]:
                 continue
 
@@ -69,22 +69,22 @@ def upload_vehicle_contractor_mapping(request):
 
             try:
                 row_content[0] =  Vehicle.objects.get(plate_number=row_content[0])
-                row_content[1] =  User.objects.get(id=request.user.id) 
-                if row_content[0] and row_content[1]: 
-                    excel_data.append(dict(zip(header,row_content))) 
+                row_content[1] =  User.objects.get(id=request.user.id)
+                if row_content[0] and row_content[1]:
+                    excel_data.append(dict(zip(header,row_content)))
             except Exception as e:
                 print(str(e))
             finally:
-                pass 
+                pass
 
         for each_record in excel_data:
             try:
-                each_record['created_by'] = request.user 
+                each_record['created_by'] = request.user
                 Vehicle_Contractor_Mapping.objects.create(**each_record);
             except Exception as e:
                 print ("error occurred while creating vehicle" + str(e))
 
-        return HttpResponse('---------'+ str(tuple(ws.rows)) + '----------') 
+        return HttpResponse('---------'+ str(tuple(ws.rows)) + '----------')
     return render(request,'upload_vcm_data.html',{})
 
 def random_string(n):
@@ -100,67 +100,67 @@ def get_unallocated_bins_from_ward(request):
     ward = Ward.objects.get(pk=request.GET['id'])
     response_data=dict()
     response_data['status'] = 'success'
-    response_data['data'] = list( Bin.objects.filter(ward_id=ward).filter(is_active=True).filter(route_id__isnull=True).filter(code__isnull=True).values('id','name') ) 
-    return HttpResponse(json.dumps(response_data),content_type="application/json") 
+    response_data['data'] = list( Bin.objects.filter(ward_id=ward).filter(is_active=True).filter(route_id__isnull=True).filter(code__isnull=True).values('id','name') )
+    return HttpResponse(json.dumps(response_data),content_type="application/json")
 
 def allocate_bins_to_route(request):
     bins  = list(map(lambda bn : Bin.objects.get(pk=bn) , request.GET['bins'].split(",")))
-    route = Route.objects.get(pk=request.GET['route']) 
-    no_of_bins_rt = route.bins.all().count() 
+    route = Route.objects.get(pk=request.GET['route'])
+    no_of_bins_rt = route.bins.all().count()
 
     for bn in bins:
         no_of_bins_rt = no_of_bins_rt + 1
-        seq_in_route  = str(no_of_bins_rt).zfill(3)  
-        bn.code = str(route.code) + '_' + seq_in_route 
+        seq_in_route  = str(no_of_bins_rt).zfill(3)
+        bn.code = str(route.code) + '_' + seq_in_route
         bn.save()
         route.bins.add(bn)
 
-    linestring = LineString([ each_bin.bin_location for each_bin in route.bins.all()]) 
-    route.route_fence = linestring 
+    linestring = LineString([ each_bin.bin_location for each_bin in route.bins.all()])
+    route.route_fence = linestring
     route.save()
 
     response_data=dict()
     response_data['status'] = 'success'
-    response_data['data'] = 'Bin allocated successfully' 
-    return HttpResponse(json.dumps(response_data),content_type="application/json") 
+    response_data['data'] = 'Bin allocated successfully'
+    return HttpResponse(json.dumps(response_data),content_type="application/json")
 
 def deallocate_bin_from_route(request):
-    bn = Bin.objects.get(pk=request.GET['id']) 
+    bn = Bin.objects.get(pk=request.GET['id'])
     rt = bn.route
     rt.bins.remove(bn)
 
     if rt.bins.all().count() > 1 :
-        linestring = LineString([ each_bin.bin_location for each_bin in rt.bins.all()]) 
+        linestring = LineString([ each_bin.bin_location for each_bin in rt.bins.all()])
     else:
         linestring = None
 
-    rt.route_fence = linestring 
+    rt.route_fence = linestring
     bn.code = None
     bn.route= None
     bn.save()
     rt.save()
-    
+
     for each_bin in rt.bins.all():
-        each_bin.code = None 
+        each_bin.code = None
         each_bin.save()
 
-    sequence = 0  
+    sequence = 0
     for each_bin in rt.bins.all():
-        sequence = sequence + 1 
+        sequence = sequence + 1
         bn_code_changed =  rt.code + '_' + str(sequence).zfill(3)
-        each_bin.code = bn_code_changed 
+        each_bin.code = bn_code_changed
         each_bin.save()
-        
+
     response_data=dict()
     response_data['status'] = 'success'
-    response_data['data'] = 'Deallocated bin from route successfully' 
-    return HttpResponse(json.dumps(response_data),content_type="application/json") 
+    response_data['data'] = 'Deallocated bin from route successfully'
+    return HttpResponse(json.dumps(response_data),content_type="application/json")
 
 def get_bin_location_from_route(request):
-    rt = Route.objects.get(code=request.GET['id']) 
+    rt = Route.objects.get(code=request.GET['id'])
 
     all_bins_from_route = list()
-    for each_bin in rt.bins.all(): 
+    for each_bin in rt.bins.filter(is_active='t'):
         each_bin_data = dict()
         each_bin_data['name'] = each_bin.name
         each_bin_data['code'] = each_bin.code
@@ -170,16 +170,16 @@ def get_bin_location_from_route(request):
     response_data=dict()
     response_data['status'] = 'success'
     #response_data['data'] = [all_bins_from_route[0],all_bins_from_route[-1]] 
-    response_data['data'] = all_bins_from_route 
-    return HttpResponse(json.dumps(response_data),content_type="application/json") 
+    response_data['data'] = all_bins_from_route
+    return HttpResponse(json.dumps(response_data),content_type="application/json")
 
 def reorder_bins(request):
-    bns = request.GET.getlist('bins[]') 
+    bns = request.GET.getlist('bins[]')
     bins  = list(map(lambda bn : Bin.objects.get(pk=bn) ,bns))
     for sequence,each_bin in enumerate(bins,start=1):
-        rt_code,earlier_sequence = each_bin.code.split('_'); 
-        bn_code_changed =  rt_code + '_' + sequence 
-        each_bin.code = bn_code_changed 
+        rt_code,earlier_sequence = each_bin.code.split('_');
+        bn_code_changed =  rt_code + '_' + sequence
+        each_bin.code = bn_code_changed
         each_bin.save()
 
 #    rt = bn.route
@@ -192,7 +192,7 @@ def reorder_bins(request):
 
     response_data=dict()
     response_data['status'] = 'success'
-    response_data['data'] = 'Deallocated bin from route successfully' 
+    response_data['data'] = 'Deallocated bin from route successfully'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
 #########################################upload#############################################    
@@ -203,17 +203,17 @@ def upload_bin_data(request):
         wb = load_workbook(filename = excel_file)
         ws = wb['Sheet1']
         excel_data = list()
-        header= ['name', 'latitude','longitude','code','tag','bin_location','bin_fence'] 
+        header= ['name', 'latitude','longitude','code','tag','bin_location','bin_fence']
 
         for row in ws.iter_rows(min_row=2,max_col=7):
             row_content = list()
             for cell in row:
                 row_content.append(cell.value)
-                
+
             if not row_content[0]:
                 continue
 
-            if row_content[2] and row_content[1]: 
+            if row_content[2] and row_content[1]:
                 row_content[2] = re.sub(r'[^\.\d]','',str(row_content[2]))
                 row_content[1] = re.sub(r'[^\.\d]','',str(row_content[1]))
                 row_content[3] = random_string(6)
@@ -248,7 +248,7 @@ def upload_bin_data(request):
     return render(request,'swmadmin/upload_bin_data.html',{})
 
 
-def upload_routes_and_bin_data(request):
+def upload_routes_and_bin_data2(request):
     if request.method == 'POST':
         excel_file = request.FILES["bin_excel_file"]
         wb = load_workbook(filename = excel_file)
@@ -375,7 +375,109 @@ def upload_routes_and_bin_data(request):
             else:
                 pass
 
-        return redirect('/routes') 
+        return redirect('routes') 
+    return render(request,'swmadmin/upload_bin_data.html',{})
+
+def upload_routes_and_bin_data(request):
+    if request.method == 'POST':
+        excel_file         = request.FILES["bin_excel_file"]
+        wb                 = load_workbook(filename = excel_file)
+        ws                 = wb['routes']
+        bins               = list()
+        routes             = list()
+        routes_from_file   = list()
+        routes_from_excel  = dict()
+        all_wards          = dict()
+        route_failure_geo  = 0
+        route_failure_ward = 0
+        bin_header         = ['name','latitude','longitude','code','tag','bin_location','bin_fence','route','ward']
+        route_header       = ['name','code','route_fence']
+        bins_routes_info   = dict()
+
+        for row in ws.iter_rows(min_row=2,max_col=6):
+            row_content = list()
+            if row[0].value is not None:
+                for cell in row:
+                    cell_content = cell.value
+                    #just to replace hyphen with underscore all places
+                    cell_content = re.sub('-','_',str(cell_content))
+                    row_content.append(cell_content)
+            else:
+                continue
+
+            name_of_bin,lon,lat        = [row_content[2],row_content[4],row_content[3]]
+            route_name,route_code,ward = [row_content[0],row_content[0],row_content[5]]
+            bin_code,bin_tag           = '',''
+
+            if route_code not in routes_from_excel:
+                bins_routes_info[route_code]=dict()
+                bins_routes_info[route_code]['status']=1
+                bins_routes_info[route_code]['bins'] = list()
+                bins_routes_info[route_code]['route_info'] = dict()
+                routes_from_excel[route_code]=0
+
+            if lat and lon:
+                location =Point(float(lon),float(lat))
+                try:
+                    #check if bin lies within ward	
+                    #ward_of_bin = Ward.objects.filter(is_active=True).filter(ward_fence__contains=location).get()
+                    ward_of_bin = Ward.objects.get(code=ward)
+                    if ward_of_bin.ward_fence.contains(location):
+                        routes_from_excel[route_code]+=1
+                        lat = re.sub(r'[^\.\d]','',str(lat))
+                        lon = re.sub(r'[^\.\d]','',str(lon))
+                        if re.match("[a-z][A-Z]+ ",row_content[1]):
+                            rt_for_bin='_'.join(row_content[1].split('_')[:-1])
+                            seq_number= row_content[1].split('_').pop().zfill(3)
+                            bin_with_seq_number= str(rt_for_bin) + '_' + str(seq_number)
+                            bin_code = bin_with_seq_number
+                        else:
+                            rt_for_bin=row_content[0]
+                            seq_number= str(routes_from_excel[route_code]).zfill(3)
+                            bin_with_seq_number= str(rt_for_bin) + '_' + str(seq_number)
+                            bin_code = bin_with_seq_number
+
+                        buffer_width = float(5 / 40000000.0 * 360.0)
+                        bin_fence = location.buffer(buffer_width)
+                        bins.append(dict(zip(bin_header,[name_of_bin,lat,lon,bin_code,bin_tag,location,bin_fence,'',ward_of_bin])))
+                        bins_routes_info[route_code]['bins'].append(dict(zip(bin_header,[name_of_bin,lat,lon,bin_code,bin_tag,location,bin_fence,'',ward_of_bin])))
+                        if route_code not in routes_from_file:
+                            routes_from_file.append(route_code)
+                            routes.append(dict(zip(route_header,[route_name,route_code,''])))
+                            bins_routes_info[route_code]['route_info'] = dict(zip(route_header,[route_name,route_code,'']))
+                    else:
+                        bins_routes_info[route_code]['status']=0
+                        bins_routes_info[route_code]['bins'].clear()
+                        continue
+                except ObjectDoesNotExist as den:
+                    print(den)
+            else:
+                continue
+
+        all_routes = list()
+        for each_route in bins_routes_info:
+            if bins_routes_info[each_route]['status'] == 1 and len(bins_routes_info[each_route]['bins']) > 1:
+                try:
+                    rt =  Route.objects.create(**bins_routes_info[each_route]['route_info']);
+                    rt.created_by = request.user
+                    rt.created_at = timezone.now()
+                    rt.save()
+                    for each_bin in bins_routes_info[each_route]['bins']:
+                        each_bin['route']= rt
+                        bn =  Bin.objects.create(**each_bin)
+                    route_path = LineString([each_bin.bin_location for each_bin in rt.bins.all()])
+                    ward_of_route = Ward.objects.filter(is_active=True).filter(ward_fence__contains=route_path).get()
+                    rt.route_fence=route_path
+                    rt.ward=ward_of_route
+                    rt.save()
+                except Exception as e:
+                    print ("Error occurred while creating route " + str(e))
+                else:
+                    all_routes.append(rt)
+            else:
+                messages.error(request, f'Failed to create {each_route} either bin outside of ward or route parameters incorrects')
+
+        return render(request,'swmadmin/upload_bin_data.html',{})
     return render(request,'swmadmin/upload_bin_data.html',{})
 
 def upload_stop_station_data(request):
@@ -390,7 +492,7 @@ def upload_stop_station_data(request):
             for feat in layer:
                 st_name = feat.get('name')
                 geom = feat.geom
-                if layer.name == 'MLC': 
+                if layer.name == 'MLC':
                     try:
                         st_ward = Ward.objects.get(code=feat.get('ward'))
                     except Exception as e:
@@ -896,7 +998,7 @@ class RouteCreateView(CreateView):
                 bin_data['route'] = Route
                 bin_data['ward']  = Route.ward
                 BIN =  Bin.objects.create(**bin_data);
-        
+
         return redirect('routes')
 
 class RouteUpdateView(UpdateView):
@@ -934,17 +1036,25 @@ class RouteUpdateView(UpdateView):
 #                bin_data['route'] = Route
 #                bin_data['ward']  = Route.ward
 #                BIN =  Bin.objects.create(**bin_data);
-        
+
         return redirect('routes')
 
 class RouteListView(ListView):
-    model = Route 
+    model = Route
     context_object_name='routes'
     template_name = 'swmadmin/routes2.html'
 
     def get_queryset(self):
         qs = super(RouteListView,self).get_queryset().filter(is_active=True).order_by('name')
         return qs
+
+    def get_context_data(self, *args, **kwargs):
+        # Call the base implementation first to get a context
+        context = super(RouteListView, self).get_context_data(*args, **kwargs)
+        # add whatever to your context:
+        context['whatever'] = messages
+        return context
+
 
 ####################################Vehicle#######################################################
 

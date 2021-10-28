@@ -26,6 +26,10 @@ SHIFT = (
         ('3', "Night"),
     )
 
+class CustomManager(models.Manager):
+    def get_queryset(self):
+            return super().get_queryset().filter(is_active=True)
+
 class Contractor(models.Model):
     name         = models.CharField(max_length=20)
     user         = models.OneToOneField(User,on_delete=models.CASCADE,null=True)
@@ -39,6 +43,8 @@ class Contractor(models.Model):
     created_by   = models.ForeignKey(User, related_name='+',on_delete=models.PROTECT,verbose_name ='Created by',null=True )
     updated_at   = models.DateTimeField(auto_now=True,null=True,blank=True)
     updated_by   = models.ForeignKey(User,related_name='+',on_delete=models.PROTECT,verbose_name='Updated by', null=True)
+
+    objects     = CustomManager()
 
     class Meta:
         db_table = "contractors"
@@ -56,6 +62,8 @@ class Route(models.Model):
     created_by   = models.ForeignKey(User, related_name='+',on_delete=models.PROTECT,verbose_name ='Created by',null=True )
     updated_at   = models.DateTimeField(auto_now=True,null=True,blank=True)
     updated_by   = models.ForeignKey(User,related_name='+',on_delete=models.PROTECT,verbose_name='Updated by', null=True)
+
+    objects     = CustomManager()
 
     class Meta:
         db_table = "routes"
@@ -86,6 +94,8 @@ class Vehicle(models.Model):
     updated_at        = models.DateTimeField(auto_now=True,null=True,blank=True)
     updated_by        = models.ForeignKey(User,related_name='+',on_delete=models.PROTECT,verbose_name='Updated by', null=True)
 
+    objects           = CustomManager()
+
     class Meta:
         db_table = "vehicles"
         ordering = ['plate_number',]
@@ -100,6 +110,8 @@ class Halt(models.Model):
     created_by = models.ForeignKey(User, related_name='+',on_delete=models.PROTECT,verbose_name ='Created by',null=True )
     updated_at = models.DateTimeField(auto_now=True,null=True,blank=True)
     updated_by = models.ForeignKey(User,related_name='+',on_delete=models.PROTECT,verbose_name='Updated by', null=True)
+
+    objects     = CustomManager()
 
     class Meta:
         db_table = "halts"
@@ -120,7 +132,7 @@ class Stop_station(Halt):
         return self.name
 
 class Bin(Halt):
-    code        = models.CharField(max_length=25, unique=True,null=True, blank=True)
+    code        = models.CharField(max_length=25, null=True, blank=True)
     tag         = models.CharField(max_length=50,null=True, blank=True)
     longitude   = models.DecimalField(max_digits=9, decimal_places=6,default=0,blank=True)
     latitude    = models.DecimalField(max_digits=9, decimal_places=6,default=0,blank=True)
@@ -144,6 +156,8 @@ class Route_schedule(models.Model):
     updated_at  = models.DateTimeField(auto_now=True,null=True,blank=True)
     updated_by  = models.ForeignKey(User,related_name='+',on_delete=models.PROTECT,verbose_name='Updated by', null=True)
 
+    objects     = CustomManager()
+
     class Meta:
         db_table = "route_schedules"
 
@@ -158,7 +172,7 @@ class Ward_Contractor_Mapping(models.Model):
 
     class Meta:
         db_table = "ward_contractor_mappings"
-   
+
 class Vehicle_Garage_Mapping(models.Model):
     vehicle     = models.OneToOneField(Vehicle,on_delete=models.CASCADE,null=True)
     garage      = models.ForeignKey(Stop_station,on_delete=models.CASCADE,null=True,limit_choices_to={'is_garage': True} )
@@ -167,6 +181,8 @@ class Vehicle_Garage_Mapping(models.Model):
     created_by  = models.ForeignKey(User, related_name='+',on_delete=models.PROTECT,verbose_name ='Created by')
     updated_at  = models.DateTimeField(auto_now=True,null=True,blank=True,verbose_name ='Updated at')
     updated_by  = models.ForeignKey(User,related_name='+',on_delete=models.PROTECT,verbose_name ='Updated by',null=True) 
+
+    objects     = CustomManager()
 
     class Meta:
         db_table = "vehicle_garage_mappings"
@@ -181,6 +197,8 @@ class Installation(models.Model):
     created_by  = models.ForeignKey(User, related_name='+',on_delete=models.PROTECT,verbose_name ='Created by')
     updated_at  = models.DateTimeField(auto_now=True,null=True,blank=True,verbose_name ='Updated at')
     updated_by  = models.ForeignKey(User,related_name='+',on_delete=models.PROTECT,verbose_name ='Updated by',null=True)   
+
+    objects     = CustomManager()
 
     class Meta:
         db_table = "installations"

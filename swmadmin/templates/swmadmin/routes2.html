@@ -112,9 +112,66 @@
 	    iconSize: [24, 30],
 	});
 
+    function deallocate_bin(bin){
+            var tr = $("#"+bin);
+            if (tr.siblings().length < 2 ){
+                alert("Bins deallocation is not possible for 2 bins route")
+                return false;
+            }
+
+            $.ajax({
+                type:'GET',						
+                url:'{% url "deallocate_bin_from_route" %}',
+                data: {
+                    'id':bin 
+                },
+                beforeSend: function(xhr) {
+                    xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+                },
+                success:function(res){
+                     var resp = res.data;
+                     tr.find('td').fadeOut(1000,function(){
+                        if( tr.is(":not(:last-child)") ){
+                            tr.nextAll().each(function(index,each_tr){
+                                //console.log(each_tr);
+                            });
+                        }
+                        tr.remove();
+                     });
+                },
+                error:function(a,b,c){
+                    alert(b);
+                    alert(c);					
+                }						
+
+            });
+    }
+
 	$(document).ready(function(){
         $('table').tablesorter({theme:'metro-dark'});
 		$("div.view_bins").click(function(){
+            let rt_id = ($(this).find('a:first').attr('class').split('_'))[2];
+            $('table[id^=bins_from_'+ rt_id +']').find('tbody').empty();
+            $.ajax({
+                type:'GET',						
+                url:'{% url "get_bins_from_route" %}',
+                data: {
+                    'id':rt_id 
+                },
+                beforeSend: function(xhr) {
+                    xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+                },
+                success:function(res){
+                    var resp = res.data;
+                    $.each(resp, function(i, bin) {
+                        $('table[id^=bins_from_'+ rt_id +']').find('tbody').append('<tr id='+ bin.id +'><td>'+ eval(i + 1) +'</td><td>'+ bin.name +'</td><td><input type="button" value="Deallocate" onclick="deallocate_bin('+ bin.id +')" id="'+ bin.id +'" class="deallocate_bins float-right"></td></tr>');
+                     });
+                },
+                error:function(a,b,c){
+                    alert(b);
+                    alert(c);					
+                }						
+            });
 			$("div.bin_info").each(function(i,elem){
 				if($(elem).is(":visible")){
 					$(elem).hide();
@@ -351,7 +408,7 @@
 		$(this).parent().hide();
 	});
 
-	$("input[class^='deallocate_bins']").click(function(event) {
+	$("input[class='deallocate_bins']").click(function(event) {
 		var bin = $(this).attr('id');
 		var tr  = $(this).closest('tr');
 

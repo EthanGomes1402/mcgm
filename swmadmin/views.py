@@ -173,6 +173,21 @@ def get_bin_location_from_route(request):
     response_data['data'] = all_bins_from_route
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+def get_bins_from_route(request):
+    rt = Route.objects.get(id=request.GET['id'])
+
+    all_bins_from_route = list()
+    for each_bin in rt.bins.all():
+        each_bin_data = dict()
+        each_bin_data['name'] = each_bin.name
+        each_bin_data['id']   = each_bin.id
+        all_bins_from_route.append(each_bin_data)
+
+    response_data=dict()
+    response_data['status'] = 'success'
+    response_data['data'] = all_bins_from_route
+    return HttpResponse(json.dumps(response_data),content_type="application/json")
+
 def reorder_bins(request):
     bns = request.GET.getlist('bins[]')
     bins  = list(map(lambda bn : Bin.objects.get(pk=bn) ,bns))

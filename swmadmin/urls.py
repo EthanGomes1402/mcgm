@@ -31,6 +31,8 @@ urlpatterns = [
     path('ajax/deallocate_bin_from_route/',views.deallocate_bin_from_route,name='deallocate_bin_from_route'),
     path('ajax/reorder_bins/',views.reorder_bins,name='reorder_bins'),
     path('ajax/get_bin_location_from_route/',views.get_bin_location_from_route,name='get_bin_location_from_route'),
+    path('ajax/get_bins_from_route/',views.get_bins_from_route,name='get_bins_from_route'),
+
 
     #all edit urls
     path('bin/edit/<int:pk>/',views.BinUpdateView.as_view(),name='edit_bin'),

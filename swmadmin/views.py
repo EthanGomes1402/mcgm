@@ -125,8 +125,10 @@ def allocate_bins_to_route(request):
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
 def deallocate_bin_from_route(request):
-    bn = Bin.objects.get(pk=request.GET['id'])
-    rt = bn.route
+    bn        = Bin.objects.get(pk=request.GET['id'])
+    rt        = bn.route
+    bn.code   = None
+    bn.save()
     rt.bins.remove(bn)
 
     if rt.bins.all().count() > 1 :
@@ -135,21 +137,16 @@ def deallocate_bin_from_route(request):
         linestring = None
 
     rt.route_fence = linestring
-    bn.code = None
-    bn.route= None
-    bn.save()
-    rt.save()
-
-    for each_bin in rt.bins.all():
-        each_bin.code = None
-        each_bin.save()
 
     sequence = 0
     for each_bin in rt.bins.all():
+        each_bin.code = None
         sequence = sequence + 1
         bn_code_changed =  rt.code + '_' + str(sequence).zfill(3)
         each_bin.code = bn_code_changed
         each_bin.save()
+
+    rt.save()
 
     response_data=dict()
     response_data['status'] = 'success'
@@ -160,7 +157,7 @@ def get_bin_location_from_route(request):
     rt = Route.objects.get(code=request.GET['id'])
 
     all_bins_from_route = list()
-    for each_bin in rt.bins.filter(is_active='t'):
+    for each_bin in rt.bins.all():
         each_bin_data = dict()
         each_bin_data['name'] = each_bin.name
         each_bin_data['code'] = each_bin.code
@@ -179,9 +176,11 @@ def get_bins_from_route(request):
     all_bins_from_route = list()
     for each_bin in rt.bins.all():
         each_bin_data = dict()
-        each_bin_data['name'] = each_bin.name
+        each_bin_data['name'] = each_bin.code
         each_bin_data['id']   = each_bin.id
         all_bins_from_route.append(each_bin_data)
+
+    print(all_bins_from_route) 
 
     response_data=dict()
     response_data['status'] = 'success'
@@ -1003,7 +1002,7 @@ class RouteCreateView(CreateView):
         if Route.route_fence:
             for sequence,point in enumerate(Route.route_fence.coords,start=1):
                 bin_data= dict()
-                bin_data['name'] = str(Route.code) + '_' + str(f'{sequence:03}')
+                bin_data['name'] = str(Route.code) + '_' + str(f'{sequence:04}')
                 bin_data['code'] = str(Route.code) + '_' + str(f'{sequence:03}')
                 bin_data['latitude']  = point[0] 
                 bin_data['longitude']  = point[1]

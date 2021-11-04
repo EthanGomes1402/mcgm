@@ -163,6 +163,7 @@
                 },
                 success:function(res){
                     var resp = res.data;
+                    console.log(resp);
                     $.each(resp, function(i, bin) {
                         $('table[id^=bins_from_'+ rt_id +']').find('tbody').append('<tr id='+ bin.id +'><td>'+ eval(i + 1) +'</td><td>'+ bin.name +'</td><td><input type="button" value="Deallocate" onclick="deallocate_bin('+ bin.id +')" id="'+ bin.id +'" class="deallocate_bins float-right"></td></tr>');
                      });
@@ -245,7 +246,7 @@
 					bin = L.geoJSON(Bin,{
 						pointToLayer : function(geoJsonPoint, latlng){
 							bins_from_route.push(latlng);
-							return L.marker(latlng,{icon : bin_icon }).bindPopup('<b>' + bin.code.split('_').pop() + '  ' + bin.name + '</b>' );
+							return L.marker(latlng,{icon : bin_icon }).bindPopup('<b>' + bin.code.split('_').pop() + '  ' + bin.code + '</b>' );
 						}
 					}).addTo(mymap);
 					 
@@ -408,6 +409,7 @@
 		$(this).parent().hide();
 	});
 
+/*
 	$("input[class='deallocate_bins']").click(function(event) {
 		var bin = $(this).attr('id');
 		var tr  = $(this).closest('tr');
@@ -443,7 +445,8 @@
 			}						
 
 		});
-	})
+	});
+*/
 
 	$("div.add_view_bins").click(function(e){
 		e.preventDefault();

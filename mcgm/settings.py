@@ -116,7 +116,8 @@ DATABASES = {
         'ENGINE': 'psqlextra.backend',
         'NAME': 'mcgm_testing_sample',
         'USER': 'mcgm',
-        'PASSWORD':'mcgm'
+        'PASSWORD':'mcgm',
+        'HOST': 'localhost'
     }
 }
 

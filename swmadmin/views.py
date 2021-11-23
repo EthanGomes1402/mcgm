@@ -494,6 +494,131 @@ def upload_routes_and_bin_data(request):
         return render(request,'swmadmin/upload_bin_data.html',{})
     return render(request,'swmadmin/upload_bin_data.html',{})
 
+def upload_routes_and_bin_with_endpoints(request):
+    if request.method == 'POST':
+        excel_file         = request.FILES["bin_excel_file"]
+        wb                 = load_workbook(filename = excel_file)
+        ws                 = wb['routes']
+        bins               = list()
+        routes             = list()
+        routes_from_file   = list()
+        routes_from_excel  = dict()
+        all_wards          = dict()
+        route_failure_geo  = 0
+        route_failure_ward = 0
+        bin_header         = ['name','latitude','longitude','code','tag','bin_location','bin_fence','route','ward']
+        route_header       = ['name','code','route_fence']
+        bins_routes_info   = dict()
+
+        for row in ws.iter_rows(min_row=2,max_col=6):
+            row_content = list()
+            if row[0].value is not None:
+                for cell in row:
+                    cell_content = cell.value
+                    #just to replace hyphen with underscore all places
+                    cell_content = re.sub('-','_',str(cell_content))
+                    row_content.append(cell_content)
+            else:
+                continue
+
+            name_of_bin,lon,lat        = [row_content[2],row_content[4],row_content[3]]
+            route_name,route_code,ward = [row_content[0],row_content[0],row_content[5]]
+            bin_code,bin_tag           = [row_content[1],'']
+
+            if route_code not in routes_from_excel:
+                bins_routes_info[route_code]               = dict()
+                bins_routes_info[route_code]['status']     = 1
+                bins_routes_info[route_code]['start']      = 1
+                bins_routes_info[route_code]['end']        = 1
+                bins_routes_info[route_code]['bins']       = list()
+                bins_routes_info[route_code]['route_info'] = dict()
+                routes_from_excel[route_code]              = 0
+
+            if lat and lon:
+                location =Point(float(lon),float(lat))
+                try:
+                    #check if bin lies within ward	
+                    #ward_of_bin = Ward.objects.filter(is_active=True).filter(ward_fence__contains=location).get()
+                    ward_of_bin = Ward.objects.get(code=ward)
+                    if ward_of_bin.ward_fence.contains(location):
+                        routes_from_excel[route_code]+=1
+                        lat = re.sub(r'[^\.\d]','',str(lat))
+                        lon = re.sub(r'[^\.\d]','',str(lon))
+                        if re.match("[a-z][A-Z]+ ",row_content[1]):
+                            rt_for_bin='_'.join(row_content[1].split('_')[:-1])
+                            seq_number= row_content[1].split('_').pop().zfill(3)
+                            bin_with_seq_number= str(rt_for_bin) + '_' + str(seq_number)
+                            bin_code = bin_with_seq_number
+                        else:
+                            rt_for_bin=row_content[0]
+                            seq_number= str(routes_from_excel[route_code]).zfill(3)
+                            bin_with_seq_number= str(rt_for_bin) + '_' + str(seq_number)
+                            bin_code = bin_with_seq_number
+
+                        buffer_width = float(5 / 40000000.0 * 360.0)
+                        bin_fence = location.buffer(buffer_width)
+                        bins.append(dict(zip(bin_header,[name_of_bin,lat,lon,bin_code,bin_tag,location,bin_fence,'',ward_of_bin])))
+                        bins_routes_info[route_code]['bins'].append(dict(zip(bin_header,[name_of_bin,lat,lon,bin_code,bin_tag,location,bin_fence,'',ward_of_bin])))
+                        if route_code not in routes_from_file:
+                            routes_from_file.append(route_code)
+                            routes.append(dict(zip(route_header,[route_name,route_code,''])))
+                            bins_routes_info[route_code]['route_info'] = dict(zip(route_header,[route_name,route_code,'']))
+                    else:
+                        bins_routes_info[route_code]['status']=0
+                        bins_routes_info[route_code]['bins'].clear()
+                        continue
+                except ObjectDoesNotExist as den:
+                    print(den)
+            else:
+                if bin_code.endswith('SS'):
+                    ward_of_mlc = Ward.objects.get(code=ward)
+                    start_point = Stop_station.objects.filter(is_mlc=True).filter(name=name_of_bin)
+                    mlc_centre  = wkt.loads(str(start_point.stop_station_fence.wkt))
+                    mlc_centre  = Point(float(mlc_centre.centroid.coords[0][0]), float(mlc_centre.centroid.coords[0][1]))
+                    if ward_of_mlc.ward_fence.contains(start_point.stop_station_fence):
+                        bins_routes_info[route_code]['start'] = mlc_centre
+                    else:
+                        bins_routes_info[route_code]['status']=0
+
+                if bin_code.endswith('EE'):
+                    ward_of_cp = Ward.objects.get(code=ward)
+                    end_point = Stop_station.objects.filter(is_chkpst=True).filter(name=name_of_bin)
+                    cp_centre  = wkt.loads(str(end_point.stop_station_fence.wkt))
+                    cp_centre  = Point(float(cp_centre.centroid.coords[0][0]), float(cp_centre.centroid.coords[0][1]))
+                    if ward_of_cp.ward_fence.contains(end_point.stop_station_fence):
+                        bins_routes_info[route_code]['end'] = cp_centre
+                    else:
+                        bins_routes_info[route_code]['status']=0
+
+        all_routes = list()
+        for each_route in bins_routes_info:
+            if bins_routes_info[each_route]['status'] == 1 and len(bins_routes_info[each_route]['bins']) > 1:
+                try:
+                    rt =  Route.objects.create(**bins_routes_info[each_route]['route_info']);
+                    rt.created_by = request.user
+                    rt.created_at = timezone.now()
+                    rt.save()
+                    for each_bin in bins_routes_info[each_route]['bins']:
+                        each_bin['route']= rt
+                        bn =  Bin.objects.create(**each_bin)
+                    route_path = LineString([ each_bin.bin_location for each_bin in rt.bins.all()])
+                    #route_path = LineString([ bins_routes_info[route_code]['start'],each_bin.bin_location for each_bin in rt.bins.all(),bins_routes_info[route_code]['end']])
+
+                    ward_of_route = Ward.objects.filter(is_active=True).filter(ward_fence__contains=route_path).get()
+                    rt.route_fence=route_path
+                    rt.ward=ward_of_route
+                    rt.save()
+                except Exception as e:
+                    print ("Error occurred while creating route " + str(e))
+                else:
+                    all_routes.append(rt)
+            else:
+                messages.error(request, f'Failed to create {each_route} either bin outside of ward or route parameters incorrects')
+
+        return render(request,'swmadmin/upload_bin_data.html',{})
+    return render(request,'swmadmin/upload_bin_data.html',{})
+
+
 def upload_stop_station_data(request):
     if request.method == 'POST':
         mykmlfile = request.FILES["excel_file"]
@@ -638,7 +763,7 @@ def upload_installation_data(request):
                 print ("error occurred while adding installation" + str(e))
 
         #print(installation_data)
-        return redirect('installations') 
+        return redirect('installations')
     return render(request,'swmadmin/upload_installation_data.html',{})
 
 def upload_route_schedule_data(request):
@@ -647,26 +772,26 @@ def upload_route_schedule_data(request):
         wb = load_workbook(filename = excel_file)
         ws = wb['route_schedule']
         route_schedule_data = list()
-        header= ['route','vehicle','shift'] 
+        header= ['route','vehicle','shift']
 
         for row in ws.iter_rows(min_row=1,max_col=3):
             row_content = list()
             for cell in row:
                 row_content.append(cell.value)
-                
+
             if not row_content[0]:
                 continue
 
-            if row_content[0] and row_content[1] and row_content[2]: 
+            if row_content[0] and row_content[1] and row_content[2]:
                 try:
-                    vehicle = Vehicle.objects.get(plate_number=row_content[1]) 
+                    vehicle = Vehicle.objects.get(plate_number=row_content[1])
                 except Vehicle.DoesNotExist:
                     vehicle = None
 
                 try:
-                    rt = Route.objects.get(code=row_content[0]) 
+                    rt = Route.objects.get(code=row_content[0])
                 except Route.DoesNotExist:
-                    rt = None                   
+                    rt = None
 
                 if not vehicle:
                     print(f"vehice {row_content[1]} does not exists")

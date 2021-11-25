@@ -95,7 +95,7 @@ class NewBinForm(forms.ModelForm):
     name = forms.CharField(label = 'Name : ')
     bin_location = forms1.gis.PointField(widget=PointWidget,required=False)
     class Meta:
-        model= Bin 
+        model= Bin
         fields=['name','tag','bin_location']
 
 class BinEditForm(NewBinForm):
@@ -107,7 +107,7 @@ class NewRouteForm(forms.ModelForm):
     route_fence = forms1.gis.LineStringField(widget=LineStringWidget(attrs={ 'map_width': 1050,'map_height': 1050 }),required=False)
 
     class Meta:
-        model= Route 
+        model= Route
         fields=['name','code','route_fence']
 
 class RouteEditForm(NewRouteForm):
@@ -123,7 +123,7 @@ class NewVehicleForm(forms.ModelForm):
     ward = forms.ModelChoiceField(queryset = Ward.objects.filter(is_active='t').order_by('name'),required=False)
 
     class Meta:
-        model= Vehicle 
+        model= Vehicle
         fields=['plate_number','engine_number','chassis_number','maker','vehicle_type','manufactured_year', 'contractor','ward']
 
 class VehicleEditForm(NewVehicleForm):
@@ -131,41 +131,43 @@ class VehicleEditForm(NewVehicleForm):
 
 class NewStopStationForm(forms.ModelForm):
     name = forms.CharField(label = 'Name :')
-    is_mlc    = forms.BooleanField(required=False) 
+    is_mlc    = forms.BooleanField(required=False)
     is_chkpst = forms.BooleanField(required=False)
     is_tnsstn = forms.BooleanField(required=False)
     is_dmpgnd = forms.BooleanField(required=False)
     is_garage = forms.BooleanField(required=False)
     ward = forms.ModelChoiceField(queryset = Ward.objects.filter(is_active='t').order_by('name'),required=False)
-    stop_station_fence =forms1.gis.PolygonField(widget=PolygonWidget(attrs={ 'map_width': 1050,'map_height': 1050 }),required=False) 
+    stop_station_fence =forms1.gis.PolygonField(widget=PolygonWidget(attrs={ 'map_width': 1050,'map_height': 1050 }),required=False)
     class Meta:
-        model= Stop_station 
+        model= Stop_station
         fields=['name','is_mlc','is_chkpst','is_tnsstn','is_dmpgnd','is_garage','ward','stop_station_fence']
 
 class StopStationEditForm(NewStopStationForm):
     pass
 
 class NewRouteScheuleForm(forms.ModelForm):
-    name = forms.CharField(label = 'Name :')
-    shift = forms.ChoiceField(choices=SHIFT)
+    name     = forms.CharField(label = 'Name :')
+    shift    = forms.ChoiceField(choices=SHIFT,label = 'Shift :')
+    mlc      = forms.ModelChoiceField(queryset = Stop_station.objects.filter(is_mlc='t').order_by('name'),required=False,label = 'MLC :')
+    chkpst   = forms.ModelChoiceField(queryset = Stop_station.objects.filter(is_chkpst='t').order_by('name'),required=False, label = 'CHECKPOST :')
 
     class Meta:
-        model= Route_schedule 
-        fields=['name','shift','route','vehicle']
+        model= Route_schedule
+        fields=['name','route','shift','vehicle','mlc','chkpst' ]
 
 class RouteScheduleEditForm(NewRouteScheuleForm):
     pass
 
 class NewContractorForm(forms.ModelForm):
     name = forms.CharField(label = 'Name :')
-    company_name = forms.CharField(label = 'Company Name :')
+    company_name = forms.CharField(label = 'Company :')
     telephone = forms.CharField(label = 'Telephone :')
     mobile = forms.CharField(label = 'Mobile :')
     fax = forms.CharField(label = 'Fax :',required=False)
     email = forms.CharField(label = 'Email :')
 
     class Meta:
-        model= Contractor 
+        model= Contractor
         fields=['name','user','company_name','telephone','mobile','fax','email']
 
 class ContractorEditForm(NewContractorForm):
@@ -176,7 +178,7 @@ class NewWCMForm(forms.ModelForm):
     contractor = forms.ModelChoiceField(queryset = Contractor.objects.filter(is_active='t'))
 
     class Meta:
-        model= Ward_Contractor_Mapping 
+        model= Ward_Contractor_Mapping
         fields=['ward','contractor']
 
 class WCMEditForm(NewWCMForm):
@@ -187,7 +189,7 @@ class NewVGMForm(forms.ModelForm):
     garage   = forms.ModelChoiceField(queryset = Stop_station.objects.filter(is_active='t').filter(is_garage=True))
 
     class Meta:
-        model= Vehicle_Garage_Mapping 
+        model= Vehicle_Garage_Mapping
         fields=['vehicle','garage']
 
 class VGMEditForm(NewVGMForm):
@@ -200,7 +202,7 @@ class NewInstallationForm(forms.ModelForm):
     wnld_tag = forms.CharField(label = 'Windschield Tag :')
 
     class Meta:
-        model= Installation 
+        model= Installation
         fields=['vehicle','imei','sim','wnld_tag']
 
 class InstallationEditForm(NewInstallationForm):

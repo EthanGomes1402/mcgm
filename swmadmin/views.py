@@ -772,9 +772,11 @@ def upload_route_schedule_data(request):
         wb = load_workbook(filename = excel_file)
         ws = wb['route_schedule']
         route_schedule_data = list()
-        header= ['route','vehicle','shift']
+        header= ['name','route','vehicle','shift','mlc','chkpst']
 
-        for row in ws.iter_rows(min_row=1,max_col=3):
+
+        for row in ws.iter_rows(min_row=2,max_col=6):
+            ward_of_rs,vehicle,cp,mlc,rt = None,None,None,None,None
             row_content = list()
             for cell in row:
                 row_content.append(cell.value)
@@ -782,65 +784,64 @@ def upload_route_schedule_data(request):
             if not row_content[0]:
                 continue
 
-            if row_content[0] and row_content[1] and row_content[2]:
+            try:
+                ward_of_route = (row_content[0].split("_"))[0][:-1]
+                if len(ward_of_route) == 1:
+                    ward_of_rs = Ward.objects.get(code=ward_of_route)
+                else:
+                    ward_of_route = ward_of_route[:1] + '/' + ward_of_route[1:]
+                    ward_of_rs = Ward.objects.get(code=ward_of_route)
+            except Ward.DoesNotExist:
+                continue
+
+            if row_content[1] and row_content[2] and row_content[3] and  row_content[4] and row_content[5]:
                 try:
-                    vehicle = Vehicle.objects.get(plate_number=row_content[1])
+                    vehicle = Vehicle.objects.get(plate_number=row_content[2])
+                    row_content[2] = vehicle
                 except Vehicle.DoesNotExist:
-                    vehicle = None
+                    continue
 
                 try:
-                    rt = Route.objects.get(code=row_content[0])
+                    rt = Route.objects.get(code=row_content[1])
+                    row_content[1] = rt
                 except Route.DoesNotExist:
-                    rt = None
-
-                if not vehicle:
-                    print(f"vehice {row_content[1]} does not exists")
                     continue
 
-                if not rt:
-                    print(f"route {row_content[0]} does not exists")
+                try:
+                    mlc = Stop_station.objects.get(name=row_content[4])
+                    row_content[4] = mlc
+                except Stop_station.DoesNotExist:
                     continue
 
-                row_content[0] = rt
-                row_content[1] = vehicle 
-                route_schedule_data.append(dict(zip(header,row_content))) 
+                try:
+                    cp = Stop_station.objects.get(name=row_content[5])
+                    row_content[5] = cp
+                except Stop_station.DoesNotExist:
+                    continue
+
+                if len(set([cp.ward,mlc.ward,rt.ward,vehicle.ward])) > 1:
+                    messages.error(request,f'for {row_content[0]} all route,vehicle,mlc,checkpost should be within a ward')
+                    continue
+                else:
+                    if ward_of_rs.ward_fence.contains(route.route_fence) and ward_of_rs.ward_fence.contains(mlc.stop_station_fence) and ward_of_rs.ward_fence.contains(cp.stop_station_fence):
+                        pass
+                    else:
+                        messages.error(request, 'all route,vehicle,mlc,checkpost should be within a ward')
+                        continue
+
+                route_schedule_data.append(dict(zip(header,row_content)))
 
         for each_route_schedule in route_schedule_data:
             try:
-                each_route_schedule['created_by'] = request.user 
+                each_route_schedule['created_by'] = request.user
                 each_route_schedule['created_at']= timezone.now()
                 Route_schedule.objects.create(**each_route_schedule);
             except Exception as e:
                 print ("error occurred while adding route schedule" + str(e))
-
-        return redirect('route_schedules') 
+        messages.success(request, 'all routes schedules added successfuly')
+        return render(request,'swmadmin/upload_route_schedule_data.html',{})
+        #return redirect('route_schedules')
     return render(request,'swmadmin/upload_route_schedule_data.html',{})
-
-def upload_student_data(request):
-    if request.method == 'POST':
-        excel_file = request.FILES["bin_excel_file"]
-        wb = load_workbook(filename = excel_file)
-        ws = wb['Sheet1']
-        excel_data = list()
-        header= list()
-        for row in ws.iter_rows(min_row=1,max_row=1):
-            for cell in row:
-                cell_content=cell.value.lower()
-                re.sub('[^a-zA-Z]','',cell_content)
-                header.append(cell_content)
-
-        print (header)   
-        for row in ws.iter_rows(min_row=2):
-            row_content = list()
-            for cell in row:
-                row_content.append(cell.value)
-            excel_data.append(dict(zip(header,row_content)))    
-
-        for each_record in excel_data:
-            Student.objects.create(**each_record);
-
-        return HttpResponse('---------'+ str(tuple(ws.rows)) + '----------') 
-    return render(request,'upload_student.html',{})
 
 def upload_geos(request):
     if request.method == 'POST':
@@ -889,13 +890,13 @@ def upload_ward_contractor_mapping(request):
         wb = load_workbook(filename = excel_file)
         ws = wb['ward']
         excel_data = list()
-        header= ['ward','contractor' ] 
+        header= ['ward','contractor' ]
 
         for row in ws.iter_rows(min_row=2,max_col=2):
             row_content = list()
             for cell in row:
                 row_content.append(cell.value)
-                
+
             if not row_content[0]:
                 continue
 
@@ -904,17 +905,17 @@ def upload_ward_contractor_mapping(request):
 
             try:
                 row_content[0] =  Ward.objects.get(code=row_content[0])
-                row_content[1] =  Contractor.objects.get(name=row_content[1]) 
-                if row_content[0] and row_content[1]: 
-                    excel_data.append(dict(zip(header,row_content))) 
+                row_content[1] =  Contractor.objects.get(name=row_content[1])
+                if row_content[0] and row_content[1]:
+                    excel_data.append(dict(zip(header,row_content)))
             except Exception as e:
                 print(str(e))
             finally:
-                pass 
+                pass
 
         for each_record in excel_data:
             try:
-                each_record['created_by'] = request.user 
+                each_record['created_by'] = request.user
                 each_record['created_at']= timezone.now()
                 Ward_Contractor_Mapping.objects.create(**each_record);
             except Exception as e:
@@ -1065,22 +1066,31 @@ class BinListView(ListView):
         return qs
 
 #################################RouteSchedule
- 
+
 class RouteScheduleCreateView(CreateView):
     model=Route_schedule
     form_class=NewRouteScheuleForm
-    template_name = 'swmadmin/add_route_schedule.html' 
+    template_name = 'swmadmin/add_route_schedule.html'
     success_url= '/route_schedules/'
 
     def form_valid(self,form):
         route_schedule = form.save(commit=False)
+        route_ward   = form.cleaned_data['route'].ward
+        vehicle_ward = form.cleaned_data['vehicle'].ward
+        mlc_ward     = form.cleaned_data['mlc'].ward
+        chkpst_ward  = form.cleaned_data['chkpst'].ward
+
+        if len(set([route_ward, vehicle_ward,mlc_ward, chkpst_ward])) > 1:
+            form.add_error(None,'Route,Vehicle,MLC and Checkpost must have same ward')
+            return super(RouteScheduleCreateView, self).form_invalid(form)
+
         route_schedule.created_at = timezone.now()
         route_schedule.created_by = self.request.user
         route_schedule.save()
         return redirect('route_schedules')
 
 class RouteScheduleUpdateView(UpdateView):
-    model = Route_schedule 
+    model = Route_schedule
     form_class = RouteScheduleEditForm
     context_object_name= 'route_schedule'
     template_name = 'swmadmin/edit_route_schedule.html'
@@ -1088,20 +1098,28 @@ class RouteScheduleUpdateView(UpdateView):
 
     def form_valid(self,form):
         Route_schedule = form.save(commit=False)
+        route_ward   = form.cleaned_data['route'].ward
+        vehicle_ward = form.cleaned_data['vehicle'].ward
+        mlc_ward     = form.cleaned_data['mlc'].ward
+        chkpst_ward  = form.cleaned_data['chkpst'].ward
+
+        if len(set([route_ward, vehicle_ward,mlc_ward, chkpst_ward])) > 1:
+            form.add_error(None,'Route,Vehicle,MLC and Checkpost must have same ward')
+            return super(RouteScheduleUpdateView, self).form_invalid(form)
         Route_schedule.updated_at = timezone.now()
         Route_schedule.updated_by = self.request.user
         Route_schedule.save()
         return redirect('route_schedules')
 
 class RouteScheduleListView(ListView):
-    model = Route_schedule 
+    model = Route_schedule
     context_object_name='route_schedules'
-    template_name = 'swmadmin/route_schedules.html' 
+    template_name = 'swmadmin/route_schedules.html'
 
     def get_queryset(self):
         qs = super(RouteScheduleListView,self).get_queryset().filter(is_active=True).order_by('name')
         return qs
-    
+
 ###################################Route#############################################################
 
 class RouteCreateView(CreateView):

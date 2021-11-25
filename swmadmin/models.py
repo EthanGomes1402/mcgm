@@ -73,11 +73,11 @@ class Route(models.Model):
 
     def bins_from_route(self):
         bins=serialize('geojson',  self.bins.all() ,geometry_field='bin_location')
-        return bins 
+        return bins
 
     def route_serialized(self):
-        routes = serialize('geojson', [ self ] ,geometry_field='route_fence') 
-        return routes 
+        routes = serialize('geojson', [ self ] ,geometry_field='route_fence')
+        return routes
 
 class Vehicle(models.Model):
     plate_number      = models.CharField(max_length=20, unique=True)
@@ -147,8 +147,10 @@ class Bin(Halt):
 
 class Route_schedule(models.Model):
     name        = models.CharField(max_length=20, unique=True)
-    vehicle     = models.ForeignKey(Vehicle, related_name='route_schedules',on_delete=models.CASCADE) 
-    route       = models.ForeignKey(Route, related_name='route_schedules',on_delete=models.CASCADE) 
+    vehicle     = models.ForeignKey(Vehicle, related_name='route_schedules',on_delete=models.CASCADE)
+    route       = models.ForeignKey(Route, related_name='route_schedules',on_delete=models.CASCADE)
+    mlc         = models.ForeignKey(Stop_station,related_name='start_route_schedules',on_delete=models.CASCADE,null=True,limit_choices_to={'is_mlc': True} )
+    chkpst      = models.ForeignKey(Stop_station,related_name='end_route_schedules',on_delete=models.CASCADE,null=True,limit_choices_to={'is_chkpst': True} )
     shift       = models.CharField(max_length=1, choices=SHIFT,default=1)
     is_active   = models.BooleanField(default=1)
     created_at  = models.DateTimeField(auto_now=True,null=True,blank=True)
@@ -168,7 +170,7 @@ class Ward_Contractor_Mapping(models.Model):
     created_at  = models.DateTimeField(auto_now_add=True,verbose_name ='Created at')
     created_by  = models.ForeignKey(User, related_name='+',on_delete=models.PROTECT,verbose_name ='Created by')
     updated_at  = models.DateTimeField(auto_now=True,null=True,blank=True,verbose_name ='Updated at')
-    updated_by  = models.ForeignKey(User,related_name='+',on_delete=models.PROTECT,verbose_name ='Updated by',null=True) 
+    updated_by  = models.ForeignKey(User,related_name='+',on_delete=models.PROTECT,verbose_name ='Updated by',null=True)
 
     class Meta:
         db_table = "ward_contractor_mappings"
@@ -180,7 +182,7 @@ class Vehicle_Garage_Mapping(models.Model):
     created_at  = models.DateTimeField(auto_now_add=True,verbose_name ='Created at')
     created_by  = models.ForeignKey(User, related_name='+',on_delete=models.PROTECT,verbose_name ='Created by')
     updated_at  = models.DateTimeField(auto_now=True,null=True,blank=True,verbose_name ='Updated at')
-    updated_by  = models.ForeignKey(User,related_name='+',on_delete=models.PROTECT,verbose_name ='Updated by',null=True) 
+    updated_by  = models.ForeignKey(User,related_name='+',on_delete=models.PROTECT,verbose_name ='Updated by',null=True)
 
     objects     = CustomManager()
 
@@ -196,7 +198,7 @@ class Installation(models.Model):
     created_at  = models.DateTimeField(auto_now_add=True,verbose_name ='Created at')
     created_by  = models.ForeignKey(User, related_name='+',on_delete=models.PROTECT,verbose_name ='Created by')
     updated_at  = models.DateTimeField(auto_now=True,null=True,blank=True,verbose_name ='Updated at')
-    updated_by  = models.ForeignKey(User,related_name='+',on_delete=models.PROTECT,verbose_name ='Updated by',null=True)   
+    updated_by  = models.ForeignKey(User,related_name='+',on_delete=models.PROTECT,verbose_name ='Updated by',null=True)
 
     objects     = CustomManager()
 

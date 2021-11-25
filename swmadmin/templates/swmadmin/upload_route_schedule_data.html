@@ -3,6 +3,14 @@
 {% block title %}Upload Route Schedule data {% endblock %}
 
 {% block content %}
+  {% for message in messages %}
+   <div class="alert {{ message.tags }} alert-dismissible" role="alert">
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+    </button>
+    {{ message }}
+   </div>
+  {% endfor %}
   <form method="post" novalidate enctype="multipart/form-data">
     {% csrf_token %}
     <input type="file" title="Upload Installation Data" name="route_schedule_excel_file" style="border:1px solid black; padding: 5px;" required="required">

@@ -1199,7 +1199,7 @@ class RouteUpdateView(UpdateView):
 class RouteListView(ListView):
     model = Route
     context_object_name='routes'
-    template_name = 'swmadmin/routes2.html'
+    template_name = 'swmadmin/routes.html'
 
     def get_queryset(self):
         qs = super(RouteListView,self).get_queryset().filter(is_active=True).order_by('name')

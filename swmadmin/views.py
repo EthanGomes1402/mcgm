@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.contrib.auth.models import User
 from django.http import HttpResponse,JsonResponse
-from .models import Bin,Route,Stop_station,Vehicle,Route_schedule,Contractor,Ward_Contractor_Mapping,Vehicle_Garage_Mapping,Installation 
+from .models import Bin,Route,Stop_station,Vehicle,Route_schedule,Contractor,Ward_Contractor_Mapping,Vehicle_Garage_Mapping,Installation
 from common.models import Ward
 from django.shortcuts import render,redirect,get_object_or_404
 from django.http import Http404
@@ -38,7 +38,7 @@ trans = CoordTransform(gcoord, mycoord)
 #        qs= Vehicle.objects.all()
 #        if self.q:
 #            qs.filter(plate_number__istartswith=self.q)
-#        return qs    
+#        return qs
 #
 #class UserAutoCompleteView(autocomplete.Select2QuerySetView):
 #    def get_queryset(self):
@@ -166,7 +166,7 @@ def get_bin_location_from_route(request):
 
     response_data=dict()
     response_data['status'] = 'success'
-    #response_data['data'] = [all_bins_from_route[0],all_bins_from_route[-1]] 
+    #response_data['data'] = [all_bins_from_route[0],all_bins_from_route[-1]]
     response_data['data'] = all_bins_from_route
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
@@ -180,7 +180,7 @@ def get_bins_from_route(request):
         each_bin_data['id']   = each_bin.id
         all_bins_from_route.append(each_bin_data)
 
-    print(all_bins_from_route) 
+    print(all_bins_from_route)
 
     response_data=dict()
     response_data['status'] = 'success'
@@ -200,8 +200,8 @@ def reorder_bins(request):
 #    bn.route=None
 #    bn.save()
 #
-#    linestring = LineString([ each_bin.bin_location for each_bin in rt.bins.all()]) 
-#    rt.route_fence = linestring 
+#    linestring = LineString([ each_bin.bin_location for each_bin in rt.bins.all()])
+#    rt.route_fence = linestring
 #    rt.save()
 
     response_data=dict()
@@ -209,7 +209,7 @@ def reorder_bins(request):
     response_data['data'] = 'Deallocated bin from route successfully'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
-#########################################upload#############################################    
+#########################################upload#############################################
 
 def upload_bin_data(request):
     if request.method == 'POST':
@@ -239,7 +239,7 @@ def upload_bin_data(request):
                 else:
                     pass
                 row_content[6]=''
-                excel_data.append(dict(zip(header,row_content))) 
+                excel_data.append(dict(zip(header,row_content)))
 
         for each_record in excel_data:
             Bin_ward=''
@@ -258,7 +258,7 @@ def upload_bin_data(request):
                 else:
                     messages.error(request, ("Location for bin %s should be within ward " %( each_record['name'])).upper())
 
-        return render(request,'swmadmin/upload_bin_data.html',{}) 
+        return render(request,'swmadmin/upload_bin_data.html',{})
     return render(request,'swmadmin/upload_bin_data.html',{})
 
 
@@ -274,8 +274,8 @@ def upload_routes_and_bin_data2(request):
         all_wards = dict()
         route_failure_geo = 0
         route_failure_ward= 0
-        bin_header= ['name','latitude','longitude','code','tag','bin_location','bin_fence','route'] 
-        route_header= ['name','code','route_fence'] 
+        bin_header= ['name','latitude','longitude','code','tag','bin_location','bin_fence','route']
+        route_header= ['name','code','route_fence']
 
         for row in ws.iter_rows(min_row=2,max_col=6):
             row_content = list()
@@ -293,34 +293,34 @@ def upload_routes_and_bin_data2(request):
             if route_code not in routes_from_excel:
                 routes_from_excel[route_code]=0
 
-            if lat and lon: 
-                routes_from_excel[route_code]+=1 
+            if lat and lon:
+                routes_from_excel[route_code]+=1
                 lat = re.sub(r'[^\.\d]','',str(lat))
                 lon = re.sub(r'[^\.\d]','',str(lon))
-                if re.match("[a-z][A-Z]+ ",row_content[1]): 
+                if re.match("[a-z][A-Z]+ ",row_content[1]):
                     rt_for_bin='_'.join(row_content[1].split('_')[:-1])
-                    seq_number= row_content[1].split('_').pop().zfill(3) 
+                    seq_number= row_content[1].split('_').pop().zfill(3)
                     bin_with_seq_number= str(rt_for_bin) + '_' + str(seq_number)
                     bin_code = bin_with_seq_number
                     bin_tag = ''
                 else:
                     rt_for_bin=row_content[0]
-                    seq_number= str(routes_from_excel[route_code]).zfill(3) 
+                    seq_number= str(routes_from_excel[route_code]).zfill(3)
                     bin_with_seq_number= str(rt_for_bin) + '_' + str(seq_number)
                     bin_code = bin_with_seq_number
                     bin_tag = ''
 
                 try:
                     location =Point(float(lon),float(lat))
-                except Exception as e: 
+                except Exception as e:
                     print(e)
                 else:
                     buffer_width = float(5 / 40000000.0 * 360.0)
-                    bin_fence = location.buffer(buffer_width) 
-                    bins.append(dict(zip(bin_header,[name,lat,lon,bin_code,bin_tag,location,bin_fence]))) 
+                    bin_fence = location.buffer(buffer_width)
+                    bins.append(dict(zip(bin_header,[name,lat,lon,bin_code,bin_tag,location,bin_fence])))
                     if route_code not in routes_from_file:
                         routes_from_file.append(route_code)
-                        routes.append(dict(zip(route_header,[route_name,route_code,'']))) 
+                        routes.append(dict(zip(route_header,[route_name,route_code,''])))
 
             else:
                 continue
@@ -344,7 +344,7 @@ def upload_routes_and_bin_data2(request):
                 ward_of_bin = Ward.objects.filter(is_active=True).filter(ward_fence__contains=each_bin['bin_location']).get()
                 each_bin['route']= rt
                 each_bin['ward'] = ward_of_bin
-            except Exception as e: 
+            except Exception as e:
                 print (f"Error while getting ward for bin {each_bin['bin_location']}")
 
             try:
@@ -366,16 +366,16 @@ def upload_routes_and_bin_data2(request):
                 geometry_error = 'LineString requires at least 2 points'
                 invalid_ward_error ='Ward matching query does not exist'
                 ocurred_error = str(e)
-                if re.match(geometry_error,ocurred_error): 
-                    route_failure_geo = route_failure_geo + 1 
+                if re.match(geometry_error,ocurred_error):
+                    route_failure_geo = route_failure_geo + 1
                     each_route.bins.clear()
                     each_route.delete()
 
-                if re.match(invalid_ward_error,ocurred_error): 
+                if re.match(invalid_ward_error,ocurred_error):
                     route_failure_ward = route_failure_ward + 1
                     ward_of_route      = re.sub(r'W$','',each_route.code.split('_')[0])
 
-                    if len(ward_of_route) > 1: 
+                    if len(ward_of_route) > 1:
                         ward_of_route      = ward_of_route[:1] + '/' + ward_of_route[1:]
                     rt_ward            = Ward.objects.get(code=ward_of_route)
 
@@ -389,7 +389,7 @@ def upload_routes_and_bin_data2(request):
             else:
                 pass
 
-        return redirect('routes') 
+        return redirect('routes')
     return render(request,'swmadmin/upload_bin_data.html',{})
 
 def upload_routes_and_bin_data(request):
@@ -433,7 +433,7 @@ def upload_routes_and_bin_data(request):
             if lat and lon:
                 location =Point(float(lon),float(lat))
                 try:
-                    #check if bin lies within ward	
+                    #check if bin lies within ward
                     #ward_of_bin = Ward.objects.filter(is_active=True).filter(ward_fence__contains=location).get()
                     ward_of_bin = Ward.objects.get(code=ward)
                     if ward_of_bin.ward_fence.contains(location):
@@ -537,7 +537,7 @@ def upload_routes_and_bin_with_endpoints(request):
             if lat and lon:
                 location =Point(float(lon),float(lat))
                 try:
-                    #check if bin lies within ward	
+                    #check if bin lies within ward
                     #ward_of_bin = Ward.objects.filter(is_active=True).filter(ward_fence__contains=location).get()
                     ward_of_bin = Ward.objects.get(code=ward)
                     if ward_of_bin.ward_fence.contains(location):
@@ -651,7 +651,7 @@ def upload_stop_station_data(request):
                         st_ward = Ward.objects.get(code=feat.get('ward'))
                     except Exception as e:
                         print ("error occurred while adding installation" + str(e))
-                        
+
                     st = Stop_station.objects.create(
                         name   = st_name,
                         is_chkpst = True,
@@ -686,7 +686,7 @@ def upload_stop_station_data(request):
                         )
                 else:
                     pass
-			
+
         return redirect('stop_stations')
     return render(request,'swmadmin/upload_stop_stations.html',{})
 
@@ -696,35 +696,35 @@ def upload_vehicle_data(request):
         wb = load_workbook(filename = excel_file)
         ws = wb['vehicle']
         excel_data = list()
-        header= ['plate_number','engine_number','chassis_number','maker','manufactured_year','vehicle_type','contractor','ward'] 
+        header= ['plate_number','engine_number','chassis_number','maker','manufactured_year','vehicle_type','contractor','ward']
 
         for row in ws.iter_rows(min_row=2,max_col=8):
             row_content = list()
             for cell in row:
                 row_content.append(cell.value)
-                
+
             if not row_content[0]:
                 continue
             row_content[1] =  random_string(20)
             row_content[2] =  random_string(20)
-            if row_content[2] and row_content[1] and row_content[6]: 
+            if row_content[2] and row_content[1] and row_content[6]:
                 user_cntr  = User.objects.get(username=row_content[6])
                 row_content[6] = user_cntr.contractor
 
                 if row_content[7]:
                     row_content[7] = Ward.objects.get(code=row_content[7])
-                    
-                excel_data.append(dict(zip(header,row_content))) 
-                
+
+                excel_data.append(dict(zip(header,row_content)))
+
         for each_record in excel_data:
             try:
-                each_record['created_by'] = request.user 
-                each_record['vehicle_type'] = each_record['vehicle_type'].upper() 
+                each_record['created_by'] = request.user
+                each_record['vehicle_type'] = each_record['vehicle_type'].upper()
                 Vehicle.objects.create(**each_record);
             except:
                 print ("error occurred while creating vehicle")
 
-        return redirect('vehicles') 
+        return redirect('vehicles')
     return render(request,'swmadmin/upload_vehicle_data.html',{})
 
 def upload_installation_data(request):
@@ -733,19 +733,19 @@ def upload_installation_data(request):
         wb = load_workbook(filename = excel_file)
         ws = wb['installation']
         installation_data = list()
-        header= ['vehicle','imei','sim','wnld_tag'] 
+        header= ['vehicle','imei','sim','wnld_tag']
 
         for row in ws.iter_rows(min_row=1,max_col=4):
             row_content = list()
             for cell in row:
                 row_content.append(cell.value)
-                
+
             if not row_content[0]:
                 continue
 
-            if row_content[0] and row_content[1] and row_content[2]: 
+            if row_content[0] and row_content[1] and row_content[2]:
                 try:
-                    vehicle = Vehicle.objects.get(plate_number=row_content[0]) 
+                    vehicle = Vehicle.objects.get(plate_number=row_content[0])
                 except Vehicle.DoesNotExist:
                     vehicle = None
 
@@ -753,11 +753,11 @@ def upload_installation_data(request):
                     print(f"vehice {row_content[0]} does not exists")
                     continue
                 row_content[0] = vehicle
-                installation_data.append(dict(zip(header,row_content))) 
+                installation_data.append(dict(zip(header,row_content)))
 
         for each_installation in installation_data:
             try:
-                each_installation['created_by'] = request.user 
+                each_installation['created_by'] = request.user
                 Installation.objects.create(**each_installation);
             except Exception as e:
                 print ("error occurred while adding installation" + str(e))
@@ -872,14 +872,14 @@ def upload_geos(request):
 #            geoms = layer.get_geoms(geos=True)
 #            print ("No of fetaures" + str(len(geoms)))
 #            for each_geom in geoms:
-#                if each_geom.geom_typeid == 6: 
+#                if each_geom.geom_typeid == 6:
 #                    print ('-------------------------')
 #                    print ('-------------------------')
 #                    print (each_geom.dims)
 #                    print (each_geom.geom_type)
 #                    print (each_geom.geom_typeid)
 #                    print (each_geom.json)
-#                    #print (each_geom) 
+#                    #print (each_geom)
             pass
     return render(request,'upload_student.html',{})
 
@@ -924,11 +924,11 @@ def upload_ward_contractor_mapping(request):
         return redirect('wcms')
     return render(request,'swmadmin/upload_wcm_data.html',{})
 
-#########################################ward############################################Done 
+#########################################ward############################################Done
 #class WardCreateView(CreateView):
 #    model=Ward
 #    form_class=NewWardForm
-#    template_name = 'swmadmin/add_ward.html' 
+#    template_name = 'swmadmin/add_ward.html'
 #    success_url= '/'
 #
 #    def form_valid(self,form):
@@ -939,7 +939,7 @@ def upload_ward_contractor_mapping(request):
 #        return redirect('wards')
 #
 #class WardUpdateView(UpdateView):
-#    model = Ward 
+#    model = Ward
 #    form_class=WardEditForm
 #    context_object_name= 'ward'
 #    template_name = 'swmadmin/edit_ward.html'
@@ -960,12 +960,12 @@ def upload_ward_contractor_mapping(request):
 #    def get_queryset(self):
 #        qs = super(WardListView,self).get_queryset().filter(is_active=True).order_by('name')
 #        return qs
-#   
-########################################StopStation##########################################Done   
+#
+########################################StopStation##########################################Done
 class StopStationCreateView(CreateView):
     model=Stop_station
     form_class=NewStopStationForm
-    template_name = 'swmadmin/add_stop_station.html' 
+    template_name = 'swmadmin/add_stop_station.html'
     success_url= '/stop_stations'
 
     def form_valid(self,form):
@@ -976,7 +976,7 @@ class StopStationCreateView(CreateView):
         return redirect('stop_stations')
 
 class StopStationUpdateView(UpdateView):
-    model = Stop_station 
+    model = Stop_station
     form_class = StopStationEditForm
     context_object_name= 'stop_station'
     template_name = 'swmadmin/edit_stop_station.html'
@@ -990,7 +990,7 @@ class StopStationUpdateView(UpdateView):
         return redirect('stop_stations')
 
 class StopStationListView(ListView):
-    model = Stop_station 
+    model = Stop_station
     context_object_name='stop_stations'
     template_name = 'swmadmin/stop_stations.html'
 
@@ -1003,7 +1003,7 @@ class StopStationListView(ListView):
 class BinCreateView(CreateView):
     model=Bin
     form_class=NewBinForm
-    template_name = 'swmadmin/add_bin.html' 
+    template_name = 'swmadmin/add_bin.html'
     success_url= '/bins'
 
     def form_valid(self,form):
@@ -1020,7 +1020,7 @@ class BinCreateView(CreateView):
         return redirect('bins')
 
 class BinUpdateView(UpdateView):
-    model = Bin 
+    model = Bin
     form_class=BinEditForm
     context_object_name= 'bin'
     template_name = 'swmadmin/edit_bin.html'
@@ -1040,7 +1040,7 @@ class BinUpdateView(UpdateView):
         return redirect('bins')
 
 class BinDeleteView(DeleteView):
-    model = Bin 
+    model = Bin
     success_url = '/bins/'
 
     def form_valid(self,form):
@@ -1057,7 +1057,7 @@ class BinDeleteView(DeleteView):
         return redirect('bins')
 
 class BinListView(ListView):
-    model = Bin 
+    model = Bin
     context_object_name='bins'
     template_name = 'swmadmin/bins.html'
 
@@ -1125,7 +1125,7 @@ class RouteScheduleListView(ListView):
 class RouteCreateView(CreateView):
     model=Route
     form_class=NewRouteForm
-    template_name = 'swmadmin/add_route.html' 
+    template_name = 'swmadmin/add_route.html'
     success_url= '/routes'
 
     def form_valid(self,form):
@@ -1135,7 +1135,7 @@ class RouteCreateView(CreateView):
         Route.route_fence.transform(trans)
 
         if Ward.objects.filter(ward_fence__contains=Route.route_fence).count() == 1:
-            route_ward = Ward.objects.filter(ward_fence__contains=Route.route_fence).get() 
+            route_ward = Ward.objects.filter(ward_fence__contains=Route.route_fence).get()
             Route.ward = route_ward
             Route.save()
         else:
@@ -1147,7 +1147,7 @@ class RouteCreateView(CreateView):
                 bin_data= dict()
                 bin_data['name'] = str(Route.code) + '_' + str(f'{sequence:04}')
                 bin_data['code'] = str(Route.code) + '_' + str(f'{sequence:03}')
-                bin_data['latitude']  = point[0] 
+                bin_data['latitude']  = point[0]
                 bin_data['longitude']  = point[1]
                 bin_data['bin_location'] = Point(point)
                 buffer_width = float(5 / 40000000.0 * 360.0)
@@ -1159,7 +1159,7 @@ class RouteCreateView(CreateView):
         return redirect('routes')
 
 class RouteUpdateView(UpdateView):
-    model = Route 
+    model = Route
     form_class=RouteEditForm
     context_object_name= 'route'
     template_name = 'swmadmin/edit_route.html'
@@ -1167,12 +1167,12 @@ class RouteUpdateView(UpdateView):
 
     def form_valid(self,form):
         Route = form.save(commit=False)
-        Route.updated_at = timezone.now() 
+        Route.updated_at = timezone.now()
         Route.updated_by = self.request.user
         Route.route_fence.transform(trans)
 
         if Ward.objects.filter(ward_fence__contains=Route.route_fence).count() == 1:
-            route_ward = Ward.objects.filter(ward_fence__contains=Route.route_fence).get() 
+            route_ward = Ward.objects.filter(ward_fence__contains=Route.route_fence).get()
             Route.ward = route_ward
             Route.save()
         else:
@@ -1185,7 +1185,7 @@ class RouteUpdateView(UpdateView):
 #                bin_data= dict()
 #                bin_data['name'] = str(Route.code) + '_' + str(sequence)
 #                bin_data['code'] = str(Route.code) + '_' + str(sequence)
-#                bin_data['latitude']  = point[0] 
+#                bin_data['latitude']  = point[0]
 #                bin_data['longitude']  = point[1]
 #                bin_data['bin_location'] = Point(point)
 #                buffer_width = float(5 / 40000000.0 * 360.0)
@@ -1218,18 +1218,18 @@ class RouteListView(ListView):
 class VehicleCreateView(CreateView):
     model=Vehicle
     form_class=NewVehicleForm
-    template_name = 'swmadmin/add_vehicle.html' 
+    template_name = 'swmadmin/add_vehicle.html'
     success_url= '/vehicles'
 
     def form_valid(self,form):
         Vehicle = form.save(commit=False)
         Vehicle.created_by = self.request.user
-        Vehicle.created_at = timezone.now().strftime('%Y-%m-%d %H:%M:%S.%f') 
+        Vehicle.created_at = timezone.now().strftime('%Y-%m-%d %H:%M:%S.%f')
         Vehicle.save()
         return redirect('vehicles')
 
 class VehicleUpdateView(UpdateView):
-    model = Vehicle 
+    model = Vehicle
     form_class=VehicleEditForm
     context_object_name= 'vehicle'
     template_name = 'swmadmin/edit_vehicle.html'
@@ -1241,9 +1241,9 @@ class VehicleUpdateView(UpdateView):
         Vehicle.updated_by = self.request.user
         Vehicle.save()
         return redirect('vehicles')
-   
+
 class VehicleListView(ListView):
-    model = Vehicle 
+    model = Vehicle
     context_object_name='vehicles'
     template_name = 'swmadmin/vehicles.html'
 
@@ -1256,7 +1256,7 @@ class VehicleListView(ListView):
 class ContractorCreateView(CreateView):
     model=Contractor
     form_class=NewContractorForm
-    template_name = 'swmadmin/add_contractor.html' 
+    template_name = 'swmadmin/add_contractor.html'
     success_url= '/contractors'
 
     def form_valid(self,form):
@@ -1267,7 +1267,7 @@ class ContractorCreateView(CreateView):
         return redirect('contractors')
 
 class ContractorUpdateView(UpdateView):
-    model = Contractor 
+    model = Contractor
     form_class = ContractorEditForm
     context_object_name= 'Contractor'
     template_name = 'swmadmin/edit_contractor.html'
@@ -1279,9 +1279,9 @@ class ContractorUpdateView(UpdateView):
         Contractor.updated_by = self.request.user
         Contractor.save()
         return redirect('contractors')
-   
+
 class ContractorListView(ListView):
-    model = Contractor 
+    model = Contractor
     context_object_name='contractors'
     template_name = 'swmadmin/contractors.html'
 
@@ -1294,7 +1294,7 @@ class ContractorListView(ListView):
 class WCMCreateView(CreateView):
     model=Ward_Contractor_Mapping
     form_class=NewWCMForm
-    template_name = 'swmadmin/add_wcm.html' 
+    template_name = 'swmadmin/add_wcm.html'
     success_url= '/wcms'
 
     def form_valid(self,form):
@@ -1305,7 +1305,7 @@ class WCMCreateView(CreateView):
         return redirect('wcms')
 
 class WCMUpdateView(UpdateView):
-    model = Ward_Contractor_Mapping 
+    model = Ward_Contractor_Mapping
     form_class = WCMEditForm
     context_object_name= 'wcm'
     template_name = 'swmadmin/edit_wcm.html'
@@ -1332,7 +1332,7 @@ class WCMListView(ListView):
 class VGMCreateView(CreateView):
     model=Vehicle_Garage_Mapping
     form_class=NewVGMForm
-    template_name = 'swmadmin/add_vgm.html' 
+    template_name = 'swmadmin/add_vgm.html'
     success_url= '/vgms'
 
     def form_valid(self,form):
@@ -1343,7 +1343,7 @@ class VGMCreateView(CreateView):
         return redirect('vgms')
 
 class VGMUpdateView(UpdateView):
-    model = Vehicle_Garage_Mapping 
+    model = Vehicle_Garage_Mapping
     form_class = VGMEditForm
     context_object_name= 'vgm'
     template_name = 'swmadmin/edit_vgm.html'
@@ -1370,18 +1370,18 @@ class VGMListView(ListView):
 class InstallationCreateView(CreateView):
     model=Installation
     form_class=NewInstallationForm
-    template_name = 'swmadmin/add_installation.html' 
+    template_name = 'swmadmin/add_installation.html'
     success_url= '/installations'
 
     def form_valid(self,form):
         Installation = form.save(commit=False)
         Installation.created_by = self.request.user
-        Installation.created_at = timezone.now().strftime('%Y-%m-%d %H:%M:%S.%f') 
+        Installation.created_at = timezone.now().strftime('%Y-%m-%d %H:%M:%S.%f')
         Installation.save()
         return redirect('installations')
 
 class InstallationUpdateView(UpdateView):
-    model = Installation 
+    model = Installation
     form_class=InstallationEditForm
     context_object_name= 'installation'
     template_name = 'swmadmin/edit_installation.html'
@@ -1393,9 +1393,9 @@ class InstallationUpdateView(UpdateView):
         Installation.updated_by = self.request.user
         Installation.save()
         return redirect('installations')
-   
+
 class InstallationListView(ListView):
-    model = Installation 
+    model = Installation
     context_object_name='installations'
     template_name = 'swmadmin/installations.html'
 
@@ -1403,7 +1403,7 @@ class InstallationListView(ListView):
         qs = super(InstallationListView,self).get_queryset().filter(is_active=True).order_by()
         return qs
 
-   
+
 ####################################delete###########################################################
 
 def delete_vehicle(request):
@@ -1412,7 +1412,7 @@ def delete_vehicle(request):
     vehicle.save()
     response_data={}
     response_data['status'] = 'success'
-    return HttpResponse(json.dumps(response_data),content_type="application/json") 
+    return HttpResponse(json.dumps(response_data),content_type="application/json")
 
 def delete_bin(request):
     bn = Bin.objects.get(pk=request.POST['id'])
@@ -1420,7 +1420,7 @@ def delete_bin(request):
     bn.save()
     response_data={}
     response_data['status'] = 'success'
-    return HttpResponse(json.dumps(response_data),content_type="application/json") 
+    return HttpResponse(json.dumps(response_data),content_type="application/json")
 
 def delete_stop_station(request):
     stop_station = Stop_station.objects.get(pk=request.POST['id'])
@@ -1428,22 +1428,22 @@ def delete_stop_station(request):
     stop_station.save()
     response_data={}
     response_data['status'] = 'success'
-    return HttpResponse(json.dumps(response_data),content_type="application/json") 
-   
+    return HttpResponse(json.dumps(response_data),content_type="application/json")
+
 def delete_route(request):
     route = Route.objects.get(pk=request.POST['id'])
 
-    for bn in route.bins.all(): 
+    for bn in route.bins.all():
         bn.code = None
         bn.save()
 
     route.bins.clear()
-    route.route_fence = None 
+    route.route_fence = None
     route.is_active = 'f'
     route.save()
     response_data={}
     response_data['status'] = 'success'
-    return HttpResponse(json.dumps(response_data),content_type="application/json") 
+    return HttpResponse(json.dumps(response_data),content_type="application/json")
 
 def delete_route_schedule(request):
     route_schedule = Route_schedule.objects.get(pk=request.POST['id'])
@@ -1451,7 +1451,7 @@ def delete_route_schedule(request):
     route_schedule.save()
     response_data={}
     response_data['status'] = 'success'
-    return HttpResponse(json.dumps(response_data),content_type="application/json") 
+    return HttpResponse(json.dumps(response_data),content_type="application/json")
 
 def delete_contractor(request):
     contractor = Contractor.objects.get(pk=request.POST['id'])
@@ -1459,7 +1459,7 @@ def delete_contractor(request):
     contractor.save()
     response_data={}
     response_data['status'] = 'success'
-    return HttpResponse(json.dumps(response_data),content_type="application/json") 
+    return HttpResponse(json.dumps(response_data),content_type="application/json")
 
 def delete_wcm(request):
     wcm = Ward_Contractor_Mapping.objects.get(pk=request.POST['id'])
@@ -1481,7 +1481,7 @@ def delete_installation(request):
     installation.save()
     response_data={}
     response_data['status'] = 'success'
-    return HttpResponse(json.dumps(response_data),content_type="application/json") 
+    return HttpResponse(json.dumps(response_data),content_type="application/json")
 
 ####################################geofence area####################################################
 
@@ -1494,7 +1494,7 @@ def get_bin_spot(request):
 
 def get_all_bin_spot(request):
     bns = Bin.objects.filter(is_active=True)
-    locations = list(); 
+    locations = list();
     for bn in bns:
         location = list()
         location.append(bn.code)
@@ -1510,7 +1510,7 @@ def get_all_bin_spot(request):
 def get_all_bin_spot_from_ward(request):
     ward = Ward.objects.get(pk=request.GET['id'])
     bns = Bin.objects.filter(is_active=True).filter(bin_location__coveredby=ward.ward_fence)
-    locations = list(); 
+    locations = list();
     for bn in bns:
         location = list()
         location.append(bn.code)
@@ -1525,7 +1525,7 @@ def get_all_bin_spot_from_ward(request):
 
 def get_all_mlc_spot(request):
     mlcs = Stop_station.objects.filter(is_mlc=True)
-    locations = list(); 
+    locations = list();
     for mlc in mlcs:
         location = list()
         location.append(mlc.name)
@@ -1541,7 +1541,7 @@ def get_all_mlc_spot(request):
 
 def get_all_tnsstn_spot(request):
     tnsstns = Stop_station.objects.filter(is_tnsstn=True)
-    locations = list(); 
+    locations = list();
     for tnsstn in tnsstns:
         location = list()
         location.append(tnsstn.name)
@@ -1557,7 +1557,7 @@ def get_all_tnsstn_spot(request):
 
 def get_all_dmpgnd_spot(request):
     dmpgnds = Stop_station.objects.filter(is_dmpgnd=True)
-    locations = list(); 
+    locations = list();
     for dmpgnd in dmpgnds:
         location = list()
         location.append(dmpgnd.name)
@@ -1573,7 +1573,7 @@ def get_all_dmpgnd_spot(request):
 
 def get_all_garage_spot(request):
     garages = Stop_station.objects.filter(is_garage=True)
-    locations = list(); 
+    locations = list();
     for garage in garages:
         location = list()
         location.append(garage.name)
@@ -1593,5 +1593,3 @@ def get_stop_station_area(request):
     response_data['stop_station_fence'] = stop_station.stop_station_fence.geojson
     response_data['status'] = 'success'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
-
-

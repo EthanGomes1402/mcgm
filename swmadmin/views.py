@@ -155,19 +155,41 @@ def deallocate_bin_from_route(request):
 
 def get_bin_location_from_route(request):
     rt = Route.objects.get(code=request.GET['id'])
-
     all_bins_from_route = list()
     for each_bin in rt.bins.all():
         each_bin_data = dict()
-        each_bin_data['name'] = each_bin.name
-        each_bin_data['code'] = each_bin.code
-        each_bin_data['location'] =each_bin.bin_location.geojson
+        each_bin_data['type']     = 'bin'
+        each_bin_data['name']     = each_bin.name
+        each_bin_data['code']     = each_bin.code
+        each_bin_data['location'] = each_bin.bin_location.geojson
         all_bins_from_route.append(each_bin_data)
+
+    rs = rt.route_schedules.all().first()
+    if rs and rs.vehicle.vehicle_type in ['MC','LC']:
+        mlc         = rs.mlc
+        cp          = rs.chkpst
+        mlc_centre  = wkt.loads(str(mlc.stop_station_fence.wkt))
+        cp_centre   = wkt.loads(str(cp.stop_station_fence.wkt))
+        mlc_centre  = Point(float(mlc_centre.centroid.coords[0][0]), float(mlc_centre.centroid.coords[0][1]))
+        cp_centre   = Point(float(cp_centre.centroid.coords[0][0]), float(cp_centre.centroid.coords[0][1]))
+
+        route_start = dict()
+        route_start['type']     = 'mlc'
+        route_start['name']     = mlc.name
+        route_start['code']     = mlc.name
+        route_start['location'] = mlc_centre.geojson
+        all_bins_from_route.insert(0,route_start)
+
+        route_end  = dict()
+        route_end['type']     = 'cp'
+        route_end['name']       = cp.name
+        route_end['code']       = cp.name
+        route_end['location']   = cp_centre.geojson
+        all_bins_from_route.append(route_end)
 
     response_data=dict()
     response_data['status'] = 'success'
-    #response_data['data'] = [all_bins_from_route[0],all_bins_from_route[-1]]
-    response_data['data'] = all_bins_from_route
+    response_data['data']   = all_bins_from_route
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
 def get_bins_from_route(request):
@@ -179,8 +201,6 @@ def get_bins_from_route(request):
         each_bin_data['name'] = each_bin.code
         each_bin_data['id']   = each_bin.id
         all_bins_from_route.append(each_bin_data)
-
-    print(all_bins_from_route)
 
     response_data=dict()
     response_data['status'] = 'success'
@@ -823,7 +843,7 @@ def upload_route_schedule_data(request):
                     messages.error(request,f'for {row_content[0]} all route,vehicle,mlc,checkpost should be within a ward')
                     continue
                 else:
-                    if ward_of_rs.ward_fence.contains(route.route_fence) and ward_of_rs.ward_fence.contains(mlc.stop_station_fence) and ward_of_rs.ward_fence.contains(cp.stop_station_fence):
+                    if ward_of_rs.ward_fence.contains(rt.route_fence) and ward_of_rs.ward_fence.contains(mlc.stop_station_fence) and ward_of_rs.ward_fence.contains(cp.stop_station_fence):
                         pass
                     else:
                         messages.error(request, 'all route,vehicle,mlc,checkpost should be within a ward')

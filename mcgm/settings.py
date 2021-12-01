@@ -68,13 +68,15 @@ TENANT_APPS = [
     'events',
     'health',
     'water',
-    'fireservices', 
+    'fireservices',
     'floppyforms',
     'crispy_forms',
     'bootstrap4',
 ]
 
-INSTALLED_APPS = list(set(SHARED_APPS + TENANT_APPS))
+INSTALLED_APPS = list(dict.fromkeys(list(SHARED_APPS + TENANT_APPS)))
+
+#INSTALLED_APPS = list(set(SHARED_APPS + TENANT_APPS))
 
 MIDDLEWARE = [
     'tenant_schemas.middleware.TenantMiddleware',
@@ -113,11 +115,11 @@ WSGI_APPLICATION = 'mcgm.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'psqlextra.backend',
-        'NAME': 'mcgm_testing_sample',
-        'USER': 'mcgm',
-        'PASSWORD':'mcgm',
-        'HOST': 'localhost'
+        'ENGINE'  : 'psqlextra.backend',
+        'NAME'    : 'mcgm',
+        'USER'    : 'mcgm',
+        'PASSWORD': 'mcgm',
+        'HOST'    : 'localhost'
     }
 }
 
@@ -155,9 +157,9 @@ DATETIME_FORMAT = '%d-%m-%Y %H:%M:%S'
 
 USE_I18N = True
 
-USE_L10N = False 
+USE_L10N = False
 
-#USE_TZ = True 
+#USE_TZ = True
 
 TIME_ZONE = 'Asia/Kolkata'
 

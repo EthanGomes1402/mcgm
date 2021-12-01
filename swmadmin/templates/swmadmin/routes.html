@@ -68,13 +68,13 @@
 					</tbody>
 				</table>
 				<div class="add_bins">
-					<div class="add_bins_link" style="text-align:right;">	
+					<div class="add_bins_link" style="text-align:right;">
 						<a href="#" class="add_bin_to_route_{{ route.id }}_{{ route.ward.id }}">Add Bins</a>
 					</div>
 					<div class="add_bins_form" id="allocate_bin_to_route_{{ route.id }}" style="display:none;">
-						<select id="bins_route_{{ route.id }}_{{ route.ward.id }}" multiple style="width:100%"></select> 
-						<input type="button" value="ADD" class="bins_route_{{ route.id }}_{{ route.ward.id }}"> 
-						<input type="button" value="CANCEL" class="add_bins_cancel"> 
+						<select id="bins_route_{{ route.id }}_{{ route.ward.id }}" multiple style="width:100%"></select>
+						<input type="button" value="ADD" class="bins_route_{{ route.id }}_{{ route.ward.id }}">
+						<input type="button" value="CANCEL" class="add_bins_cancel">
 					</div>
 				</div>
 			</div>
@@ -104,7 +104,7 @@
 	let mymap = L.map('loadpositionmap').setView([19.122777, 72.894568],16);
 	L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 	attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-	subdomain :['a','b','c']	
+	subdomain :['a','b','c']
 	}).addTo(mymap);
 
 	var bin_icon = L.icon({
@@ -112,39 +112,46 @@
 	    iconSize: [24, 30],
 	});
 
+    var mlc_icon = L.icon({
+        iconUrl: '{% static 'img/mlc2.png' %}',
+    });
+
+    var garage_icon = L.icon({
+        iconUrl: '{% static 'img/garrage2.png' %}',
+    });
+
     function deallocate_bin(bin){
-            var tr = $("#"+bin);
-            if (tr.siblings().length < 2 ){
-                alert("Bins deallocation is not possible for 2 bins route")
-                return false;
-            }
+		var tr = $("#"+bin);
+		if (tr.siblings().length < 2 ){
+			alert("Bins deallocation is not possible for 2 bins route")
+			return false;
+		}
 
-            $.ajax({
-                type:'GET',						
-                url:'{% url "deallocate_bin_from_route" %}',
-                data: {
-                    'id':bin 
-                },
-                beforeSend: function(xhr) {
-                    xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
-                },
-                success:function(res){
-                     var resp = res.data;
-                     tr.find('td').fadeOut(1000,function(){
-                        if( tr.is(":not(:last-child)") ){
-                            tr.nextAll().each(function(index,each_tr){
-                                //console.log(each_tr);
-                            });
-                        }
-                        tr.remove();
-                     });
-                },
-                error:function(a,b,c){
-                    alert(b);
-                    alert(c);					
-                }						
-
-            });
+		$.ajax({
+			type:'GET',
+			url:'{% url "deallocate_bin_from_route" %}',
+			data: {
+				'id':bin
+			},
+			beforeSend: function(xhr) {
+				xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+			},
+			success:function(res){
+				 var resp = res.data;
+				 tr.find('td').fadeOut(1000,function(){
+					if( tr.is(":not(:last-child)") ){
+						tr.nextAll().each(function(index,each_tr){
+							//console.log(each_tr);
+						});
+					}
+					tr.remove();
+				 });
+			},
+			error:function(a,b,c){
+				alert(b);
+				alert(c);
+			}
+		});
     }
 
 	$(document).ready(function(){
@@ -153,10 +160,10 @@
             let rt_id = ($(this).find('a:first').attr('class').split('_'))[2];
             $('table[id^=bins_from_'+ rt_id +']').find('tbody').empty();
             $.ajax({
-                type:'GET',						
+                type:'GET',
                 url:'{% url "get_bins_from_route" %}',
                 data: {
-                    'id':rt_id 
+                    'id':rt_id
                 },
                 beforeSend: function(xhr) {
                     xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
@@ -170,8 +177,8 @@
                 },
                 error:function(a,b,c){
                     alert(b);
-                    alert(c);					
-                }						
+                    alert(c);
+                }
             });
 			$("div.bin_info").each(function(i,elem){
 				if($(elem).is(":visible")){
@@ -198,13 +205,11 @@
 			$(this).parent().hide();
 		})
 
-
 		$("input.add_bins_cancel").click(function(){
 			$(this).parent().prev().show();
 			$(this).parent().hide();
 		})
 	});
-
 
 	var marker;
 	var route_path;
@@ -223,7 +228,7 @@
 		if(added_markers.length){
 			$.each(added_markers, function(i, each_added_bin) {
 				mymap.removeLayer(each_added_bin);
-			});	
+			});
 		}
 
 		if( route_path ){
@@ -231,10 +236,10 @@
 		}
 
 		$.ajax({
-			type:'GET',						
+			type:'GET',
 			url:'{% url "get_bin_location_from_route" %}',
 			data: {
-				'id':rt_id 
+				'id':rt_id
 			},
 			beforeSend: function(xhr) {
 				xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
@@ -242,15 +247,38 @@
 			success:function(res){
 				 var resp = res.data;
 				 $.each(resp, function(i, bin) {
-					let Bin= JSON.parse(bin.location);
-					bin = L.geoJSON(Bin,{
-						pointToLayer : function(geoJsonPoint, latlng){
-							bins_from_route.push(latlng);
-							return L.marker(latlng,{icon : bin_icon }).bindPopup('<b>' + bin.code.split('_').pop() + '  ' + bin.code + '</b>' );
-						}
-					}).addTo(mymap);
-					 
-					added_markers.push(bin);
+                    if(bin.type === 'bin'){
+                        let Bin= JSON.parse(bin.location);
+                        bin = L.geoJSON(Bin,{
+                            pointToLayer : function(geoJsonPoint, latlng){
+                                bins_from_route.push(latlng);
+                                return L.marker(latlng,{icon : bin_icon }).bindPopup('<b>' + bin.code.split('_').pop() + '  ' + bin.code + '</b>' );
+                            }
+                        }).addTo(mymap);
+                        added_markers.push(bin);
+                    }
+                    else if(bin.type === 'mlc'){
+                        let Bin= JSON.parse(bin.location);
+                        bin = L.geoJSON(Bin,{
+                            pointToLayer : function(geoJsonPoint, latlng){
+                                bins_from_route.push(latlng);
+                                return L.marker(latlng,{icon : mlc_icon }).bindPopup('<b>' + bin.code.split('_').pop() + '  ' + bin.code + '</b>' );
+                            }
+                        }).addTo(mymap);
+                        added_markers.push(bin);
+                    }
+                    else if(bin.type === 'cp'){
+                        let Bin= JSON.parse(bin.location);
+                        bin = L.geoJSON(Bin,{
+                            pointToLayer : function(geoJsonPoint, latlng){
+                                bins_from_route.push(latlng);
+                                return L.marker(latlng,{icon : garage_icon }).bindPopup('<b>' + bin.code.split('_').pop() + '  ' + bin.code + '</b>' );
+                            }
+                        }).addTo(mymap);
+                        added_markers.push(bin);
+                    }
+                    else{
+                    }
 				 });
 
 				 route_path = L.Routing.control({
@@ -258,7 +286,7 @@
                                  show: false,
                                  waypointMode: 'snap',
                                  router: L.Routing.mapbox('pk.eyJ1IjoiZGhpcmFqc2hpbmRlMTIxMDgzIiwiYSI6ImNrYTlpMjdqaTBuM3Ayc21rNnN1bzl5Y2EifQ.EGvhAM99uPWkNzB314HXHg'),
-				 createMarker : function(){ return null;}	 
+				 createMarker : function(){ return null;}
                                  }).addTo(mymap);
 
 				 $("#loadpositionmap").dialog({
@@ -275,8 +303,8 @@
 			},
 			error:function(a,b,c){
 				alert(b);
-				alert(c);					
-			}						
+				alert(c);
+			}
 		});
 	});
 
@@ -294,10 +322,10 @@
 
 		if (!$('#bins_route_'+ ward_route).has('option').length) {
 			$.ajax({
-				type:'GET',						
+				type:'GET',
 				url:'{% url "get_unallocated_bins_from_ward" %}',
 				data: {
-					'id':ward_id 
+					'id':ward_id
 				},
 				beforeSend: function(xhr) {
 					xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
@@ -317,12 +345,12 @@
 							 $current_div.hide();
 							 $div.show();
 						 })
-					}	
+					}
 				},
 				error:function(a,b,c){
 					alert(b);
-					alert(c);					
-				}						
+					alert(c);
+				}
 
 			});
 		}
@@ -342,15 +370,15 @@
 		if ($("table#bins_from_"+ ward_route + " tbody").children().length !== '0') {
 			var updateInfo ={};
 			$("table#bins_from_"+ ward_route + " tbody tr").each(function(index,elem){
-				var bn_id = $(this).attr('id'); 
+				var bn_id = $(this).attr('id');
 				reordered_bins.push(bn_id)
 			})
 
 			$.ajax({
-				type:'GET',						
+				type:'GET',
 				url:'{% url "reorder_bins" %}',
 				data: {
-					'bins[]':reordered_bins 
+					'bins[]':reordered_bins
 				},
 				beforeSend: function(xhr) {
 					xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
@@ -364,8 +392,8 @@
 				},
 				error:function(a,b,c){
 					alert(b);
-					alert(c);					
-				}						
+					alert(c);
+				}
 
 			});
 		}
@@ -382,13 +410,13 @@
 		selected_bins = "bins_route_" + route_id + '_' + ward_id;
 		var bins = $("#"+ select_id ).val().join(",");
 		var bin_data = {
-				bins:bins, 
+				bins:bins,
 				ward:ward_id,
 				route:route_id
 			       };
 
 		$.ajax({
-			type:'GET',						
+			type:'GET',
 			url:'{% url "allocate_bins_to_route" %}',
 			data: bin_data,
 			beforeSend: function(xhr) {
@@ -400,8 +428,8 @@
 			},
 			error:function(a,b,c){
 				alert(b);
-				alert(c);					
-			}						
+				alert(c);
+			}
 		});
 	});
 
@@ -420,10 +448,10 @@
         }
 
 		$.ajax({
-			type:'GET',						
+			type:'GET',
 			url:'{% url "deallocate_bin_from_route" %}',
 			data: {
-				'id':bin 
+				'id':bin
 			},
 			beforeSend: function(xhr) {
 				xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
@@ -441,8 +469,8 @@
 			},
 			error:function(a,b,c){
 				alert(b);
-				alert(c);					
-			}						
+				alert(c);
+			}
 
 		});
 	});
@@ -476,7 +504,7 @@
 			type:'POST',
 			url:'{% url "delete_route" %}',
 			data: {
-				'id':route_id 
+				'id':route_id
 			},
 			beforeSend: function(xhr) {
 				xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );

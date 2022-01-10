@@ -4,6 +4,7 @@ from django.urls import path,include
 from accounts import views as accounts_views
 from django.contrib.auth import views as auth_views
 
+#trial checking if both are in sync
 urlpatterns = [
     path('signup/',accounts_views.signup,name='signup'), 
     path('login/',auth_views.LoginView.as_view(template_name = 'accounts/login.html'),name='login'),

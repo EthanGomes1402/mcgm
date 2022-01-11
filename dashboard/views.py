@@ -13,8 +13,8 @@ def latest_vehicle_status(request):
     response_data['status'] = 'success'
     response_data['data'] = list()
 
-    for each_th_record_dict in Current_tracklog_history.objects.values('vehicle').annotate(max_id=Max('id')).order_by('max_id'): 
-        each_th_record = Current_tracklog_history.objects.get(id=each_th_record_dict['max_id']) 
+    for each_th_record_dict in Current_tracklog_history.objects.values('vehicle').annotate(max_id=Max('id')).order_by('max_id'):
+        each_th_record = Current_tracklog_history.objects.get(id=each_th_record_dict['max_id'])
         each_vehicle_record_data = dict()
         each_vehicle_record_data['veh'] = str(each_th_record.vehicle)
         each_vehicle_record_data['veh_ward'] = str(each_th_record.vehicle.ward)
@@ -25,7 +25,7 @@ def latest_vehicle_status(request):
         try:
             each_vehicle_record_data['ward'] = Ward.objects.filter(is_active=True).filter(ward_fence__contains=each_vehicle_record_data['location']).get()
         except:
-            each_vehicle_record_data['ward'] = None 
+            each_vehicle_record_data['ward'] = None
         each_vehicle_record_data['time'] = str(each_th_record.datetime.strftime("%Y-%m-%d %H:%M:%S"))
         #logic will check if current time is in assigned route schedule for a vehicle
         each_vehicle_record_data['trip_status'] = 'In trip'
@@ -46,12 +46,12 @@ def latest_vehicle_status(request):
                 each_vehicle_record_data['speed_class'] ='orange'
                 each_vehicle_record_data['veh_status'] ='Running'
                 each_vehicle_record_data['veh_class'] ='green'
-        else: 
+        else:
             each_vehicle_record_data['speed_status']='No Speed'
             each_vehicle_record_data['speed_class'] ='aqua'
             each_vehicle_record_data['veh_status'] ='Idle'
             each_vehicle_record_data['veh_class'] ='orange'
-            
+
         each_vehicle_record_data['mps'] = str(each_th_record.mps)
         each_vehicle_record_data['miv'] = str(each_th_record.miv)
         each_vehicle_record_data['ibv'] = str(each_th_record.ibv)
@@ -68,7 +68,7 @@ def quick_view(request):
 
 def get_quick_view_form_param(request):
     form_parameters = dict()
-    form_parameters['wards'] = [] 
+    form_parameters['wards'] = []
     form_parameters['vehicles'] = []
     wards = Ward.objects.filter(is_active=True)
     vehicles = Vehicle.objects.filter(is_active=True)
@@ -85,7 +85,7 @@ def get_quick_view_form_param(request):
 
     for each_vehicle in vehicles:
         veh_type = str(each_vehicle.vehicle_type).lower()
-        all_vehicles[veh_type]=list()  
+        all_vehicles[veh_type]=list()
 
     for each_vehicle in vehicles:
         vehicle_info = dict()

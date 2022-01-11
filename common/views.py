@@ -9,7 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.views.generic import CreateView,UpdateView,ListView,View,DetailView,DeleteView
 from django.utils import timezone
-from rest_framework.response import Response 
+from rest_framework.response import Response
 from rest_framework.views import APIView
 from datetime import datetime
 timestamp_from = datetime.now().date()
@@ -33,7 +33,7 @@ trans = CoordTransform(gcoord, mycoord)
 class WardCreateView(CreateView):
     model=Ward
     form_class=NewWardForm
-    template_name = 'common/add_ward.html' 
+    template_name = 'common/add_ward.html'
     success_url= '/wards/'
 
     def form_valid(self,form):
@@ -44,7 +44,7 @@ class WardCreateView(CreateView):
         return redirect('wards')
 
 class WardUpdateView(UpdateView):
-    model = Ward 
+    model = Ward
     form_class=WardEditForm
     context_object_name= 'ward'
     template_name = 'common/edit_ward.html'
@@ -76,17 +76,17 @@ def upload_wards(request):
                     created_by = request.user,
                     created_at = timezone.now()
                 )
-        return redirect('wards') 
+        return redirect('wards')
     return render(request,'common/upload_wards.html',{})
 
 class ZoneCreateView(CreateView):
     model=Zone
     form_class=NewZoneForm
-    template_name = 'common/add_zone.html' 
+    template_name = 'common/add_zone.html'
     success_url= '/zones'
 
     def form_valid(self,form):
-        zone_data = form.cleaned_data 
+        zone_data = form.cleaned_data
         all_wards_from_zone = zone_data.pop('wards')
         all_wards = list(all_wards_from_zone)
         all_ward_fence = list()
@@ -99,7 +99,7 @@ class ZoneCreateView(CreateView):
 
         for each_ward_fence in all_ward_fence:
             all_ward_fence_union = all_ward_fence_union.union(each_ward_fence)
-            
+
         zone_fence = all_ward_fence_union
         if isinstance(zone_fence, geos.Polygon):
             zone_fence = geos.MultiPolygon(zone_fence)
@@ -126,7 +126,7 @@ class ZoneUpdateView(UpdateView):
         zone = self.object
         zone.wards.clear()
 
-        zone_data = form.cleaned_data 
+        zone_data = form.cleaned_data
         all_wards_from_zone = zone_data.pop('wards')
         all_wards = list(all_wards_from_zone)
         all_ward_fence = list()
@@ -139,7 +139,7 @@ class ZoneUpdateView(UpdateView):
 
         for each_ward_fence in all_ward_fence:
             all_ward_fence_union = all_ward_fence_union.union(each_ward_fence)
-            
+
         zone_fence = all_ward_fence_union
 
         if isinstance(zone_fence, geos.Polygon):
@@ -152,7 +152,7 @@ class ZoneUpdateView(UpdateView):
         zone.save()
 
         div_of_zone = zone.div
-        if div_of_zone: 
+        if div_of_zone:
             all_zone_fences = div_of_zone.zones.all().values_list('zone_fence',flat=True)
             all_zone_fence_union =  all_zone_fences[0]
             all_zone_fences = all_zone_fences[1:]
@@ -162,20 +162,20 @@ class ZoneUpdateView(UpdateView):
 
             div_fence = all_zone_fence_union
             if isinstance(div_fence, geos.Polygon):
-                div_fence = geos.MultiPolygon(div_fence) 
+                div_fence = geos.MultiPolygon(div_fence)
 
-            div_of_zone.div_fence = div_fence 
+            div_of_zone.div_fence = div_fence
             div_of_zone.save()
         return redirect('zones')
 
 class DivCreateView(CreateView):
     model=Div
     form_class=NewDivForm
-    template_name = 'common/add_div.html' 
+    template_name = 'common/add_div.html'
     success_url= '/divs'
 
     def form_valid(self,form):
-        div_data = form.cleaned_data 
+        div_data = form.cleaned_data
         all_zones_from_div = div_data.pop('zones')
         all_zones = list(all_zones_from_div)
         all_zone_fence = list()
@@ -191,8 +191,8 @@ class DivCreateView(CreateView):
 
         div_fence = all_zone_fence_union
         if isinstance(div_fence, geos.Polygon):
-            div_fence = geos.MultiPolygon(div_fence)           
-            
+            div_fence = geos.MultiPolygon(div_fence)
+
         div_data['div_fence'] = div_fence
         div_data['created_by'] = self.request.user
         div_data['created_at'] = timezone.now()
@@ -205,7 +205,7 @@ class DivCreateView(CreateView):
         return redirect('divs')
 
 class DivUpdateView(UpdateView):
-    model = Div 
+    model = Div
     form_class=DivEditForm
     context_object_name= 'div'
     template_name = 'common/edit_div.html'
@@ -215,7 +215,7 @@ class DivUpdateView(UpdateView):
         div = self.object
         div.zones.clear()
 
-        div_data = form.cleaned_data 
+        div_data = form.cleaned_data
         all_zones_from_div = div_data.pop('zones')
         all_zones = list(all_zones_from_div)
         all_zone_fence = list()
@@ -228,7 +228,7 @@ class DivUpdateView(UpdateView):
 
         for each_zone_fence in all_zone_fence:
             all_zone_fence_union = all_zone_fence_union.union(each_zone_fence)
-            
+
         div_fence = all_zone_fence_union
 
         if isinstance(div_fence, geos.Polygon):
@@ -239,7 +239,7 @@ class DivUpdateView(UpdateView):
         div.updated_at = timezone.now()
         div.zones.set(all_zones)
         div.save()
-        return redirect('divs')   
+        return redirect('divs')
 
 class WardListView(ListView):
     model = Ward
@@ -257,7 +257,7 @@ class WardListView(ListView):
         return qs
 
 class ZoneListView(ListView):
-    model = Zone 
+    model = Zone
     context_object_name='zones'
     template_name = 'common/zones.html'
 
@@ -266,13 +266,13 @@ class ZoneListView(ListView):
         return qs
 
 class DivListView(ListView):
-    model = Div 
+    model = Div
     context_object_name='divs'
     template_name = 'common/divs.html'
 
     def get_queryset(self):
         qs = super(DivListView,self).get_queryset().filter(is_active=True).order_by('name')
-        return qs   
+        return qs
 
 def delete_ward(request):
     ward = Ward.objects.get(pk=request.POST['id'])
@@ -280,7 +280,7 @@ def delete_ward(request):
     ward.save()
     response_data={}
     response_data['status'] = 'success'
-    return HttpResponse(json.dumps(response_data),content_type="application/json") 
+    return HttpResponse(json.dumps(response_data),content_type="application/json")
 
 def delete_zone(request):
     zone = Zone.objects.get(pk=request.POST['id'])
@@ -288,7 +288,7 @@ def delete_zone(request):
     zone.save()
     response_data={}
     response_data['status'] = 'success'
-    return HttpResponse(json.dumps(response_data),content_type="application/json") 
+    return HttpResponse(json.dumps(response_data),content_type="application/json")
 
 def delete_div(request):
     div = Div.objects.get(pk=request.POST['id'])
@@ -296,7 +296,7 @@ def delete_div(request):
     div.save()
     response_data={}
     response_data['status'] = 'success'
-    return HttpResponse(json.dumps(response_data),content_type="application/json") 
+    return HttpResponse(json.dumps(response_data),content_type="application/json")
 
 def get_ward_area(request):
     ward = Ward.objects.get(pk=request.GET['id'])
@@ -312,13 +312,13 @@ def get_zone_area(request):
     response_data={}
     response_data['status'] = 'success'
 
-    if all_ward_fence : 
+    if all_ward_fence :
         all_ward_fence_union =  all_ward_fence[0]
         all_ward_fence = all_ward_fence[1:]
 
         for each_ward_fence in all_ward_fence:
             all_ward_fence_union = all_ward_fence_union.union(each_ward_fence)
-                
+
         zone_fence = all_ward_fence_union
 
         if isinstance(zone_fence, geos.Polygon):
@@ -327,7 +327,7 @@ def get_zone_area(request):
         response_data['zone_fence'] = zone_fence.geojson
     else:
         response_data['status'] = 'failure'
-        response_data['zone_fence'] = '' 
+        response_data['zone_fence'] = ''
 
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
@@ -340,7 +340,7 @@ def get_div_area(request):
 
     for each_zone_fence in all_zone_fence:
         all_zone_fence_union = all_zone_fence_union.union(each_zone_fence)
-            
+
     div_fence = all_zone_fence_union
 
     if isinstance(div_fence, geos.Polygon):

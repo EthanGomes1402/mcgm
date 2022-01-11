@@ -26,7 +26,7 @@ def dashboard(request):
 
 class UpdateUserProfile(UpdateView):
     model = User
-    fields = ['username', 'email'] 
+    fields = ['username', 'email']
     template_name = 'accounts/user_profile.html'
 
     def get_object(self):
@@ -41,6 +41,6 @@ def update_profile(request):
             user= uform.save()
         return redirect('dashboard')
     else:
-        uform = UpdateUserForm() 
-    return  render(request, 'accounts/user_profile.html', {'form': uform})   
+        uform = UpdateUserForm()
+    return  render(request, 'accounts/user_profile.html', {'form': uform})
 

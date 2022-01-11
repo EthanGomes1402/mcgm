@@ -7,3 +7,4 @@ python manage.py migrate_schemas --app_label reports -s swm
 python manage.py migrate_schemas --app_label swmadmin -s swm
 =python manage.py migrate_schemas --app_label reports -s swm
 ============================================================================
+----------------------------------------------------------------------------

@@ -6,7 +6,10 @@ from django.contrib.auth import views as auth_views
 
 #trial checking if both are in sync
 urlpatterns = [
-    path('signup/',accounts_views.signup,name='signup'), 
+    path('accounts/signup/', accounts_views.SignUpView.as_view(), name='signup'),
+    path('accounts/signup/contractor/',accounts_views.ContractorSignUpView.as_view(), name='contractor_signup'),
+    path('accounts/signup/officer/', accounts_views.OfficerSignUpView.as_view(), name='officer_signup'),
+    #path('signup/',accounts_views.signup,name='signup'), 
     path('login/',auth_views.LoginView.as_view(template_name = 'accounts/login.html'),name='login'),
     path('logout/',auth_views.LogoutView.as_view(),name='logout'),
     path('update_profile/',accounts_views.UpdateUserProfile.as_view(success_url="/dashboard/"),name='update_profile' )

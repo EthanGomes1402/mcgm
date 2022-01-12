@@ -6,6 +6,7 @@ from rest_framework_gis.serializers import GeoFeatureModelSerializer
 from django.contrib.gis.gdal import SpatialReference, CoordTransform
 from django.contrib.gis.geos import GEOSGeometry,Point
 from common.models import Ward
+from accounts.models import Bmc_contractor
 
 #floppyform by default use srid 3857 so to make it use 4326
 gcoord = SpatialReference(3857)
@@ -84,7 +85,7 @@ class Vehicle(models.Model):
     vehicle_type      = models.CharField(max_length=10, choices=VEHICLE_TYPE,default='scv')
     engine_number     = models.CharField(max_length=20, unique=True)
     chassis_number    = models.CharField(max_length=20, unique=True)
-    contractor        = models.ForeignKey(Contractor,on_delete=models.CASCADE,null=True)
+    contractor        = models.ForeignKey(Bmc_contractor,on_delete=models.CASCADE,null=True)
     ward              = models.ForeignKey(Ward, related_name='vehicles',on_delete=models.PROTECT,null=True)
     maker             = models.CharField(max_length=20)
     manufactured_year = models.IntegerField()

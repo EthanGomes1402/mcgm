@@ -10,7 +10,7 @@ from .forms import NewRouteForm,NewBinForm,NewStopStationForm,NewVehicleForm,New
 from .forms import RouteEditForm,BinEditForm,StopStationEditForm,VehicleEditForm,RouteScheduleEditForm,ContractorEditForm,WCMEditForm,VGMEditForm,InstallationEditForm
 from django.core.serializers import serialize
 from django.contrib.auth.decorators import login_required,user_passes_test
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin,UserPassesTestMixin
 from django.utils.decorators import method_decorator
 from django.views.generic import CreateView,UpdateView,ListView,View,DetailView,DeleteView
 from django.utils import timezone
@@ -1015,11 +1015,14 @@ def upload_ward_contractor_mapping(request):
 #        return qs
 #
 ########################################StopStation##########################################Done
-class StopStationCreateView(CreateView):
+class StopStationCreateView(UserPassesTestMixin,CreateView):
     model=Stop_station
     form_class=NewStopStationForm
     template_name = 'swmadmin/add_stop_station.html'
     success_url= '/stop_stations'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def form_valid(self,form):
         Stop_station = form.save(commit=False)
@@ -1028,12 +1031,15 @@ class StopStationCreateView(CreateView):
         Stop_station.save()
         return redirect('stop_stations')
 
-class StopStationUpdateView(UpdateView):
+class StopStationUpdateView(UserPassesTestMixin,UpdateView):
     model = Stop_station
     form_class = StopStationEditForm
     context_object_name= 'stop_station'
     template_name = 'swmadmin/edit_stop_station.html'
     success_url = '/stop_stations/'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def form_valid(self,form):
         Stop_station = form.save(commit=False)
@@ -1042,10 +1048,13 @@ class StopStationUpdateView(UpdateView):
         Stop_station.save()
         return redirect('stop_stations')
 
-class StopStationListView(ListView):
+class StopStationListView(UserPassesTestMixin,ListView):
     model = Stop_station
     context_object_name='stop_stations'
     template_name = 'swmadmin/stop_stations.html'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def get_queryset(self):
         qs = super(StopStationListView,self).get_queryset().filter(is_active=True).order_by('name')
@@ -1053,11 +1062,14 @@ class StopStationListView(ListView):
 
 ####################################Bin#####################################################Done
 
-class BinCreateView(CreateView):
+class BinCreateView(UserPassesTestMixin,CreateView):
     model=Bin
     form_class=NewBinForm
     template_name = 'swmadmin/add_bin.html'
     success_url= '/bins'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def form_valid(self,form):
         Bin = form.save(commit=False)
@@ -1072,13 +1084,16 @@ class BinCreateView(CreateView):
         Bin.save()
         return redirect('bins')
 
-class BinUpdateView(UpdateView):
+class BinUpdateView(UserPassesTestMixin,UpdateView):
     model = Bin
     form_class=BinEditForm
     context_object_name= 'bin'
     template_name = 'swmadmin/edit_bin.html'
     success_url = '/bins/'
 
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
+
     def form_valid(self,form):
         Bin = form.save(commit=False)
         Bin.bin_location.transform(trans)
@@ -1092,10 +1107,13 @@ class BinUpdateView(UpdateView):
         Bin.save()
         return redirect('bins')
 
-class BinDeleteView(DeleteView):
+class BinDeleteView(UserPassesTestMixin,DeleteView):
     model = Bin
     success_url = '/bins/'
 
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
+
     def form_valid(self,form):
         Bin = form.save(commit=False)
         Bin.bin_location.transform(trans)
@@ -1109,10 +1127,13 @@ class BinDeleteView(DeleteView):
         Bin.save()
         return redirect('bins')
 
-class BinListView(ListView):
+class BinListView(UserPassesTestMixin,ListView):
     model = Bin
     context_object_name='bins'
     template_name = 'swmadmin/bins.html'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def get_queryset(self):
         qs = super(BinListView,self).get_queryset().filter(is_active=True).order_by('name')
@@ -1120,11 +1141,14 @@ class BinListView(ListView):
 
 #################################RouteSchedule
 
-class RouteScheduleCreateView(CreateView):
+class RouteScheduleCreateView(UserPassesTestMixin,CreateView):
     model=Route_schedule
     form_class=NewRouteScheuleForm
     template_name = 'swmadmin/add_route_schedule.html'
     success_url= '/route_schedules/'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def form_valid(self,form):
         route_schedule = form.save(commit=False)
@@ -1142,12 +1166,15 @@ class RouteScheduleCreateView(CreateView):
         route_schedule.save()
         return redirect('route_schedules')
 
-class RouteScheduleUpdateView(UpdateView):
+class RouteScheduleUpdateView(UserPassesTestMixin,UpdateView):
     model = Route_schedule
     form_class = RouteScheduleEditForm
     context_object_name= 'route_schedule'
     template_name = 'swmadmin/edit_route_schedule.html'
     success_url = '/route_schedules/'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def form_valid(self,form):
         Route_schedule = form.save(commit=False)
@@ -1164,10 +1191,13 @@ class RouteScheduleUpdateView(UpdateView):
         Route_schedule.save()
         return redirect('route_schedules')
 
-class RouteScheduleListView(ListView):
+class RouteScheduleListView(UserPassesTestMixin,ListView):
     model = Route_schedule
     context_object_name='route_schedules'
     template_name = 'swmadmin/route_schedules.html'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def get_queryset(self):
         qs = super(RouteScheduleListView,self).get_queryset().filter(is_active=True).order_by('name')
@@ -1175,11 +1205,14 @@ class RouteScheduleListView(ListView):
 
 ###################################Route#############################################################
 
-class RouteCreateView(CreateView):
+class RouteCreateView(UserPassesTestMixin,CreateView):
     model=Route
     form_class=NewRouteForm
     template_name = 'swmadmin/add_route.html'
     success_url= '/routes'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def form_valid(self,form):
         Route = form.save(commit=False)
@@ -1211,12 +1244,15 @@ class RouteCreateView(CreateView):
 
         return redirect('routes')
 
-class RouteUpdateView(UpdateView):
+class RouteUpdateView(UserPassesTestMixin,UpdateView):
     model = Route
     form_class=RouteEditForm
     context_object_name= 'route'
     template_name = 'swmadmin/edit_route.html'
     success_url = '/routes/'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def form_valid(self,form):
         Route = form.save(commit=False)
@@ -1249,10 +1285,13 @@ class RouteUpdateView(UpdateView):
 
         return redirect('routes')
 
-class RouteListView(ListView):
+class RouteListView(UserPassesTestMixin,ListView):
     model = Route
     context_object_name='routes'
     template_name = 'swmadmin/routes.html'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def get_queryset(self):
         qs = super(RouteListView,self).get_queryset().filter(is_active=True).order_by('name')
@@ -1268,11 +1307,14 @@ class RouteListView(ListView):
 
 ####################################Vehicle#######################################################
 
-class VehicleCreateView(CreateView):
+class VehicleCreateView(UserPassesTestMixin,CreateView):
     model=Vehicle
     form_class=NewVehicleForm
     template_name = 'swmadmin/add_vehicle.html'
     success_url= '/vehicles'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def form_valid(self,form):
         Vehicle = form.save(commit=False)
@@ -1281,12 +1323,15 @@ class VehicleCreateView(CreateView):
         Vehicle.save()
         return redirect('vehicles')
 
-class VehicleUpdateView(UpdateView):
+class VehicleUpdateView(UserPassesTestMixin,UpdateView):
     model = Vehicle
     form_class=VehicleEditForm
     context_object_name= 'vehicle'
     template_name = 'swmadmin/edit_vehicle.html'
     success_url = '/vehicles/'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def form_valid(self,form):
         Vehicle = form.save(commit=False)
@@ -1295,10 +1340,13 @@ class VehicleUpdateView(UpdateView):
         Vehicle.save()
         return redirect('vehicles')
 
-class VehicleListView(ListView):
+class VehicleListView(UserPassesTestMixin,ListView):
     model = Vehicle
     context_object_name='vehicles'
     template_name = 'swmadmin/vehicles.html'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def get_queryset(self):
         qs = super(VehicleListView,self).get_queryset().filter(is_active=True).order_by('plate_number')
@@ -1306,11 +1354,14 @@ class VehicleListView(ListView):
 
 ######################################Contractor#######################################################
 
-class ContractorCreateView(CreateView):
+class ContractorCreateView(UserPassesTestMixin,CreateView):
     model=Contractor
     form_class=NewContractorForm
     template_name = 'swmadmin/add_contractor.html'
     success_url= '/contractors'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def form_valid(self,form):
         Contractor = form.save(commit=False)
@@ -1319,12 +1370,15 @@ class ContractorCreateView(CreateView):
         Contractor.save()
         return redirect('contractors')
 
-class ContractorUpdateView(UpdateView):
+class ContractorUpdateView(UserPassesTestMixin,UpdateView):
     model = Contractor
     form_class = ContractorEditForm
     context_object_name= 'Contractor'
     template_name = 'swmadmin/edit_contractor.html'
     success_url = '/contractors/'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def form_valid(self,form):
         Contractor = form.save(commit=False)
@@ -1333,10 +1387,13 @@ class ContractorUpdateView(UpdateView):
         Contractor.save()
         return redirect('contractors')
 
-class ContractorListView(ListView):
+class ContractorListView(UserPassesTestMixin,ListView):
     model = Contractor
     context_object_name='contractors'
     template_name = 'swmadmin/contractors.html'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def get_queryset(self):
         qs = super(ContractorListView,self).get_queryset().filter(is_active=True).order_by('name')
@@ -1344,11 +1401,14 @@ class ContractorListView(ListView):
 
 ####################################WCM##############################################################
 
-class WCMCreateView(CreateView):
+class WCMCreateView(UserPassesTestMixin,CreateView):
     model=Ward_Contractor_Mapping
     form_class=NewWCMForm
     template_name = 'swmadmin/add_wcm.html'
     success_url= '/wcms'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def form_valid(self,form):
         WCM = form.save(commit=False)
@@ -1357,12 +1417,15 @@ class WCMCreateView(CreateView):
         WCM.save()
         return redirect('wcms')
 
-class WCMUpdateView(UpdateView):
+class WCMUpdateView(UserPassesTestMixin,UpdateView):
     model = Ward_Contractor_Mapping
     form_class = WCMEditForm
     context_object_name= 'wcm'
     template_name = 'swmadmin/edit_wcm.html'
     success_url = '/wcms/'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def form_valid(self,form):
         WCM = form.save(commit=False)
@@ -1371,10 +1434,13 @@ class WCMUpdateView(UpdateView):
         WCM.save()
         return redirect('wcms')
 
-class WCMListView(ListView):
+class WCMListView(UserPassesTestMixin,ListView):
     model = Ward_Contractor_Mapping
     context_object_name='wcms'
     template_name = 'swmadmin/wcms.html'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def get_queryset(self):
         qs = super(WCMListView,self).get_queryset().filter(is_active=True)
@@ -1382,11 +1448,14 @@ class WCMListView(ListView):
 
 ########################################VGM#########################################################
 
-class VGMCreateView(CreateView):
+class VGMCreateView(UserPassesTestMixin,CreateView):
     model=Vehicle_Garage_Mapping
     form_class=NewVGMForm
     template_name = 'swmadmin/add_vgm.html'
     success_url= '/vgms'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def form_valid(self,form):
         VGM = form.save(commit=False)
@@ -1395,12 +1464,15 @@ class VGMCreateView(CreateView):
         VGM.save()
         return redirect('vgms')
 
-class VGMUpdateView(UpdateView):
+class VGMUpdateView(UserPassesTestMixin,UpdateView):
     model = Vehicle_Garage_Mapping
     form_class = VGMEditForm
     context_object_name= 'vgm'
     template_name = 'swmadmin/edit_vgm.html'
     success_url = '/vgms/'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def form_valid(self,form):
         VGM = form.save(commit=False)
@@ -1409,10 +1481,13 @@ class VGMUpdateView(UpdateView):
         VGM.save()
         return redirect('vgms')
 
-class VGMListView(ListView):
+class VGMListView(UserPassesTestMixin,ListView):
     model = Vehicle_Garage_Mapping
     context_object_name='vgms'
     template_name = 'swmadmin/vgms.html'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def get_queryset(self):
         qs = super(VGMListView,self).get_queryset().filter(is_active=True)
@@ -1420,11 +1495,14 @@ class VGMListView(ListView):
 
 #######################################Installation##############################################
 
-class InstallationCreateView(CreateView):
+class InstallationCreateView(UserPassesTestMixin,CreateView):
     model=Installation
     form_class=NewInstallationForm
     template_name = 'swmadmin/add_installation.html'
     success_url= '/installations'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def form_valid(self,form):
         Installation = form.save(commit=False)
@@ -1433,12 +1511,15 @@ class InstallationCreateView(CreateView):
         Installation.save()
         return redirect('installations')
 
-class InstallationUpdateView(UpdateView):
+class InstallationUpdateView(UserPassesTestMixin,UpdateView):
     model = Installation
     form_class=InstallationEditForm
     context_object_name= 'installation'
     template_name = 'swmadmin/edit_installation.html'
     success_url = '/installations/'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def form_valid(self,form):
         Installation = form.save(commit=False)
@@ -1447,10 +1528,13 @@ class InstallationUpdateView(UpdateView):
         Installation.save()
         return redirect('installations')
 
-class InstallationListView(ListView):
+class InstallationListView(UserPassesTestMixin,ListView):
     model = Installation
     context_object_name='installations'
     template_name = 'swmadmin/installations.html'
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def get_queryset(self):
         qs = super(InstallationListView,self).get_queryset().filter(is_active=True).order_by()

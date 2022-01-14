@@ -6,8 +6,11 @@ from swmadmin.models import Vehicle
 from reports.models import Current_tracklog_history
 from django.db.models.aggregates import Max
 from django.contrib.gis.geos import GEOSGeometry,Point,LineString
+from django.contrib.auth.decorators import login_required,user_passes_test
 
 # Create your views here.
+@login_required
+@user_passes_test(lambda user: user.is_superuser or (user.appuser.is_contractor or user.appuser.is_officer))
 def latest_vehicle_status(request):
     response_data=dict()
     response_data['status'] = 'success'
@@ -63,6 +66,8 @@ def latest_vehicle_status(request):
     #vehicles  = list(map(lambda vehicle : Vehicle.objects.get(pk=vehicle) , form_data['selectVehicle'].split("_")))
     return render(request,'dashboard/latest_vehicle_status.html',{ 'all_entries' : response_data['data'] })
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser or (user.appuser.is_contractor or user.appuser.is_officer))
 def quick_view(request):
     return render(request,'dashboard/quick_view.html',{})
 

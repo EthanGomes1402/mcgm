@@ -44,12 +44,12 @@ class OfficerSignUpForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
         model = Appuser
 
+    @transaction.atomic
     def save(self, commit=True):
         user = super().save(commit=False)
         user.is_officer = True
-        if commit:
-            bmc_officer = Bmc_contractor.objects.create(user=user)
-            bmc_officer.ward=Ward.objects.get(id =self.cleaned_data.get('ward'))
-            bmc_officer.save()
-            user.save()
-            return user
+        user.save()
+        bmc_officer = Bmc_officer.objects.create(user=user)
+        bmc_officer.ward=Ward.objects.get(id =self.cleaned_data.get('ward'))
+        bmc_officer.save()
+        return user

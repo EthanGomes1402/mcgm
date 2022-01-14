@@ -1,7 +1,7 @@
 from django.shortcuts import render,redirect
 from django.contrib.auth import login
-from django.contrib.auth.decorators import login_required
-from .forms import SignUpForm,ContractorSignUpForm,OfficerSignUpForm 
+from django.contrib.auth.decorators import login_required,user_passes_test
+from .forms import SignUpForm,ContractorSignUpForm,OfficerSignUpForm
 from .forms import UpdateUserForm
 from django.http import HttpResponse
 from django.views.generic import CreateView,ListView,UpdateView
@@ -25,6 +25,7 @@ def signup(request):
     return render(request, 'accounts/signup.html', {'form': form})
 
 @login_required
+@user_passes_test(lambda user: user.is_superuser or (user.appuser.is_contractor or user.appuser.is_officer))
 def dashboard(request):
     return render(request, 'base.html')
 

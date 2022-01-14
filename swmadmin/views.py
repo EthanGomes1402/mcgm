@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.contrib.auth.models import User
+from accounts.models import Appuser
 from django.http import HttpResponse,JsonResponse
 from .models import Bin,Route,Stop_station,Vehicle,Route_schedule,Contractor,Ward_Contractor_Mapping,Vehicle_Garage_Mapping,Installation
 from common.models import Ward
@@ -8,7 +9,8 @@ from django.http import Http404
 from .forms import NewRouteForm,NewBinForm,NewStopStationForm,NewVehicleForm,NewRouteScheuleForm,NewContractorForm,NewWCMForm,NewVGMForm,NewInstallationForm
 from .forms import RouteEditForm,BinEditForm,StopStationEditForm,VehicleEditForm,RouteScheduleEditForm,ContractorEditForm,WCMEditForm,VGMEditForm,InstallationEditForm
 from django.core.serializers import serialize
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required,user_passes_test
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.decorators import method_decorator
 from django.views.generic import CreateView,UpdateView,ListView,View,DetailView,DeleteView
 from django.utils import timezone
@@ -48,6 +50,8 @@ trans = CoordTransform(gcoord, mycoord)
 #        return qs
 
 seen = dict()
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def upload_vehicle_contractor_mapping(request):
     if request.method == 'POST':
         excel_file = request.FILES["vcm_excel_file"]
@@ -96,6 +100,8 @@ def random_string(n):
 		seen[random_str]=1
 	return random_str
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def get_unallocated_bins_from_ward(request):
     ward = Ward.objects.get(pk=request.GET['id'])
     response_data=dict()
@@ -103,6 +109,8 @@ def get_unallocated_bins_from_ward(request):
     response_data['data'] = list( Bin.objects.filter(ward_id=ward).filter(is_active=True).filter(route_id__isnull=True).filter(code__isnull=True).values('id','name') )
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def allocate_bins_to_route(request):
     bins  = list(map(lambda bn : Bin.objects.get(pk=bn) , request.GET['bins'].split(",")))
     route = Route.objects.get(pk=request.GET['route'])
@@ -124,6 +132,8 @@ def allocate_bins_to_route(request):
     response_data['data'] = 'Bin allocated successfully'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def deallocate_bin_from_route(request):
     bn        = Bin.objects.get(pk=request.GET['id'])
     rt        = bn.route
@@ -153,6 +163,8 @@ def deallocate_bin_from_route(request):
     response_data['data'] = 'Deallocated bin from route successfully'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def get_bin_location_from_route(request):
     rt = Route.objects.get(code=request.GET['id'])
     all_bins_from_route = list()
@@ -192,6 +204,8 @@ def get_bin_location_from_route(request):
     response_data['data']   = all_bins_from_route
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def get_bins_from_route(request):
     rt = Route.objects.get(id=request.GET['id'])
 
@@ -207,6 +221,8 @@ def get_bins_from_route(request):
     response_data['data'] = all_bins_from_route
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def reorder_bins(request):
     bns = request.GET.getlist('bins[]')
     bins  = list(map(lambda bn : Bin.objects.get(pk=bn) ,bns))
@@ -230,7 +246,8 @@ def reorder_bins(request):
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
 #########################################upload#############################################
-
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def upload_bin_data(request):
     if request.method == 'POST':
         excel_file = request.FILES["bin_excel_file"]
@@ -281,7 +298,8 @@ def upload_bin_data(request):
         return render(request,'swmadmin/upload_bin_data.html',{})
     return render(request,'swmadmin/upload_bin_data.html',{})
 
-
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def upload_routes_and_bin_data2(request):
     if request.method == 'POST':
         excel_file = request.FILES["bin_excel_file"]
@@ -412,6 +430,8 @@ def upload_routes_and_bin_data2(request):
         return redirect('routes')
     return render(request,'swmadmin/upload_bin_data.html',{})
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def upload_routes_and_bin_data(request):
     if request.method == 'POST':
         excel_file         = request.FILES["bin_excel_file"]
@@ -514,6 +534,8 @@ def upload_routes_and_bin_data(request):
         return render(request,'swmadmin/upload_bin_data.html',{})
     return render(request,'swmadmin/upload_bin_data.html',{})
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def upload_routes_and_bin_with_endpoints(request):
     if request.method == 'POST':
         excel_file         = request.FILES["bin_excel_file"]
@@ -638,7 +660,8 @@ def upload_routes_and_bin_with_endpoints(request):
         return render(request,'swmadmin/upload_bin_data.html',{})
     return render(request,'swmadmin/upload_bin_data.html',{})
 
-
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def upload_stop_station_data(request):
     if request.method == 'POST':
         mykmlfile = request.FILES["excel_file"]
@@ -710,6 +733,8 @@ def upload_stop_station_data(request):
         return redirect('stop_stations')
     return render(request,'swmadmin/upload_stop_stations.html',{})
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def upload_vehicle_data(request):
     if request.method == 'POST':
         excel_file = request.FILES["vehicle_excel_file"]
@@ -729,7 +754,7 @@ def upload_vehicle_data(request):
             row_content[2] =  random_string(20)
             if row_content[2] and row_content[1] and row_content[6]:
                 user_cntr  = User.objects.get(username=row_content[6])
-                row_content[6] = user_cntr.contractor
+                row_content[6] = user_cntr.appuser.bmc_contractor
 
                 if row_content[7]:
                     row_content[7] = Ward.objects.get(code=row_content[7])
@@ -747,6 +772,8 @@ def upload_vehicle_data(request):
         return redirect('vehicles')
     return render(request,'swmadmin/upload_vehicle_data.html',{})
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def upload_installation_data(request):
     if request.method == 'POST':
         excel_file = request.FILES["installation_excel_file"]
@@ -786,6 +813,8 @@ def upload_installation_data(request):
         return redirect('installations')
     return render(request,'swmadmin/upload_installation_data.html',{})
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def upload_route_schedule_data(request):
     if request.method == 'POST':
         excel_file = request.FILES["route_schedule_excel_file"]
@@ -863,6 +892,8 @@ def upload_route_schedule_data(request):
         #return redirect('route_schedules')
     return render(request,'swmadmin/upload_route_schedule_data.html',{})
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def upload_geos(request):
     if request.method == 'POST':
         mykmlfile = request.FILES["excel_file"]
@@ -904,6 +935,8 @@ def upload_geos(request):
     return render(request,'upload_student.html',{})
 
 #ward code and contractor username excel sheet
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def upload_ward_contractor_mapping(request):
     if request.method == 'POST':
         excel_file = request.FILES["wcm_excel_file"]
@@ -1425,7 +1458,8 @@ class InstallationListView(ListView):
 
 
 ####################################delete###########################################################
-
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def delete_vehicle(request):
     vehicle = Vehicle.objects.get(pk=request.POST['id'])
     vehicle.is_active = 'f'
@@ -1434,6 +1468,8 @@ def delete_vehicle(request):
     response_data['status'] = 'success'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def delete_bin(request):
     bn = Bin.objects.get(pk=request.POST['id'])
     bn.is_active = 'f'
@@ -1442,6 +1478,8 @@ def delete_bin(request):
     response_data['status'] = 'success'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def delete_stop_station(request):
     stop_station = Stop_station.objects.get(pk=request.POST['id'])
     stop_station.is_active = 'f'
@@ -1450,6 +1488,8 @@ def delete_stop_station(request):
     response_data['status'] = 'success'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def delete_route(request):
     route = Route.objects.get(pk=request.POST['id'])
 
@@ -1465,6 +1505,8 @@ def delete_route(request):
     response_data['status'] = 'success'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def delete_route_schedule(request):
     route_schedule = Route_schedule.objects.get(pk=request.POST['id'])
     route_schedule.is_active = 'f'
@@ -1473,6 +1515,8 @@ def delete_route_schedule(request):
     response_data['status'] = 'success'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def delete_contractor(request):
     contractor = Contractor.objects.get(pk=request.POST['id'])
     contractor.is_active = 'f'
@@ -1481,6 +1525,8 @@ def delete_contractor(request):
     response_data['status'] = 'success'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def delete_wcm(request):
     wcm = Ward_Contractor_Mapping.objects.get(pk=request.POST['id'])
     wcm.delete()
@@ -1488,6 +1534,8 @@ def delete_wcm(request):
     response_data['status'] = 'success'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def delete_vgm(request):
     vgm = Vehicle_Garage_Mapping.objects.get(pk=request.POST['id'])
     vgm.delete()
@@ -1495,6 +1543,8 @@ def delete_vgm(request):
     response_data['status'] = 'success'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def delete_installation(request):
     installation = Installation.objects.get(pk=request.POST['id'])
     installation.is_active = 'f'
@@ -1505,6 +1555,8 @@ def delete_installation(request):
 
 ####################################geofence area####################################################
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def get_bin_spot(request):
     bn = Bin.objects.get(pk=request.GET['id'])
     response_data={}
@@ -1512,6 +1564,8 @@ def get_bin_spot(request):
     response_data['status'] = 'success'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def get_all_bin_spot(request):
     bns = Bin.objects.filter(is_active=True)
     locations = list();
@@ -1527,6 +1581,8 @@ def get_all_bin_spot(request):
     response_data['status'] = 'success'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def get_all_bin_spot_from_ward(request):
     ward = Ward.objects.get(pk=request.GET['id'])
     bns = Bin.objects.filter(is_active=True).filter(bin_location__coveredby=ward.ward_fence)
@@ -1543,6 +1599,8 @@ def get_all_bin_spot_from_ward(request):
     response_data['status'] = 'success'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def get_all_mlc_spot(request):
     mlcs = Stop_station.objects.filter(is_mlc=True)
     locations = list();
@@ -1559,6 +1617,8 @@ def get_all_mlc_spot(request):
     response_data['status'] = 'success'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def get_all_tnsstn_spot(request):
     tnsstns = Stop_station.objects.filter(is_tnsstn=True)
     locations = list();
@@ -1575,6 +1635,8 @@ def get_all_tnsstn_spot(request):
     response_data['status'] = 'success'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def get_all_dmpgnd_spot(request):
     dmpgnds = Stop_station.objects.filter(is_dmpgnd=True)
     locations = list();
@@ -1591,6 +1653,8 @@ def get_all_dmpgnd_spot(request):
     response_data['status'] = 'success'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def get_all_garage_spot(request):
     garages = Stop_station.objects.filter(is_garage=True)
     locations = list();
@@ -1607,6 +1671,8 @@ def get_all_garage_spot(request):
     response_data['status'] = 'success'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
 def get_stop_station_area(request):
     stop_station = Stop_station.objects.get(pk=request.GET['id'])
     response_data={}

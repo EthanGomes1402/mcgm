@@ -26,6 +26,7 @@
     <header>
         <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
           <a class="navbar-brand" href="#">VTMS</a>
+
           <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
           </button>
@@ -67,6 +68,7 @@
                 </ul>
               </div>
             </li>
+          {% if user.is_authenticated and user.is_superuser %}
             <li class="sidebar-dropdown">
               <a href="#">
                   <i class="fas fa-trash"></i>
@@ -80,6 +82,7 @@
                 </ul>
               </div>
             </li>
+          {% endif %}
             <li class="sidebar-dropdown">
               <a href="#">
                   <i class="far fa-file"></i>
@@ -104,20 +107,18 @@
                       <a href="#" class="dropdown-toggle" data-toggle="dropdown">Bin Status</a>
                       <div class="dropdown-menu">
                           <a href="{% url 'bin_collection_status' %}" class="dropdown-item">Bin Collection Status</a>
-			  <!--<a href="{% url 'bin_rfid_tag_status' %}" class="dropdown-item">Bin RFID Tag Status</a>-->
+			              <!--<a href="{% url 'bin_rfid_tag_status' %}" class="dropdown-item">Bin RFID Tag Status</a>-->
                       </div>
                   </div>
                   </li>
-
                   <li class="sidebar-dropdown">
                     <div class="dropdown">
                       <a href="#" class="dropdown-toggle" data-toggle="dropdown">Garage Traction</a>
                       <div class="dropdown-menu">
                           <a href="{% url 'garage_traction' %}" class="dropdown-item">Garage Traction</a>
                       </div>
-                  </div>
+                    </div>
                   </li>
-
                   <li class="sidebar-dropdown">
                     <div class="dropdown">
                       <a href="#" class="dropdown-toggle" data-toggle="dropdown">Landfill Site Usage</a>
@@ -225,7 +226,7 @@
                     <div class="dropdown">
                       <a href="#" class="dropdown-toggle" data-toggle="dropdown">Weight</a>
                       <div class="dropdown-menu">
-			      <!--<a href="{% url 'weight_locationwise' %}" class="dropdown-item">LWR</a>-->
+			              <!--<a href="{% url 'weight_locationwise' %}" class="dropdown-item">LWR</a>-->
                           <a href="{% url 'weight_wardwise' %}" class="dropdown-item">Ward Traction</a>
                           <a href="{% url 'weight_history' %}" class="dropdown-item">Weight History</a>
                           <a href="{% url 'weight_zonewise' %}" class="dropdown-item">Zone Traction</a>
@@ -235,6 +236,7 @@
                 </ul>
               </div>
             </li>
+          {% if user.is_authenticated and user.is_superuser %}
             <li class="sidebar-dropdown">
               <a href="#">
                   <i class="fas fa-user"></i>
@@ -245,19 +247,20 @@
                   <li><a href="{% url 'vehicles' %}">Vehicle</a></li>
                   <li><a href="{% url 'bins' %}">Bin</a></li>
                   <li><a href="{% url 'routes' %}">Route</a></li>
-		  <li><a href="{% url 'route_schedules' %}">Route Schedule</a></li>
+		          <li><a href="{% url 'route_schedules' %}">Route Schedule</a></li>
                   <li><a href="{% url 'stop_stations' %}">Stop Station</a></li>
                   <li><a href="{% url 'contractors' %}">Contractor</a></li>
-		  <li><a href="{% url 'vgms' %}">Garage vehicle Mapping</a></li>
+		          <li><a href="{% url 'vgms' %}">Garage vehicle Mapping</a></li>
                   <li><a href="{% url 'wcms' %}">Ward Contractor Mapping</a></li>
-		  <li><a href="{% url 'installations' %}">Installation</a></li>
-		  <li><a href="{% url 'wards' %}">Ward</a></li>
-		  <li><a href="{% url 'divs' %}">Div</a></li>
-		  <li><a href="{% url 'zones' %}">Zone</a></li>
+		          <li><a href="{% url 'installations' %}">Installation</a></li>
+		          <li><a href="{% url 'wards' %}">Ward</a></li>
+		          <li><a href="{% url 'divs' %}">Div</a></li>
+		          <li><a href="{% url 'zones' %}">Zone</a></li>
                   <li><a href="#">Staff Management</a></li>
                 </ul>
               </div>
             </li>
+          {% endif %}
           </ul>
         </div>
       </div>

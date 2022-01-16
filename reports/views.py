@@ -1240,7 +1240,7 @@ def get_vehicle_travel_history(request):
     from_time = dateutil.parser.parse(form_data['from_time'])
     to_time = dateutil.parser.parse(form_data['to_time'])
     vehicle = Vehicle.objects.get(pk=form_data['selectVehicle'])
-    vc = chain(vehicle.tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime') , vehicle.current_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime'))
+    vc = chain(vehicle.vehicle_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime') , vehicle.current_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime'))
 
     for each_vehicle_record in set(vc):
         each_vehicle_record_data = dict()

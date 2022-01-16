@@ -3,7 +3,7 @@ from django.contrib.gis.db import models
 from django.core.serializers import serialize
 from django.contrib.auth.models import User
 from swmadmin.models import Vehicle,Route,Bin
-from swmadmin.models import Stop_station 
+from swmadmin.models import Stop_station
 from psqlextra.types import PostgresPartitioningMethod
 from psqlextra.models import PostgresPartitionedModel
 
@@ -53,7 +53,7 @@ class Alert(models.Model):
     ]
     category = models.CharField(max_length=1,choices=alert_category_choices,default=geo_fence)
     sub_category = models.CharField(max_length=2,choices=alert_sub_category_choices,default=none)
-    message = models.TextField() 
+    message = models.TextField()
     location = models.PointField(null=True, blank=True)
     vehicle = models.ForeignKey(Vehicle, related_name='alerts',on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now=True,null=True)
@@ -90,7 +90,7 @@ class Tracklog_history(models.Model):
 
     class Meta:
         db_table = "tracklog_historys"
-        ordering = ['vehicle','datetime'] 
+        ordering = ['vehicle','datetime']
 
 class Current_tracklog_history(PostgresPartitionedModel):
     class PartitioningMeta:
@@ -124,7 +124,7 @@ class Current_tracklog_history(PostgresPartitionedModel):
 
     class Meta:
         db_table = "current_tracklog_historys"
-        ordering = ['vehicle','datetime'] 
+        ordering = ['vehicle','datetime']
 
 class Vehicle_tracklog_history(PostgresPartitionedModel):
     class PartitioningMeta:
@@ -158,7 +158,7 @@ class Vehicle_tracklog_history(PostgresPartitionedModel):
 
     class Meta:
         db_table = "vehicle_tracklog_historys"
-        ordering = ['vehicle','datetime'] 
+        ordering = ['vehicle','datetime']
 
 class Weight_history(models.Model):
     vehicle = models.ForeignKey(Vehicle, related_name='weight_historys',on_delete=models.CASCADE)
@@ -200,8 +200,8 @@ class Tag_read_history(models.Model):
 
 
 class Route_status(models.Model):
-    route = models.ForeignKey(Route, related_name='route_statuses',on_delete=models.CASCADE) 
-    bins  = models.ForeignKey(Bin, related_name='route_statuses',on_delete=models.CASCADE) 
+    route = models.ForeignKey(Route, related_name='route_statuses',on_delete=models.CASCADE)
+    bins  = models.ForeignKey(Bin, related_name='route_statuses',on_delete=models.CASCADE)
     shift_choices = [
         ('1','Morning'),
         ('2','Afternoon'),

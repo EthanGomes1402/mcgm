@@ -265,3 +265,11 @@ class Activity_log_history(models.Model):
 
     class Meta:
         db_table = "activity_log_historys"
+
+class Faulty_records(models.Model):
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now=True,null=True)
+
+    class Meta:
+        db_table = "faulty_records"
+        ordering = ['created_at',]

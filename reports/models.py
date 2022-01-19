@@ -92,6 +92,66 @@ class Tracklog_history(models.Model):
         db_table = "tracklog_historys"
         ordering = ['vehicle','datetime']
 
+class Unlogged_tracklog_history(models.Model):
+    vehicle = models.ForeignKey(Vehicle, related_name='unlogged_tracklog_historys',on_delete=models.CASCADE,db_index=False)
+    datetime = models.DateTimeField(auto_now=True,null=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6,default=0,blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6,default=0,blank=True)
+    speed = models.FloatField(default=0.0, blank=True)
+    heading = models.IntegerField(null=True, blank=True)
+    mps = models.BooleanField(default=0,null=True)
+    miv = models.FloatField(default=0.0, blank=True)
+    ibv = models.FloatField(default=0.0, blank=True)
+    location = models.PointField(null=True, blank=True)
+    ignition = models.BooleanField(default=1)
+    emergency= models.CharField(max_length=4,null=True, blank=True)
+    dio = models.CharField(max_length=150,null=True, blank=True)
+    dod = models.DateField(auto_now=True,null=True)
+    shift_choices = [
+        ('1','Morning'),
+        ('2','Afternoon'),
+        ('3','Night')
+    ]
+    shift= models.CharField(max_length=1,choices=shift_choices,default='1')
+    created_at = models.DateTimeField(auto_now=True,null=True,blank=True)
+
+    def __str__(self):
+        return (",".join([str(self.vehicle),str(self.datetime)]))
+
+    class Meta:
+        db_table = "unlogged_tracklog_historys"
+        ordering = ['vehicle','datetime']
+
+class Unlogged_tracklog_history_v2(models.Model):
+    vehicle = models.ForeignKey(Vehicle, related_name='unlogged_tracklog_historys_v2s',on_delete=models.CASCADE,db_index=False)
+    datetime = models.DateTimeField(auto_now=True,null=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6,default=0,blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6,default=0,blank=True)
+    speed = models.FloatField(default=0.0, blank=True)
+    heading = models.IntegerField(null=True, blank=True)
+    mps = models.BooleanField(default=0,null=True)
+    miv = models.FloatField(default=0.0, blank=True)
+    ibv = models.FloatField(default=0.0, blank=True)
+    location = models.PointField(null=True, blank=True,spatial_index=False)
+    ignition = models.BooleanField(default=1)
+    emergency= models.CharField(max_length=4,null=True, blank=True)
+    dio = models.CharField(max_length=150,null=True, blank=True)
+    dod = models.DateField(auto_now=True,null=True)
+    shift_choices = [
+        ('1','Morning'),
+        ('2','Afternoon'),
+        ('3','Night')
+    ]
+    shift= models.CharField(max_length=1,choices=shift_choices,default='1')
+    created_at = models.DateTimeField(auto_now=True,null=True,blank=True)
+
+    def __str__(self):
+        return (",".join([str(self.vehicle),str(self.datetime)]))
+
+    class Meta:
+        db_table = "unlogged_tracklog_historys_v2"
+        ordering = ['vehicle','datetime']
+
 class Current_tracklog_history(PostgresPartitionedModel):
     class PartitioningMeta:
         method = PostgresPartitioningMethod.LIST

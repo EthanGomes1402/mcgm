@@ -16,11 +16,20 @@ def latest_vehicle_status(request):
     response_data['status'] = 'success'
     response_data['data'] = list()
 
+    iward = None
+    if not request.user.is_superuser:
+        if request.user.appuser.is_contractor:
+            iward = request.user.appuser.bmc_contractor.ward
+        else:
+            iward = request.user.appuser.bmc_officer.ward
+
     for each_th_record_dict in Current_tracklog_history.objects.values('vehicle').annotate(max_id=Max('id')).order_by('max_id'):
         each_th_record = Current_tracklog_history.objects.get(id=each_th_record_dict['max_id'])
         each_vehicle_record_data = dict()
         each_vehicle_record_data['veh'] = str(each_th_record.vehicle)
         each_vehicle_record_data['veh_ward'] = str(each_th_record.vehicle.ward)
+        if iward and iward!= each_th_record.vehicle.ward:
+            continue
         each_vehicle_record_data['type'] = str(each_th_record.vehicle.vehicle_type)
         each_vehicle_record_data['lat'] = str(each_th_record.latitude)
         each_vehicle_record_data['lon'] = str(each_th_record.longitude)

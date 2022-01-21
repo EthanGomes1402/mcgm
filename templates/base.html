@@ -83,6 +83,7 @@
               </div>
             </li>
           {% endif %}
+          {% if user.is_authenticated and user.is_superuser %}
             <li class="sidebar-dropdown">
               <a href="#">
                   <i class="far fa-file"></i>
@@ -236,6 +237,7 @@
                 </ul>
               </div>
             </li>
+          {% endif %}
           {% if user.is_authenticated and user.is_superuser %}
             <li class="sidebar-dropdown">
               <a href="#">

@@ -10,12 +10,11 @@
   <table class="table tablesorter">
     <thead class="thead-inverse">
       <tr>
-        <th>From Ward</th>
         <th>Vehicle</th>
         <th>Type</th>
-	<th>Ward</th>
+	    <th>Ward</th>
         <th>Time</th>
-	<th>Trip Status</th>
+	    <th>Trip Status</th>
         <th>Vehicle Status</th>
         <th>Speed Status</th>
         <th>Tracking Status</th>
@@ -25,17 +24,16 @@
     <tbody>
       {% for each_entry in all_entries %}
         <tr>
-	  <td>{{ each_entry.veh_ward }}</td>
-	  <td>{{ each_entry.veh  }}</td>
-	  <td>{{ each_entry.type }}</td>
-          <td>{{ each_entry.ward  }} </td>
-          <td>{{ each_entry.time | default_if_none:"" }}</td>
-          <td>{{ each_entry.trip_status }}</td>
-	  <!--<td>{% firstof bin.ward bin.route.ward  %}</td>-->
-          <td bgcolor="{{ each_entry.veh_class }}">{{ each_entry.veh_status }}</td>
-          <td bgcolor="{{ each_entry.speed_class }}">{{ each_entry.speed_status }}</td>
-          <td></td>
-	  <td class="area"><img src="{% static 'img/location.png' %}"><span style="display:none;">{{  each_entry.lat }},{{each_entry.lon }}</span> </td>
+	        <td>{{ each_entry.veh  }}</td>
+	        <td>{{ each_entry.type }}</td>
+            <td>{{ each_entry.ward  }} </td>
+            <td>{{ each_entry.time | default_if_none:"" }}</td>
+            <td>{{ each_entry.trip_status }}</td>
+	        <!--<td>{% firstof bin.ward bin.route.ward  %}</td>-->
+            <td bgcolor="{{ each_entry.veh_class }}">{{ each_entry.veh_status }}</td>
+            <td bgcolor="{{ each_entry.speed_class }}">{{ each_entry.speed_status }}</td>
+            <td></td>
+	        <td class="area"><img src="{% static 'img/location.png' %}"><span style="display:none;">{{  each_entry.lat }},{{each_entry.lon }}</span> </td>
         </tr>
       {% endfor %}
     </tbody>

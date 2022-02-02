@@ -7,6 +7,8 @@ from reports.models import Current_tracklog_history
 from django.db.models.aggregates import Max
 from django.contrib.gis.geos import GEOSGeometry,Point,LineString
 from django.contrib.auth.decorators import login_required,user_passes_test
+from datetime import datetime
+from datetime import timedelta
 
 # Create your views here.
 @login_required
@@ -38,7 +40,8 @@ def latest_vehicle_status(request):
             each_vehicle_record_data['ward'] = Ward.objects.filter(is_active=True).filter(ward_fence__contains=each_vehicle_record_data['location']).get()
         except:
             each_vehicle_record_data['ward'] = None
-        each_vehicle_record_data['time'] = str(each_th_record.datetime.strftime("%Y-%m-%d %H:%M:%S"))
+        tm = each_th_record.datetime + timedelta(minutes=330)
+        each_vehicle_record_data['time'] = str(tm.strftime("%Y-%m-%d %H:%M:%S"))
         #logic will check if current time is in assigned route schedule for a vehicle
         each_vehicle_record_data['trip_status'] = 'In trip'
         each_vehicle_record_data['speed'] = each_th_record.speed

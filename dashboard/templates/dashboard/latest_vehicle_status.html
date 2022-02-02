@@ -22,7 +22,7 @@
       </tr>
     </thead>
     <tbody>
-      {% for each_entry in all_entries %}
+      {% for each_entry in all_entries reversed %}
         <tr>
 	        <td>{{ each_entry.veh  }}</td>
 	        <td>{{ each_entry.type }}</td>
@@ -77,7 +77,7 @@
 		$(document).ready(function(){
 		        setTimeout(function () {
 				location.reload(true);
-		        },15000); 
+		        },60000); 
 
 			$('table').tablesorter({theme:'metro-dark'});
 			$("td.area").click(function () {

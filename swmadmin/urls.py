@@ -44,6 +44,7 @@ urlpatterns = [
     path('wcm/edit/<int:pk>/',views.WCMUpdateView.as_view(),name='edit_wcm'),
     path('vgm/edit/<int:pk>/',views.VGMUpdateView.as_view(),name='edit_vgm'),
     path('installation/edit/<int:pk>/',views.InstallationUpdateView.as_view(),name='edit_installation'),
+    path('ewd/edit/<int:pk>/',views.EwdUpdateView.as_view(),name='edit_ewd'),
     #path('vcm/edit/',views.CreateVCMView.as_view(),name='add_vcm'),
 
     #all file upload and populate data urls
@@ -54,6 +55,7 @@ urlpatterns = [
     path('upload_wcm_data/',views.upload_ward_contractor_mapping,name='upload_ward_contractor_mapping'),
     path('upload_installation_data/',views.upload_installation_data,name='upload_installation_data'),
     path('upload_route_schedule_data/',views.upload_route_schedule_data,name='upload_route_schedule_data'),
+    path('upload_ewd_data/',views.upload_ewd_data,name='upload_ewd_data'),
 
 #    #all add urls    
     path('bin/add/',views.BinCreateView.as_view(),name='add_bin'),
@@ -65,6 +67,7 @@ urlpatterns = [
     path('wcm/add/',views.WCMCreateView.as_view(),name='add_wcm'),
     path('vgm/add/',views.VGMCreateView.as_view(),name='add_vgm'),
     path('installation/add/',views.InstallationCreateView.as_view(),name='add_installation'),
+    path('ewd/add/',views.EwdCreateView.as_view(),name='add_ewd'),
 #   path('vcm/add/',views.CreateVCMView.as_view(),name='add_vcm'),
 
 #   all list urls
@@ -77,6 +80,7 @@ urlpatterns = [
     path('wcms/',views.WCMListView.as_view(),name='wcms'),
     path('vgms/',views.VGMListView.as_view(),name='vgms'),
     path('installations/',views.InstallationListView.as_view(),name='installations'),
+    path('ewds/',views.EwdListView.as_view(),name='ewds'),
 #   path('vcms/',views.VCMListView.as_view(),name='vcms'),
 
 #   all delete urls for common app
@@ -89,6 +93,7 @@ urlpatterns = [
     path('ajax/delete_wcm/',views.delete_wcm,name='delete_wcm'),
     path('ajax/delete_vgm/',views.delete_vgm,name='delete_vgm'),
     path('ajax/delete_installation/',views.delete_installation,name='delete_installation'),
+    path('ajax/delete_ewd/',views.delete_ewd,name='delete_ewd'),
 
 #    path('ajax/get_route_fence/',views.get_route_fence,name='get_route_fence'),
     path('ajax/get_bin_spot/',views.get_bin_spot,name='get_bin_spot'),
@@ -99,4 +104,5 @@ urlpatterns = [
     path('ajax/get_all_dmpgnd_spot/',views.get_all_dmpgnd_spot,name='get_all_dmpgnd_spot'),
     path('ajax/get_all_garage_spot/',views.get_all_garage_spot,name='get_all_garage_spot'),
     path('ajax/get_stop_station_area/',views.get_stop_station_area,name='get_stop_station_area'),
+    path('ajax/get_ewd_area/',views.get_ewd_area,name='get_ewd_area'),
 ]

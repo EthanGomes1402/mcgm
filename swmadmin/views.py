@@ -2,12 +2,12 @@ from django.shortcuts import render
 from django.contrib.auth.models import User
 from accounts.models import Appuser
 from django.http import HttpResponse,JsonResponse
-from .models import Bin,Route,Stop_station,Vehicle,Route_schedule,Contractor,Ward_Contractor_Mapping,Vehicle_Garage_Mapping,Installation
+from .models import Bin,Route,Stop_station,Vehicle,Route_schedule,Contractor,Ward_Contractor_Mapping,Vehicle_Garage_Mapping,Installation,Ewd
 from common.models import Ward
 from django.shortcuts import render,redirect,get_object_or_404
 from django.http import Http404
-from .forms import NewRouteForm,NewBinForm,NewStopStationForm,NewVehicleForm,NewRouteScheuleForm,NewContractorForm,NewWCMForm,NewVGMForm,NewInstallationForm
-from .forms import RouteEditForm,BinEditForm,StopStationEditForm,VehicleEditForm,RouteScheduleEditForm,ContractorEditForm,WCMEditForm,VGMEditForm,InstallationEditForm
+from .forms import NewRouteForm,NewBinForm,NewStopStationForm,NewVehicleForm,NewRouteScheuleForm,NewContractorForm,NewWCMForm,NewVGMForm,NewInstallationForm,NewEwdForm
+from .forms import RouteEditForm,BinEditForm,StopStationEditForm,VehicleEditForm,RouteScheduleEditForm,ContractorEditForm,WCMEditForm,VGMEditForm,InstallationEditForm,EwdEditForm
 from django.core.serializers import serialize
 from django.contrib.auth.decorators import login_required,user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin,UserPassesTestMixin
@@ -977,43 +977,66 @@ def upload_ward_contractor_mapping(request):
         return redirect('wcms')
     return render(request,'swmadmin/upload_wcm_data.html',{})
 
-#########################################ward############################################Done
-#class WardCreateView(CreateView):
-#    model=Ward
-#    form_class=NewWardForm
-#    template_name = 'swmadmin/add_ward.html'
-#    success_url= '/'
-#
-#    def form_valid(self,form):
-#        Ward = form.save(commit=False)
-#        Ward.created_by = self.request.user
-#        Ward.created_at = timezone.now()
-#        Ward.save()
-#        return redirect('wards')
-#
-#class WardUpdateView(UpdateView):
-#    model = Ward
-#    form_class=WardEditForm
-#    context_object_name= 'ward'
-#    template_name = 'swmadmin/edit_ward.html'
-#    success_url = '/wards/'
-#
-#    def form_valid(self,form):
-#        Ward = form.save(commit=False)
-#        Ward.updated_at = timezone.now()
-#        Ward.updated_by = self.request.user
-#        Ward.save()
-#        return redirect('wards')
-#
-#class WardListView(ListView):
-#    model = Ward
-#    context_object_name='wards'
-#    template_name = 'swmadmin/wards.html'
-#
-#    def get_queryset(self):
-#        qs = super(WardListView,self).get_queryset().filter(is_active=True).order_by('name')
-#        return qs
-#
+def upload_ewd_data(request):
+    if request.method == 'POST':
+        mykmlfile = request.FILES["excel_file"]
+        with open('/tmp/ewds.kml','wb+') as destination:
+            for chunk in mykmlfile.chunks():
+                destination.write(chunk)
+
+        ds = DataSource('/tmp/ewds.kml')
+        for layer in ds:
+            for feat in layer:
+                #geom = feat.geom.clone()
+                geom = feat.geom
+                geom.coord_dim = 2
+                ewd  = Ewd.objects.create(
+                     name        = feat.get('name'),
+                     code        = feat.get('name'),
+                     ewd_fence   = geom.geos,
+                     created_by  = request.user,
+                     created_at  = timezone.now()
+                )
+        return redirect('ewds')
+    return render(request,'swmadmin/upload_ewds.html',{})
+
+#########################################Ewd############################################Done
+class EwdCreateView(CreateView):
+    model=Ewd
+    form_class=NewEwdForm
+    template_name = 'swmadmin/add_ewd.html'
+    success_url = '/ewds/'
+
+    def form_valid(self,form):
+        ewd = form.save(commit=False)
+        ewd.created_by = self.request.user
+        ewd.created_at = timezone.now()
+        ewd.save()
+        return redirect('ewds')
+
+class EwdUpdateView(UpdateView):
+    model = Ewd
+    form_class=EwdEditForm
+    context_object_name= 'ewd'
+    template_name = 'swmadmin/edit_ewd.html'
+    success_url = '/ewds/'
+
+    def form_valid(self,form):
+        ewd = form.save(commit=False)
+        ewd.updated_at = timezone.now()
+        ewd.updated_by = self.request.user
+        ewd.save()
+        return redirect('ewds')
+
+class EwdListView(ListView):
+    model = Ewd
+    context_object_name='ewds'
+    template_name = 'swmadmin/ewds.html'
+
+    def get_queryset(self):
+        qs = super(EwdListView,self).get_queryset().filter(is_active=True).order_by('name')
+        return qs
+
 ########################################StopStation##########################################Done
 class StopStationCreateView(UserPassesTestMixin,CreateView):
     model=Stop_station
@@ -1637,6 +1660,16 @@ def delete_installation(request):
     response_data['status'] = 'success'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
+def delete_ewd(request):
+    ewd = Ewd.objects.get(pk=request.POST['id'])
+    ewd.is_active = 'f'
+    ewd.save()
+    response_data={}
+    response_data['status'] = 'success'
+    return HttpResponse(json.dumps(response_data),content_type="application/json")
+
 ####################################geofence area####################################################
 
 @login_required
@@ -1763,3 +1796,12 @@ def get_stop_station_area(request):
     response_data['stop_station_fence'] = stop_station.stop_station_fence.geojson
     response_data['status'] = 'success'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
+
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
+def get_ewd_area(request):
+    ewd = Ewd.objects.get(pk=request.GET['id'])
+    response_data={}
+    response_data['ewd_fence'] = ewd.ewd_fence.geojson
+    response_data['status'] = 'success'
+    return HttpResponse(json.dumps(response_data),content_type="application/json")   

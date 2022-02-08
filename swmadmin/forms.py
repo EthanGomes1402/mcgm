@@ -1,6 +1,6 @@
 from django import forms
 from common.models import Ward
-from .models import Route,Bin,Stop_station,Vehicle,Route_schedule,Contractor,Ward_Contractor_Mapping,Vehicle_Garage_Mapping,Installation
+from .models import Route,Bin,Stop_station,Vehicle,Route_schedule,Contractor,Ward_Contractor_Mapping,Vehicle_Garage_Mapping,Installation,Ewd
 from django.contrib.auth.models import User
 import floppyforms as forms1
 from dal import autocomplete
@@ -206,4 +206,16 @@ class NewInstallationForm(forms.ModelForm):
         fields=['vehicle','imei','sim','wnld_tag']
 
 class InstallationEditForm(NewInstallationForm):
+    pass
+
+class NewEwdForm(forms.ModelForm):
+    name = forms.CharField(max_length=20)
+    code = forms.CharField(max_length=20)
+    description = forms.CharField(max_length=200)
+    ewd_fence = forms1.gis.MultiPolygonField(widget=MultiPolygonWidget(attrs={ 'map_width': 1050,'map_height': 800 }),required=False)
+    class Meta:
+        model= Ewd
+        fields=['name','code','description','ewd_fence']
+
+class EwdEditForm(NewEwdForm):
     pass

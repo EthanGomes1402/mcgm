@@ -22,7 +22,8 @@ from django.contrib.auth import views as auth_views
 
 urlpatterns = [
 #   autocomplete
-   path('latest_vehicle_status/',views.latest_vehicle_status,name='latest_vehicle_status'),
+   #path('latest_vehicle_status/',views.latest_vehicle_status,name='latest_vehicle_status'),
+   path('latest_vehicle_status/',views.latest_vehicle_status_v2,name='latest_vehicle_status'),
    path('quick_view/',views.quick_view,name='quick_view'),
    path('get_quick_view_form_param/',views.get_quick_view_form_param,name='get_quick_view_form_param'),
 

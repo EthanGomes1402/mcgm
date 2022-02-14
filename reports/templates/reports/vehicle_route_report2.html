@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}Bin Collection Status Report {% endblock %}
+
+{% block extrastylesheet %}
+ <style>
+  div.loader {
+    width: 100px;
+    height: 100px;
+    position: absolute;
+    top:0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+ }
+ </style>
+{% endblock %}
+
+{% block content %}
+	<div>
+		<div width="100%" style="display:none;" id="vehicle_summery_data">
+			<button id="export_to_excel" style="float: right;">Export To Excel</button>
+			<button id="export_to_csv" style="float: right;">Export To CSV</button>
+			<button id="export_to_pdf" style="float: right;">Export To PDF</button>
+			<table  id="vehicle_summery" width="100%" class="table tablesorter">
+				<thead>
+					<tr>
+						<th>Index</th>
+						<th>Vehicle</th>
+						<th>Date</th>
+						<th>Time</th>
+						<th>Location</th>
+						<th>Distance</th>
+						<th>Speed</th>
+					</tr>
+				</thead>
+				<tbody>
+                    {% for loc in data %}
+                    {% %}
+                </tbody>
+			</table>
+		</div>
+	</div>
+{% endblock %}
+
+{% block js %}
+{% endblock %}  

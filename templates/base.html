@@ -84,7 +84,7 @@
             </li>
           {% endif %}
           {% if user.is_authenticated and user.is_superuser %}
-            <li class="sidebar-dropdown">
+            <!--<li class="sidebar-dropdown">
               <a href="#">
                   <i class="far fa-file"></i>
                 <span>Reports</span>
@@ -108,7 +108,7 @@
                       <a href="#" class="dropdown-toggle" data-toggle="dropdown">Bin Status</a>
                       <div class="dropdown-menu">
                           <a href="{% url 'bin_collection_status' %}" class="dropdown-item">Bin Collection Status</a>
-			              <!--<a href="{% url 'bin_rfid_tag_status' %}" class="dropdown-item">Bin RFID Tag Status</a>-->
+			              <a href="{% url 'bin_rfid_tag_status' %}" class="dropdown-item">Bin RFID Tag Status</a>
                       </div>
                   </div>
                   </li>
@@ -227,13 +227,31 @@
                     <div class="dropdown">
                       <a href="#" class="dropdown-toggle" data-toggle="dropdown">Weight</a>
                       <div class="dropdown-menu">
-			              <!--<a href="{% url 'weight_locationwise' %}" class="dropdown-item">LWR</a>-->
+			              <a href="{% url 'weight_locationwise' %}" class="dropdown-item">LWR</a>
                           <a href="{% url 'weight_wardwise' %}" class="dropdown-item">Ward Traction</a>
                           <a href="{% url 'weight_history' %}" class="dropdown-item">Weight History</a>
                           <a href="{% url 'weight_zonewise' %}" class="dropdown-item">Zone Traction</a>
                       </div>
                   </div>
                   </li>			
+                </ul>
+              </div>
+            </li>-->
+            <li class="sidebar-dropdown">
+              <a href="#">
+                  <i class="far fa-file"></i>
+                <span>Report</span>
+              </a>
+              <div class="sidebar-submenu">
+                <ul>
+                  <li class="sidebar-dropdown">
+                    <div class="dropdown">
+                      <a href="#" class="dropdown-toggle" data-toggle="dropdown">Vehicle Report</a>
+                      <div class="dropdown-menu">
+                          <a href="{% url 'vehicle_route_report' %}" class="dropdown-item">Vehicle Route Report</a>
+                      </div>
+                    </div>
+                  </li>
                 </ul>
               </div>
             </li>

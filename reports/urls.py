@@ -45,6 +45,7 @@ urlpatterns = [
 
     path('reports/vehicle_route_history',views.vehicle_route_history,name='vehicle_route_history'),
     path('reports/vehicle_summery',views.vehicle_summery,name='vehicle_summery'),
+    path('reports/vehicle_route_report',views.vehicle_route_report,name='vehicle_route_report'),
 
     path('reports/vehicle_status_bin_rfid_tag',views.vehicle_status_bin_rfid_tag,name='vehicle_status_bin_rfid_tag'),
     path('reports/vehicle_status_bin_rfid_tag_status',views.vehicle_status_bin_rfid_tag_status,name='vehicle_status_bin_rfid_tag_status'),

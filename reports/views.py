@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth.models import User
 from common.models import Ward,Zone,Div
 from swmadmin.models import Vehicle,Contractor,Ward_Contractor_Mapping,Bin,Route,Stop_station,Vehicle_Garage_Mapping
@@ -820,24 +821,75 @@ def vehicle_summery(request):
         to_time = dateutil.parser.parse(form_data['to_time'])
         vehicles  = list(map(lambda vehicle : Vehicle.objects.get(pk=vehicle) , form_data['selectVehicle'].split("_")))
 
-# table: table which record rfid tag read entries of unregistered
-# desc : get list windschedil tag read entry for a selected vehicle
-# op   : vehicle,RFID tag,location,datetime(at which tag read)
-#
-#        for each_vehicle in vehicles:
-#            for each_alert in each_vehicle.alerts.filter(created_at__range=(from_time,to_time)):
-#                each_alert_data = dict()
-#                each_alert_data['location'] = each_alert.location
-#                each_alert_data['vehicle'] = each_vehicle.plate_number
-#                each_alert_data['tag'] = 'geofence'
-#                each_alert_data['time'] = each_vehicle.created_at.strftime("%Y-%m-%d %H:%M:%S")
-#                response_data['data'].append(each_alert_data)
-#
-        return HttpResponse(json.dumps(response_data),content_type="application/json")
+def by_datetime(ele):
+    return ele.datetime
 
-    #fields required div,zone,ward,vehicle,date range parameter
-    #return HttpResponse("<h1> report "+ str(inspect.stack()[0][3]) +"</h1>")
-    return render(request,'reports/vehicle_summery.html',{ 'form_params' : form_params })
+##done
+def vehicle_route_report(request):
+    set_session_reporting_form_params(request)
+    form_params = request.session['reports_form_params']
+
+    if request.method == 'POST':
+        response_data=dict()
+        response_data['status'] = 'success'
+        response_data['data'] = list()
+        form_data = QueryDict(request.POST['form_data'].encode('ASCII'))
+        from_time = dateutil.parser.parse(form_data['from_time'])
+        to_time   = dateutil.parser.parse(form_data['to_time'])
+        plate_no  = form_data['vehicle']
+        vehicle   = Vehicle.objects.get(plate_number=plate_no)
+        vc = chain(vehicle.vehicle_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime').distinct('datetime'), vehicle.current_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime').distinct('datetime'))
+        sorted_vc = sorted(vc,key=by_datetime)
+
+        for each_vehicle_record in sorted_vc:
+            each_vehicle_record_data = dict()
+            each_vehicle_record_data['vehicle']     = plate_no
+            each_vehicle_record_data['date']        = str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))
+            each_vehicle_record_data['time']        = str(each_vehicle_record.datetime.strftime("%H:%M:%S"))
+            each_vehicle_record_data['location']    = ''
+            each_vehicle_record_data['speed']       = str(each_vehicle_record.speed)
+            response_data['data'].append(each_vehicle_record_data)
+        return HttpResponse(json.dumps(response_data),content_type="application/json")
+    return render(request,'reports/vehicle_route_report.html',{ 'form_params' : form_params})
+
+##done
+def vehicle_route_report_v2(request):
+    set_session_reporting_form_params(request)
+    form_params = request.session['reports_form_params']
+
+    if request.method == 'POST':
+        response_data=dict()
+        response_data['status'] = 'success'
+        response_data['data'] = list()
+        form_data = QueryDict(request.POST['form_data'].encode('ASCII'))
+        from_time = dateutil.parser.parse(form_data['from_time'])
+        to_time   = dateutil.parser.parse(form_data['to_time'])
+        plate_no  = form_data['vehicle']
+        vehicle   = Vehicle.objects.get(plate_number=plate_no)
+        vc = chain(vehicle.vehicle_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime').distinct('datetime'), vehicle.current_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime').distinct('datetime'))
+        sorted_vc = sorted(vc,key=by_datetime)
+
+        for each_vehicle_record in sorted_vc:
+            each_vehicle_record_data = dict()
+            each_vehicle_record_data['vehicle']     = plate_no
+            each_vehicle_record_data['date']        = str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))
+            each_vehicle_record_data['time']        = str(each_vehicle_record.datetime.strftime("%H:%M:%S"))
+            each_vehicle_record_data['location']    = ''
+            each_vehicle_record_data['speed']       = str(each_vehicle_record.speed)
+            response_data['data'].append(each_vehicle_record_data)
+        paginatorr = Paginator(response_data['data'], 100)
+        first_page = paginatorr.page(1).object_list
+        page_range = paginatorr.page_range
+        context = {
+            'paginatorr':paginatorr,
+            'first_page':first_page,
+            'page_range':page_range
+        }
+        page_n = request.POST.get('page_n', None)
+        results['list'] = list(paginatorr.page(page_n).object_list.values('id', 'datetime'))
+        return JsonResponse({"results":results})
+        #return HttpResponse(json.dumps(response_data),content_type="application/json")
+    return render(request,'reports/vehicle_route_report_v2.html',{ 'form_params' : form_params})
 
 ##done
 def vehicle_status_bin_rfid_tag(request):

@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth.models import User
 from common.models import Ward,Zone,Div
-from swmadmin.models import Vehicle,Contractor,Ward_Contractor_Mapping,Bin,Route,Stop_station,Vehicle_Garage_Mapping
+from swmadmin.models import Vehicle,Contractor,Ward_Contractor_Mapping,Bin,Route,Stop_station,Vehicle_Garage_Mapping,Ewd
 from reports.models import Alert,Tracklog_history
 from django.http import HttpResponse,JsonResponse
 from django.shortcuts import render,redirect,get_object_or_404
@@ -841,12 +841,42 @@ def vehicle_route_report(request):
         vc = chain(vehicle.vehicle_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime').distinct('datetime'), vehicle.current_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime').distinct('datetime'))
         sorted_vc = sorted(vc,key=by_datetime)
 
+        seen        = dict()
+        speed_zero  = dict()
+
         for each_vehicle_record in sorted_vc:
+            #logic to skip consecutive stationary entries 
+            if each_vehicle_record.speed == 0.0:
+                if each_vehicle_record.speed in speed_zero.keys():
+                    continue
+                else:
+                    speed_zero[each_vehicle_record.speed]=1
+            else:
+                speed_zero = {}
+
+            #logic to keep a entry for a minute  
+            tm_upto_minute = each_vehicle_record.datetime.strftime("%d_%m_%Y_%H_%M")
+            if tm_upto_minute in seen.keys():
+                continue
+            else:
+                seen[tm_upto_minute]=1
+
+#            location=Point(float(each_vehicle_record.longitude), float(each_vehicle_record.latitude))
+#            area    = None
+#
+#            try:
+#                pass
+#                #area = Ewd.objects.filter(ewd_fence__contains=location).get()
+#            except:
+#                area = None
+#
+#            area = area.name if area else ''
+
             each_vehicle_record_data = dict()
             each_vehicle_record_data['vehicle']     = plate_no
             each_vehicle_record_data['date']        = str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))
             each_vehicle_record_data['time']        = str(each_vehicle_record.datetime.strftime("%H:%M:%S"))
-            each_vehicle_record_data['location']    = ''
+            each_vehicle_record_data['area']        = ''
             each_vehicle_record_data['speed']       = str(each_vehicle_record.speed)
             response_data['data'].append(each_vehicle_record_data)
         return HttpResponse(json.dumps(response_data),content_type="application/json")

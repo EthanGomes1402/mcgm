@@ -207,15 +207,15 @@ class Installation(models.Model):
         db_table = "installations"
 
 class Ewd(models.Model):
-    name = models.CharField(max_length=20, unique=True)
-    code = models.CharField(max_length=20, unique=True,default='')
-    description = models.CharField(max_length=50,default='')
-    ewd_fence = models.MultiPolygonField()
+    name         = models.CharField(max_length=20, unique=True)
+    code         = models.CharField(max_length=20, unique=True,default='')
+    description  = models.CharField(max_length=50,default='')
+    ewd_fence    = models.PolygonField()
     is_active    = models.BooleanField(default=1)
-    created_at = models.DateTimeField(auto_now=True,null=True,blank=True)
-    created_by = models.ForeignKey(User, related_name='+',on_delete=models.PROTECT,verbose_name ='Created by',null=True )
-    updated_at = models.DateTimeField(auto_now=True,null=True,blank=True)
-    updated_by = models.ForeignKey(User,related_name='+',on_delete=models.PROTECT,verbose_name='Updated by', null=True)
+    created_at   = models.DateTimeField(auto_now=True,null=True,blank=True)
+    created_by   = models.ForeignKey(User, related_name='+',on_delete=models.PROTECT,verbose_name ='Created by',null=True )
+    updated_at   = models.DateTimeField(auto_now=True,null=True,blank=True)
+    updated_by   = models.ForeignKey(User,related_name='+',on_delete=models.PROTECT,verbose_name='Updated by', null=True)
 
     def __str__(self):
         return (self.code)

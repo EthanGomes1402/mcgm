@@ -28,6 +28,8 @@ import dateutil.parser
 from geopy.geocoders import Nominatim
 from datetime import date,timedelta
 from itertools import chain
+import codecs
+import math
 
 gcoord = SpatialReference(3857)
 mycoord = SpatialReference(4326)
@@ -844,6 +846,15 @@ def vehicle_route_report(request):
         seen        = dict()
         speed_zero  = dict()
 
+        #ajit's code block 1 starts - initializing the dictionary from txt file.
+        mydict = {}
+        filename = "../../../../../tmp/fulldata.txt"
+        a_file = codecs.open(filename, encoding="utf-8")
+        for line in a_file:
+            key, value = line.split(":::")
+            mydict[key] = value
+        #ajit code block 1 ends here
+
         for each_vehicle_record in sorted_vc:
             #logic to skip consecutive stationary entries 
             if each_vehicle_record.speed == 0.0:
@@ -872,11 +883,38 @@ def vehicle_route_report(request):
 #
 #            area = area.name if area else ''
 
+            #from here: ajit's code block 2 starts - computing and saving the addresses in the response data dictionary
+            inputlat = each_vehicle_record.latitude
+            inputlong = each_vehicle_record.longitude
+            inputlatlong = str(inputlat)+","+str(inputlong)
+            #accept the input and turn it into the nearest value whose answer we have in our text file database
+            newlat = format((round(inputlat,6)),'.6f')
+            newlong = format((round(inputlong, 6)),'.6f')
+            latfract = int(newlat[3:9])
+            longfract = int(newlong[3:9])
+            latadjustmentoffset = latfract%1000
+            if(int(newlat[0:2]) == 18):
+                finallatfract = latfract+(999-latadjustmentoffset)
+            else:
+                finallatfract = latfract+(223-latadjustmentoffset)
+                finallatfract = str(finallatfract).zfill(6)
+            longadjustmentoffset = longfract%1000
+            finallongfract = longfract+(896-longadjustmentoffset)
+            latmain = int(math.floor(float(newlat)))
+            longmain = int(math.floor(float(newlong)))
+            finallatlong = str(latmain)+"."+str(finallatfract)+","+str(longmain)+"."+str(finallongfract)
+            try:
+                resultaddress = mydict[finallatlong]
+                resultaddress = (resultaddress.split(","))[:2]
+            except:
+                resultaddress = "Out of Mumbai."
+            #ajit code block 2 ends here
+
             each_vehicle_record_data = dict()
             each_vehicle_record_data['vehicle']     = plate_no
             each_vehicle_record_data['date']        = str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))
             each_vehicle_record_data['time']        = str(each_vehicle_record.datetime.strftime("%H:%M:%S"))
-            each_vehicle_record_data['area']        = ''
+            each_vehicle_record_data['area']        = resultaddress
             each_vehicle_record_data['speed']       = str(each_vehicle_record.speed)
             response_data['data'].append(each_vehicle_record_data)
         return HttpResponse(json.dumps(response_data),content_type="application/json")

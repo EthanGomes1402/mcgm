@@ -121,11 +121,6 @@ def get_quick_view_form_param(request):
     response_data['status'] = 'success'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
-
-
-
-
-
 @login_required
 @user_passes_test(lambda user: user.is_superuser or (user.appuser.is_contractor or user.appuser.is_officer))
 def latest_vehicle_status_v2(request):
@@ -186,7 +181,7 @@ def latest_vehicle_status_v2(request):
         except:
             resultaddress = "Out of Mumbai."
         #each_vehicle_record_data['address'] = resultaddress
-        each_vehicle_record_data['ward'] = resultaddress
+        each_vehicle_record_data['ward'] = resultaddress.split(",")[0] if resultaddress.split(",")[0] else ' '
         #ajit code block 2 ends here
 
         #try:

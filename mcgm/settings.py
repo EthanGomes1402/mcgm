@@ -180,5 +180,5 @@ DEFAULT_FILE_STORAGE = (
 )
 
 LOGOUT_REDIRECT_URL = 'login'
-LOGIN_REDIRECT_URL = 'dashboard'
+LOGIN_REDIRECT_URL = 'latest_vehicle_status'
 CRISPY_TEMPLATE_PACK = 'bootstrap4'

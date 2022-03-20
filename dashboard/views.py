@@ -43,7 +43,7 @@ def latest_vehicle_status(request):
             each_vehicle_record_data['ward'] = Ewd.objects.filter(is_active=True).filter(ewd_fence__contains=each_vehicle_record_data['location']).get()
         except:
             each_vehicle_record_data['ward'] = None
-        tm = each_th_record.datetime + timedelta(minutes=330)
+        tm = each_th_record.datetime + timedelta(minutes=0)
         each_vehicle_record_data['time'] = str(tm.strftime("%Y-%m-%d %H:%M:%S"))
         #logic will check if current time is in assigned route schedule for a vehicle
         each_vehicle_record_data['trip_status'] = 'In trip'
@@ -188,7 +188,7 @@ def latest_vehicle_status_v2(request):
             #each_vehicle_record_data['ward'] = Ewd.objects.filter(is_active=True).filter(ewd_fence__contains=each_vehicle_record_data['location']).get()
         #except:
             #each_vehicle_record_data['ward'] = None
-        tm = each_th_record.datetime + timedelta(minutes=330)
+        tm = each_th_record.datetime + timedelta(minutes=0)
         each_vehicle_record_data['time'] = str(tm.strftime("%Y-%m-%d %H:%M:%S"))
         #logic will check if current time is in assigned route schedule for a vehicle
         each_vehicle_record_data['trip_status'] = 'In trip'

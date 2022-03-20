@@ -1243,27 +1243,43 @@ class RouteCreateView(UserPassesTestMixin,CreateView):
         Route.created_at = timezone.now()
         Route.route_fence.transform(trans)
 
-        if Ward.objects.filter(ward_fence__contains=Route.route_fence).count() == 1:
-            route_ward = Ward.objects.filter(ward_fence__contains=Route.route_fence).get()
-            Route.ward = route_ward
-            Route.save()
-        else:
-            messages.error(self.request, ('Route should be within ward').upper())
-            return self.render_to_response(self.get_context_data(form=form))
+        if Route.route_type == 'N':
+            if Ward.objects.filter(ward_fence__contains=Route.route_fence).count() == 1:
+                route_ward = Ward.objects.filter(ward_fence__contains=Route.route_fence).get()
+                Route.ward = route_ward
+                Route.save()
+            else:
+                messages.error(self.request, ('Route should be within ward').upper())
+                return self.render_to_response(self.get_context_data(form=form))
 
-        if Route.route_fence:
-            for sequence,point in enumerate(Route.route_fence.coords,start=1):
-                bin_data= dict()
-                bin_data['name'] = str(Route.code) + '_' + str(f'{sequence:04}')
-                bin_data['code'] = str(Route.code) + '_' + str(f'{sequence:03}')
-                bin_data['latitude']  = point[0]
-                bin_data['longitude']  = point[1]
-                bin_data['bin_location'] = Point(point)
-                buffer_width = float(5 / 40000000.0 * 360.0)
-                bin_data['bin_fence'] = bin_data['bin_location'].buffer(buffer_width)
-                bin_data['route'] = Route
-                bin_data['ward']  = Route.ward
-                BIN =  Bin.objects.create(**bin_data);
+            if Route.route_fence:
+                for sequence,point in enumerate(Route.route_fence.coords,start=1):
+                    bin_data= dict()
+                    bin_data['name'] = str(Route.code) + '_' + str(f'{sequence:04}')
+                    bin_data['code'] = str(Route.code) + '_' + str(f'{sequence:03}')
+                    bin_data['latitude']  = point[0]
+                    bin_data['longitude']  = point[1]
+                    bin_data['bin_location'] = Point(point)
+                    buffer_width = float(5 / 40000000.0 * 360.0)
+                    bin_data['bin_fence'] = bin_data['bin_location'].buffer(buffer_width)
+                    bin_data['route'] = Route
+                    bin_data['ward']  = Route.ward
+                    BIN =  Bin.objects.create(**bin_data);
+        else:
+            Route.save()
+            if Route.route_fence:
+                for sequence,point in enumerate(Route.route_fence.coords,start=1):
+                    bin_data= dict()
+                    bin_data['name'] = str(Route.code) + '_' + str(f'{sequence:04}')
+                    bin_data['code'] = str(Route.code) + '_' + str(f'{sequence:03}')
+                    bin_data['latitude']  = point[0]
+                    bin_data['longitude']  = point[1]
+                    bin_data['bin_location'] = Point(point)
+                    buffer_width = float(5 / 40000000.0 * 360.0)
+                    bin_data['bin_fence'] = bin_data['bin_location'].buffer(buffer_width)
+                    bin_data['route'] = Route
+                    bin_data['ward']  = None
+                    BIN =  Bin.objects.create(**bin_data);
 
         return redirect('routes')
 

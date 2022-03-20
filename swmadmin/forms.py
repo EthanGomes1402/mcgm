@@ -11,12 +11,17 @@ VEHICLE_TYPE = (
         ("swm","Sweeper Vehicle Machine"),
         ("scv","Small Compactor Vehicle"),
         ("sl","Sleeper Vehicle"),
+        ("dw","Dry Waste"),
     )
 YEARS = [(year,year) for year in range(1950,2021,1)]
 SHIFT = (
         ('1', "Morning"),
         ('2', "Afternoon"),
         ('3', "Night"),
+    )
+ROUTE_TYPE = (
+        ('S', "Sweaper"),
+        ('N', "Normal"),
     )
 
 class PointWidget(forms1.gis.PointWidget, forms1.gis.BaseOsmWidget):
@@ -104,11 +109,12 @@ class BinEditForm(NewBinForm):
 class NewRouteForm(forms.ModelForm):
     name = forms.CharField(label = 'Name :')
     code = forms.CharField(label = 'Code :')
+    route_type = forms.ChoiceField(choices=ROUTE_TYPE)
     route_fence = forms1.gis.LineStringField(widget=LineStringWidget(attrs={ 'map_width': 1050,'map_height': 1050 }),required=False)
 
     class Meta:
         model= Route
-        fields=['name','code','route_fence']
+        fields=['name','code','route_type','route_fence']
 
 class RouteEditForm(NewRouteForm):
     pass

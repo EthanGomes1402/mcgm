@@ -19,6 +19,7 @@ VEHICLE_TYPE = (
         ("scv","Small Compactor Vehicle"),
         ("sw","Sweeper Vehicle"),
         ("ww","Watch & Ward"),
+        ("dw","Dry Waste"),
     )
 
 SHIFT = (
@@ -58,6 +59,11 @@ class Route(models.Model):
     code         = models.CharField(max_length=20, unique=True,null=True)
     ward         = models.ForeignKey(Ward, related_name='routes',on_delete=models.PROTECT,null=True)
     route_fence  = models.LineStringField(null=True, blank=True)
+    type_choices = [
+        ('S','Sweaper'),
+        ('N','Normal'),
+    ]
+    route_type   = models.CharField(max_length=1,choices=type_choices,default='N')
     is_active    = models.BooleanField(default=1)
     created_at   = models.DateTimeField(auto_now=True,null=True,blank=True)
     created_by   = models.ForeignKey(User, related_name='+',on_delete=models.PROTECT,verbose_name ='Created by',null=True )

@@ -83,7 +83,7 @@
               </div>
             </li>
           {% endif %}
-          {% if user.is_authenticated and user.is_superuser %}
+          {% if user.is_authenticated %}
             <!--<li class="sidebar-dropdown">
               <a href="#">
                   <i class="far fa-file"></i>
@@ -249,6 +249,7 @@
                       <a href="#" class="dropdown-toggle" data-toggle="dropdown">Vehicle Report</a>
                       <div class="dropdown-menu">
                           <a href="{% url 'vehicle_route_report' %}" class="dropdown-item">Vehicle Route Report</a>
+                          <a href="{% url 'vehicle_route_report' %}" class="dropdown-item">Sweaper Vehicle Report</a>
                       </div>
                     </div>
                   </li>

@@ -4,10 +4,12 @@
 {% block title %}
 	<h1>Zone From Mumbai</h1>
 {% endblock %}
-
+{% block content_title %}Zones{% endblock %}
 {% block content %}
+
+
   <div>
-	  <a href="{% url 'add_zone' %}" class="vtms_buttons">Add New zone</a>
+	  <a href="{% url 'add_zone' %}" class="btn btn-warning  px-3">Add New zone</a>
   </div>
   {% if zones %}
   <table class="table tablesorter">
@@ -28,8 +30,10 @@
 	  <td>this is zone {{ zone.name }}</td>
 	  <td class="area" id="area_{{zone.pk}}"><img src="{% static 'img/location.png' %}"></td>
 	  <td>
-		  <a href="{% url 'edit_zone' zone.pk %}" class="vtms_buttons">Edit</a>
-		  <a id="{{zone.pk}}" href="#" class="vtms_buttons delete_zone">Delete</a>
+	  <div class="btn-group btn-group-sm">
+		  <a href="{% url 'edit_zone' zone.pk %}" class="btn btn-info"><i class="fas fa-pen"></i></a>
+		  <a id="{{zone.pk}}" href="#" class="btn btn-danger"><i class="fas fa-trash"></i></a>
+		  </div>
 	  </td>
         </tr>
       {% endfor %}

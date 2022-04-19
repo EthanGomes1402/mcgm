@@ -5,9 +5,13 @@
 	<h1>contractors</h1>	
 {% endblock %}
 
+{% block content_title %}Contractors{% endblock %}
 {% block content %}
+
+
+          
   <div>
-	  <a href="{% url 'add_contractor' %}" class="vtms_buttons">Add Contractor</a>
+	  <a href="{% url 'add_contractor' %}" class="btn btn-warning  px-3"><b>Add Contractor</b></a>
   </div>
 
   {% if contractors %}
@@ -29,8 +33,10 @@
 	  <td>{{ contractor.telephone }}</td>
 	  <td>{{ contractor.email }} </td>
 	  <td>
-		  <a href="{% url 'edit_contractor' contractor.pk %}" class="vtms_buttons">Edit</a>
-		  <a id="{{ contractor.pk }}" href="#" class="vtms_buttons delete_contractor">Delete</a>
+	  <div class="btn-group btn-group-sm">
+		  <a href="{% url 'edit_contractor' contractor.pk %}" class="btn btn-info"><i class="fas fa-pen"></i></a>
+		  <a id="{{ contractor.pk }}" href="#" class="btn btn-danger"><i class="fas fa-trash"></i></a>
+		   </div>
 	  </td>
 	</tr>
       {% endfor %}
@@ -39,6 +45,9 @@
   {% else %}
 	<h1>No Contractor Found</h1>      	
   {% endif %}
+  
+  
+
 {% endblock %}
 
 {% block js %}

@@ -4,10 +4,12 @@
 {% block title %}
 	<h1>Div From Mumbai</h1>
 {% endblock %}
-
+{% block content_title %}Divs{% endblock %}
 {% block content %}
+
+
   <div>
-	  <a href="{% url 'add_div' %}" class="vtms_buttons">Add New div</a>
+	  <a href="{% url 'add_div' %}" class="btn btn-warning  px-3"><b>Add New div</b></a>
   </div>
   {% if divs %}
   <table class="table tablesorter">
@@ -28,8 +30,10 @@
 	  <td>this is div {{ div.name }}</td>
 	  <td class="area" id="area_{{div.pk}}"><img src="{% static 'img/location.png' %}"></td>
 	  <td>
-		  <a href="{% url 'edit_div' div.pk %}" class="vtms_buttons">Edit</a>
-		  <a id="{{div.pk}}" href="#" class="vtms_buttons delete_div">Delete</a>
+	  <div class="btn-group btn-group-sm">
+		  <a href="{% url 'edit_div' div.pk %}" class="btn btn-info"><i class="fas fa-pen"></i></a>
+		  <a id="{{div.pk}}" href="#" class="btn btn-danger"><i class="fas fa-trash"></i></a>
+		  </div>
 	  </td>
         </tr>
       {% endfor %}
@@ -40,6 +44,7 @@
   {% endif %}
   <div id="loadpositionmap" style="display: none;" align="center">
   </div>
+
 {% endblock %}
 
 {% block js %}

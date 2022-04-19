@@ -30,6 +30,9 @@ from datetime import date,timedelta
 from itertools import chain
 import codecs
 import math
+from datetime import datetime
+import pdfkit
+import os
 
 gcoord = SpatialReference(3857)
 mycoord = SpatialReference(4326)
@@ -837,7 +840,9 @@ def vehicle_route_report(request):
         response_data['data'] = list()
         form_data = QueryDict(request.POST['form_data'].encode('ASCII'))
         from_time = dateutil.parser.parse(form_data['from_time'])
+        response_data['fromtime'] = str(from_time)
         to_time   = dateutil.parser.parse(form_data['to_time'])
+        response_data['totime'] = str(to_time)
         plate_no  = form_data['vehicle']
         vehicle   = Vehicle.objects.get(plate_number=plate_no)
         vc = chain(vehicle.vehicle_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime').distinct('datetime'), vehicle.current_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime').distinct('datetime'))
@@ -1371,3 +1376,356 @@ def get_vehicle_travel_history(request):
         response_data['data'].append(each_vehicle_record_data)
     #vehicles  = list(map(lambda vehicle : Vehicle.objects.get(pk=vehicle) , form_data['selectVehicle'].split("_")))
     return HttpResponse(json.dumps(response_data),content_type="application/json")
+
+
+
+
+
+
+
+def generatePdfForVehicleRouteReport(request):
+    set_session_reporting_form_params(request)
+    form_params = request.session['reports_form_params']
+
+    if request.method == 'POST':
+        #response_data=dict()
+        #response_data['status'] = 'success'
+        #response_data['data'] = list()
+        form_data = QueryDict(request.POST['form_data'].encode('ASCII'))
+        from_time = dateutil.parser.parse(form_data['from_time'])
+        #response_data['fromtime'] = str(from_time)
+        to_time   = dateutil.parser.parse(form_data['to_time'])
+        #response_data['totime'] = str(to_time)
+        plate_no  = form_data['vehicle']
+        vehicle   = Vehicle.objects.get(plate_number=plate_no)
+        vc = chain(vehicle.vehicle_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime').distinct('datetime'), vehicle.current_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime').distinct('datetime'))
+        sorted_vc = sorted(vc,key=by_datetime)
+
+        seen        = dict()
+        speed_zero  = dict()
+
+        #ajit's code block 1 starts - initializing the dictionary from txt file.
+        mydict = {}
+        filename = "../../../../../tmp/fulldata.txt"
+        a_file = codecs.open(filename, encoding="utf-8")
+        for line in a_file:
+            key, value = line.split(":::")
+            mydict[key] = value
+        #ajit code block 1 ends here
+        each_vehicle_record_data = dict()
+        
+        
+        #HTML Generation Code, to later conver to PDF:
+        loopcounter = 0
+        htmlfilename = "/home/mcgm/Development/mcgm/mcgm/static/pdfreports/"+str(plate_no)+"_"+str(from_time)+"_to_"+str(to_time)+".html"
+        pdffilename = "/home/mcgm/Development/mcgm/mcgm/static/pdfreports/"+str(plate_no)+"_"+str(from_time)+"_to_"+str(to_time)+".pdf"
+        now = datetime.now()
+        # dd/mm/YY H:M:S
+        dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+
+
+        staticpagehead = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <meta name="description" content="" />
+
+    <meta name="author" content="" />
+
+    <meta name="generator" content="" />
+
+    <title>Route Travel Report</title>
+
+
+
+<!-- CSS -->
+<link href="http://rfwastemanagement.com/css/bootstrap.min.css" rel="stylesheet" />
+<style>
+
+    .rftablenew .bmclogo {
+
+        margin: auto;
+
+        display: block;
+
+        width: 14%;
+
+        margin-bottom: 20px;
+
+    }
+
+    
+
+    .newtable-bg {
+
+        background: #cae0f9;
+
+        padding: 20px;
+
+        border-radius: 10px;
+
+    }
+
+    
+
+    .start-table {
+
+        margin-top: 20px;
+
+        padding-top: 20px;
+
+        border-top: 1px solid #4f8bcf;
+
+    }
+
+    
+
+    .newtable-bg .form-control {
+
+        border: 1px solid #4f8bcf;
+
+        color: #000;
+
+    }
+
+    
+
+    .start-table .table>thead:first-child>tr:first-child>th {
+
+        border: 1px solid #4f8bcf;
+
+    }
+
+    
+
+    .start-table .table-new {
+
+        background: #fff;
+
+        padding: 15px;
+
+    }
+
+    
+
+    .table-new .table-bordered>tbody>tr>td {
+
+        border: 1px solid #4f8bcf;
+
+    }
+
+</style>
+
+</head>
+
+
+<body>
+
+
+
+    <div class="container-fluid rftablenew">
+
+        <div class="row">
+
+            <div class="col-md-12">
+
+                <img src="http://swm.vtms.cleanupmumbai.com/static/images2/mcgm-logo.png" alt="BMC Logo" class="img-responsive bmclogo">
+
+            </div>
+
+        </div>
+<h3 style = "text-align: center;">Route Travel Report</h3>"""
+
+
+
+        datedatahtml = """<div class="newtable-bg">
+
+            <div class="row">
+
+                <div class="col-md-4">
+
+                    <div class="form-inline">
+
+                        <div class="form-group" style = "text-align: 'center'">
+
+                            <label for="fromdate">From: </label><input type="fromdate" value = \""""+str(from_time)+"""" class="form-control"></div>
+
+                    </div>
+
+                </div>
+
+                <div class="col-md-4">
+
+                    <div class="form-inline">
+
+                        <div class="form-group" style = "text-align: 'center'">
+
+                            <label for="todate">To: </label>
+
+<input type="todate" value = \""""+str(to_time)+"""" class="form-control">
+
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="col-md-4">
+
+                    <div class="form-inline">
+
+                        <div class="form-group" >
+
+                            <label for="reportgendate">Report Generated Date: </label><input type="reportgendate" value = \""""+dt_string+"""" class="form-control"></div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="row start-table">
+
+                <div class="col-md-12">
+
+                    <div class="table-new">
+
+                        <table class="table table-bordered">
+
+
+                            <thead>
+
+                                <th>Index</th>
+
+                                <th>Vehicle</th>
+
+                                <th width = "14%">Date</th>
+
+                                <th>Time</th>
+
+                                <th>Location</th>
+
+                                <th>Speed</th>
+
+                            </thead>
+                            
+                            <tbody>"""
+        
+
+
+        # Append-adds at last
+        #htmlfile = open(htmlfilename, "a")  # append mode
+        htmlfile = open(htmlfilename, "a", encoding="utf-8")
+        htmlfile.write(staticpagehead)
+        htmlfile.write(datedatahtml)
+        
+        for each_vehicle_record in sorted_vc:
+            #logic to skip consecutive stationary entries 
+            if each_vehicle_record.speed == 0.0:
+                if each_vehicle_record.speed in speed_zero.keys():
+                    continue
+                else:
+                    speed_zero[each_vehicle_record.speed]=1
+            else:
+                speed_zero = {}
+
+            #logic to keep a entry for a minute  
+            tm_upto_minute = each_vehicle_record.datetime.strftime("%d_%m_%Y_%H_%M")
+            if tm_upto_minute in seen.keys():
+                continue
+            else:
+                seen[tm_upto_minute]=1
+
+#            location=Point(float(each_vehicle_record.longitude), float(each_vehicle_record.latitude))
+#            area    = None
+#
+#            try:
+#                pass
+#                #area = Ewd.objects.filter(ewd_fence__contains=location).get()
+#            except:
+#                area = None
+#
+#            area = area.name if area else ''
+
+            #from here: ajit's code block 2 starts - computing and saving the addresses in the response data dictionary
+            inputlat = each_vehicle_record.latitude
+            inputlong = each_vehicle_record.longitude
+            inputlatlong = str(inputlat)+","+str(inputlong)
+            #accept the input and turn it into the nearest value whose answer we have in our text file database
+            newlat = format((round(inputlat,6)),'.6f')
+            newlong = format((round(inputlong, 6)),'.6f')
+            latfract = int(newlat[3:9])
+            longfract = int(newlong[3:9])
+            latadjustmentoffset = latfract%1000
+            if(int(newlat[0:2]) == 18):
+                finallatfract = latfract+(999-latadjustmentoffset)
+            else:
+                finallatfract = latfract+(223-latadjustmentoffset)
+                finallatfract = str(finallatfract).zfill(6)
+            longadjustmentoffset = longfract%1000
+            finallongfract = longfract+(896-longadjustmentoffset)
+            latmain = int(math.floor(float(newlat)))
+            longmain = int(math.floor(float(newlong)))
+            finallatlong = str(latmain)+"."+str(finallatfract)+","+str(longmain)+"."+str(finallongfract)
+            try:
+                resultaddress = mydict[finallatlong]
+                resultaddress = (resultaddress.split(","))[:2]
+            except:
+                resultaddress = "Out of Mumbai."
+            #ajit code block 2 ends here
+
+
+
+
+            #each_vehicle_record_data = dict()
+            #each_vehicle_record_data['vehicle']     = plate_no
+            #each_vehicle_record_data['date']        = str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))
+            #each_vehicle_record_data['time']        = str(each_vehicle_record.datetime.strftime("%H:%M:%S"))
+            #each_vehicle_record_data['area']        = resultaddress
+            #each_vehicle_record_data['speed']       = str(each_vehicle_record.speed)
+            #response_data['data'].append(each_vehicle_record_data)
+
+
+
+            loopcounter+=1
+
+            finalresultaddress = ""
+            finalresultaddress = finalresultaddress.join(resultaddress)
+
+            finalspeed = ""
+            finalspeed = finalspeed.join(str(each_vehicle_record.speed))
+            appenddata = """<tr>
+                                    <td>"""+str(loopcounter)+"""</td>
+                                    <td>"""+str(plate_no)+"""</td>
+                                    <td>"""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+"""</td>
+                                    <td>"""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+"""</td>
+                                    <td>"""+finalresultaddress+"""</td>
+                                    <td>"""+finalspeed+"""</td>
+                                </tr>"""
+
+            htmlfile.write(appenddata)
+
+
+        staticbottomdata = """</tbody>
+                    </div>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div></body>
+</html>"""
+        htmlfile.write(staticbottomdata)
+        htmlfile.close()
+
+        pdfkit.from_file(htmlfilename, pdffilename)
+        os.remove(htmlfilename)
+        pdfaccesslink = "http://swm.vtms.cleanupmumbai.com/static/pdfreports/"+str(plate_no)+"_"+str(from_time)+"_to_"+str(to_time)+".pdf"
+        return HttpResponse(pdfaccesslink)
+
+        #return HttpResponse(json.dumps(response_data),content_type="application/json")
+    return render(request,'reports/vehicle_route_report.html',{ 'form_params' : form_params})

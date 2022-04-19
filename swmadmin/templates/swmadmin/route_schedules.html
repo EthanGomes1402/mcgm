@@ -5,10 +5,13 @@
 	Route schedules 
 {% endblock %}
 
+{% block content_title %}Route Schedule{% endblock %}
 {% block content %}
+
+          
   <div>
-	  <a href="{% url 'add_route_schedule' %}" class="vtms_buttons">Add New Route schedule</a>
-      <a href="{% url 'upload_route_schedule_data' %}" class="vtms_buttons">Upload Route Schedule</a>
+	  <a href="{% url 'add_route_schedule' %}" class="btn btn-warning  px-3"><b>Add New Route schedule</b></a>
+      <a href="{% url 'upload_route_schedule_data' %}" class="btn btn-info   px-3 ml-2"><b>Upload Route Schedule</b></a>
   </div>
   {% if route_schedules %}
   <table class="table tablesorter">
@@ -31,8 +34,10 @@
           <td>{{ route_schedule.vehicle }}</td>
 	  <td class="route_path"><img src="{% static 'img/location.png' %}"><span style="display:none;">{{route_schedule.route.bins_from_route}} -- {{ route_schedule.route.route_serialized }}</span></td>
 	  <td>
-		  <a href="{% url 'edit_route_schedule' route_schedule.pk %}" class="vtms_buttons">Edit</a>
-		  <a id="{{ route_schedule.pk }}" href="#" class="vtms_buttons delete_route_schedule">Delete</a>
+	  <div class="btn-group btn-group-sm">
+		  <a href="{% url 'edit_route_schedule' route_schedule.pk %}" class="btn btn-info"><i class="fas fa-pen"></i></a>
+		  <a id="{{ route_schedule.pk }}" href="#" class="btn btn-danger"><i class="fas fa-trash"></i></a>
+		  </div>
 	  </td>
         </tr>
       {% endfor %}
@@ -43,6 +48,9 @@
   {% endif %}
   <div id="loadpositionmap" style="display: none;" align="center">
   </div>
+  
+
+
 {% endblock %}
 
 {% block js %}

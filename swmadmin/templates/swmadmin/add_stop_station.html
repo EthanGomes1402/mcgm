@@ -7,11 +7,12 @@
 	{{ form.media }}
 {% endblock %}
 
+{% block content_title %}Add Stop Station{% endblock %}
 {% block content %}
   <form method="post" novalidate>
     {% csrf_token %}
     {{ form | crispy }} 
-    <button type="submit" class="btn btn-success">Add</button>
+    <button type="submit" class="btn btn-success mb-3">Add</button>
   </form>
 {% endblock %}
 

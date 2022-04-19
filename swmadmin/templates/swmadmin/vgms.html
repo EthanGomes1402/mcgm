@@ -4,10 +4,13 @@
 {% block title %}
 	Vehicle Garage Mapping 
 {% endblock %}
-
+{% block content_title %}Garage Vehicle Mapping{% endblock %}
 {% block content %}
+
+
+			
   <div>
-	  <a href="{% url 'add_vgm' %}" class="vtms_buttons">Assign Vehicle To Garage</a>
+	  <a href="{% url 'add_vgm' %}" class="btn btn-warning  px-3"><b>Assign Vehicle To Garage</b></a>
   </div>
   {% if vgms %}
   <table class="table tablesorter">
@@ -24,8 +27,10 @@
           <td>{{ vgm.vehicle }} </td>
           <td>{{ vgm.garage }} </td>
 	  <td>
-		  <a href="{% url 'edit_vgm' vgm.pk %}" class="vtms_buttons">Edit</a>
-		  <a id="{{ vgm.pk }}" href="#" class="vtms_buttons delete_vgm">Delete</a>
+	   <div class="btn-group btn-group-sm">
+		  <a href="{% url 'edit_vgm' vgm.pk %}" class="btn btn-info"><i class="fas fa-pen"></i></a>
+		  <a id="{{ vgm.pk }}" href="#" class="btn btn-danger"><i class="fas fa-trash"></i></a>
+		  </div>
 	  </td>
         </tr>
       {% endfor %}
@@ -34,6 +39,7 @@
   {% else %}
   	<h1>No Garage Vehicle Mapping Found</h1>
   {% endif %}
+
 {% endblock %}
 
 {% block js %}

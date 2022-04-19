@@ -2,7 +2,7 @@
 {% load crispy_forms_tags %}
 
 {% block title %} Edit div {{ div.name }} {% endblock %}
-
+{% block content_title %}Edit Div{% endblock %}
 {% block content %}
 	<form method="post" novalidate>
 		{% csrf_token %}

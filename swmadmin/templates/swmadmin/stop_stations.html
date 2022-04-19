@@ -5,10 +5,14 @@
 	<h1>Stop Stations</h1>
 {% endblock %}
 
+{% block content_title %}Stop Stations{% endblock %}
 {% block content %}
+
+
+          
   <div>
-	  <a href="{% url 'add_stop_station' %}" class="vtms_buttons">Add New Stop station</a>
-          <a href="{% url 'upload_stop_station_data' %}" class="vtms_buttons">Upload Stop station</a>
+	  <a href="{% url 'add_stop_station' %}" class="btn btn-warning  px-3"><b>Add New Stop station</b></a>
+          <a href="{% url 'upload_stop_station_data' %}" class="btn btn-info   px-3 ml-2"><b>Upload Stop station</b></a>
   </div>
   {% if stop_stations %}
   <table class="table tablesorter">
@@ -43,8 +47,10 @@
 	  <td>this is stop station {{ stop_station.name | upper }}</td>
 	  <td class="area" id="stopstation_{{  stop_station.pk}}"><img src="{% static 'img/location.png' %}"></td>
 	  <td>
-		  <a href="{% url 'edit_stop_station' stop_station.pk %}" class="vtms_buttons">Edit</a>
-		  <a id="{{stop_station.pk}}" href="#" class="vtms_buttons delete_stop_station">Delete</a>
+	  <div class="btn-group btn-group-sm">
+		  <a href="{% url 'edit_stop_station' stop_station.pk %}" class="btn btn-info"><i class="fas fa-pen"></i></a>
+		  <a id="{{stop_station.pk}}" href="#" class="btn btn-danger"><i class="fas fa-trash"></i></a>
+		  </div>
 	  </td>
         </tr>
       {% endfor %}
@@ -55,6 +61,8 @@
   {% endif %}
   <div id="loadpositionmap" style="display: none;" align="center">
   </div>
+  
+
 {% endblock %}
 
 {% block js %}

@@ -4,11 +4,14 @@
 {% block title %}
 	<h1>Ewds List</h1>
 {% endblock %}
-
+{% block content_title %}EWDS{% endblock %}
 {% block content %}
+
+
+          
   <div>
-	  <a href="{% url 'add_ewd' %}" class="vtms_buttons">Add New Ewd</a>
-	  <a href="{% url 'upload_ewd_data' %}" class="vtms_buttons">Upload Ewd KML</a>
+	  <a href="{% url 'add_ewd' %}" class="btn btn-warning  px-3"><b>Add New Ewd</b></a>
+	  <a href="{% url 'upload_ewd_data' %}" class="btn btn-info   px-3 ml-2"><b>Upload Ewd KML</b></a>
   </div>
 
   {% if ewds %}
@@ -30,8 +33,10 @@
           <td>this is ewd {{ ewd.name }}</td>
           <td class="area" id="area_{{ewd.pk}}"><img src="{% static 'img/location.png' %}"></td>
           <td>
-              <a href="{% url 'edit_ewd' ewd.pk %}" class="vtms_buttons">Edit</a>
-              <a id="{{ewd.pk}}" href="#" class="vtms_buttons delete_ewd">Delete</a>
+          <div class="btn-group btn-group-sm">
+              <a href="{% url 'edit_ewd' ewd.pk %}" class="btn btn-info"><i class="fas fa-pen"></i></a>
+              <a id="{{ewd.pk}}" href="#" class="btn btn-danger"><i class="fas fa-trash"></i></a>
+              </div>
           </td>
         </tr>
       {% endfor %}
@@ -42,6 +47,9 @@
   {% endif %}
   <div id="loadpositionmap" style="display: none;" align="center">
   </div>
+  
+  
+
 {% endblock %}
 
 {% block js %}

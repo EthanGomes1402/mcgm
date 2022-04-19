@@ -6,7 +6,7 @@
 {% block head %}
 	{{ form.media }}
 {% endblock %}
-
+{% block content_title %}Add Route{% endblock %}
 {% block content %}
   {% for message in messages %}
    <div class="alert {{ message.tags }} alert-dismissible" role="alert">
@@ -22,7 +22,7 @@
     <table border="1">
     {{ form | crispy }} 	
     </table>
-    <button type="submit" class="btn btn-success">Add</button>
+    <button type="submit" class="btn btn-success mb-3">Add</button>
   </form>
 {% endblock %}
 

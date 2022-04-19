@@ -4,11 +4,13 @@
 {% block title %}
 	<h1>Wards List</h1>
 {% endblock %}
-
+{% block content_title %}Wards{% endblock %}
 {% block content %}
+
+
   <div>
-	  <a href="{% url 'add_ward' %}" class="vtms_buttons">Add New Ward</a>
-	  <a href="{% url 'upload_wards' %}" class="vtms_buttons">Upload Ward KML</a>
+	  <a href="{% url 'add_ward' %}" class="btn btn-warning  px-3"><b>Add New Ward</b></a>
+	  <a href="{% url 'upload_wards' %}" class="btn btn-info   px-3 ml-2"><b>Upload Ward KML</b></a>
   </div>
 
   {% if wards %}
@@ -30,8 +32,10 @@
 	  <td>this is ward {{ ward.name }}</td>
 	  <td class="area" id="area_{{ward.pk}}"><img src="{% static 'img/location.png' %}"></td>
 	  <td>
-		  <a href="{% url 'edit_ward' ward.pk %}" class="vtms_buttons">Edit</a>
-		  <a id="{{ward.pk}}" href="#" class="vtms_buttons delete_ward">Delete</a>
+	  <div class="btn-group btn-group-sm">
+		  <a href="{% url 'edit_ward' ward.pk %}" class="btn btn-info"><i class="fas fa-pen"></i></a>
+		  <a id="{{ward.pk}}" href="#" class="btn btn-danger"><i class="fas fa-trash"></i></a>
+		  </div>
 	  </td>
         </tr>
       {% endfor %}
@@ -42,6 +46,10 @@
   {% endif %}
   <div id="loadpositionmap" style="display: none;" align="center">
   </div>
+
+
+
+
 {% endblock %}
 
 {% block js %}

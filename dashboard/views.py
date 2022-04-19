@@ -13,6 +13,7 @@ from datetime import timedelta
 import codecs
 import math
 
+
 # Create your views here.
 @login_required
 @user_passes_test(lambda user: user.is_superuser or (user.appuser.is_contractor or user.appuser.is_officer))
@@ -127,6 +128,14 @@ def latest_vehicle_status_v2(request):
     response_data=dict()
     response_data['status'] = 'success'
     response_data['data'] = list()
+    scvcount = 0
+    lccount = 0
+    mccount = 0
+    wwcount = 0
+    dwcount = 0
+    swcount = 0
+    othercount = 0
+
 
     #ajit's code block 1 starts - initializing the dictionary from txt file.
     mydict = {}
@@ -149,6 +158,7 @@ def latest_vehicle_status_v2(request):
         each_vehicle_record_data = dict()
         each_vehicle_record_data['veh'] = str(each_th_record.vehicle)
         each_vehicle_record_data['veh_ward'] = str(each_th_record.vehicle.ward)
+        each_vehicle_record_data['veh_contractor'] = str(each_th_record.vehicle.contractor)
         if iward and iward!= each_th_record.vehicle.ward:
             continue
         each_vehicle_record_data['type'] = str(each_th_record.vehicle.vehicle_type)
@@ -191,7 +201,23 @@ def latest_vehicle_status_v2(request):
         tm = each_th_record.datetime + timedelta(minutes=0)
         each_vehicle_record_data['time'] = str(tm.strftime("%Y-%m-%d %H:%M:%S"))
         #logic will check if current time is in assigned route schedule for a vehicle
-        each_vehicle_record_data['trip_status'] = 'In trip'
+        #Below code commented out by ajit because it is not being used in the front end.
+        if(str(each_th_record.vehicle.vehicle_type) == "SCV"):
+            scvcount+=1
+        elif(str(each_th_record.vehicle.vehicle_type) == "LC"):
+            lccount+=1
+        elif(str(each_th_record.vehicle.vehicle_type) == "MC"):
+            mccount+=1
+        elif(str(each_th_record.vehicle.vehicle_type) == "WW"):
+            wwcount+=1
+        elif(str(each_th_record.vehicle.vehicle_type) == "dw"):
+            dwcount+=1
+        elif(str(each_th_record.vehicle.vehicle_type) == "sw"):
+            swcount+=1
+        else:
+            othercount+=1
+
+        """ each_vehicle_record_data['trip_status'] = 'In trip'
         each_vehicle_record_data['speed'] = each_th_record.speed
         if each_vehicle_record_data['speed']:
             if each_vehicle_record_data['speed'] > 60:
@@ -221,7 +247,7 @@ def latest_vehicle_status_v2(request):
         #each_vehicle_record_data['location'] = str(each_th_record.location)
         each_vehicle_record_data['ignition_status'] = str(each_th_record.ignition)
         each_vehicle_record_data['emergency_status'] = str(each_th_record.emergency)
-        each_vehicle_record_data['digital_io_status'] = str(each_th_record.dio)
+        each_vehicle_record_data['digital_io_status'] = str(each_th_record.dio) """
         response_data['data'].append(each_vehicle_record_data)
     #vehicles  = list(map(lambda vehicle : Vehicle.objects.get(pk=vehicle) , form_data['selectVehicle'].split("_")))
-    return render(request,'dashboard/latest_vehicle_status.html',{ 'all_entries' : response_data['data'] })
+    return render(request,'dashboard/latest_vehicle_status.html',{ 'all_entries' : response_data['data'], 'scvcount' : scvcount, 'lccount' : lccount, 'mccount' : mccount, 'swcount' : swcount, 'dwcount' : dwcount, 'wwcount': wwcount, 'othercount' : othercount})

@@ -4,11 +4,12 @@
 {% block title %}
 	Ward Contractor Mapping 
 {% endblock %}
-
+{% block content_title %}Ward Contractor Mapping{% endblock %}
 {% block content %}
+
   <div>
-	  <a href="{% url 'add_wcm' %}" class="vtms_buttons">Assign Contractor To Ward</a>
-	  <a href="{% url 'upload_ward_contractor_mapping' %}" class="vtms_buttons">Upload Ward Contractor Mapping</a>
+	  <a href="{% url 'add_wcm' %}" class="btn btn-warning  px-3"><b>Assign Contractor To Ward</b></a>
+	  <a href="{% url 'upload_ward_contractor_mapping' %}" class="btn btn-info   px-3 ml-2"><b>Upload Ward Contractor Mapping</b></a>
   </div>
   {% if wcms %}
   <table class="table tablesorter">
@@ -27,8 +28,10 @@
           <td>{{ wcm.contractor }} </td>
           <td>{{ wcm.contractor.company_name }} </td>
 	      <td>
-		      <a href="{% url 'edit_wcm' wcm.pk %}" class="vtms_buttons">Edit</a>
-		      <a id="{{ wcm.pk }}" href="#" class="vtms_buttons delete_wcm">Delete</a>
+	      <div class="btn-group btn-group-sm">
+		      <a href="{% url 'edit_wcm' wcm.pk %}" class="btn btn-info"><i class="fas fa-pen"></i></a>
+		      <a id="{{ wcm.pk }}" href="#" class="btn btn-danger"><i class="fas fa-trash"></i></a>
+		      </div>
 	      </td>
         </tr>
       {% endfor %}
@@ -37,6 +40,11 @@
   {% else %}
   	<h1>No Ward Contractor Mapping Found</h1>
   {% endif %}
+  
+  </div>
+</div>
+</div>
+</section>
 {% endblock %}
 
 {% block js %}

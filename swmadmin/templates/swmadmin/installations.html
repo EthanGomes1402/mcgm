@@ -4,17 +4,19 @@
 {% block title %}
 	<h1>Installations</h1>
 {% endblock %}
-
+{% block content_title %}Installations{% endblock %}
 {% block content %}
+
+
   <div>
-	  <a href="{% url 'add_installation' %}" class="vtms_buttons">Add New Installation</a>
-	  <a href="{% url 'upload_installation_data' %}" class="vtms_buttons">Upload Installation</a>
+	  <a href="{% url 'add_installation' %}" class="btn btn-warning  px-3"><b>Add New Installation</b></a>
+	  <a href="{% url 'upload_installation_data' %}" class="btn btn-info   px-3 ml-2"><b>Upload Installation</b></a>
   </div>
   <div>
 	  {% if installations %}
-	  <button id="export_to_excel" style="float: right;">Export To Excel</button>
-	  <button id="export_to_csv" style="float: right;">Export To CSV</button>
-	  <button id="export_to_pdf" style="float: right;">Export To PDF</button>
+	  <button class="btn btn-danger  btn-sm px-3 ml-2" id="export_to_excel" style="float: right;">Export To Excel</button>
+	  <button class="btn btn-danger  btn-sm px-3 ml-2" id="export_to_csv" style="float: right;">Export To CSV</button>
+	  <button class="btn btn-danger  btn-sm px-3 ml-2" id="export_to_pdf" style="float: right;">Export To PDF</button>
 	  </br>
 	  <table class="table tablesorter" id="installation">
 	    <thead class="thead-inverse">
@@ -38,8 +40,10 @@
 		  <td>{{ installation.vehicle.contractor }}</td>
 		  <td>{{ installation.wnld_tag  | default_if_none:"" }}</td>
 		  <td>
-			  <a href="{% url 'edit_installation' installation.pk %}" class="vtms_buttons">Edit</a>
-			  <a id="{{installation.pk}}" href="#" class="vtms_buttons delete_installation">Delete</a>
+		  <div class="btn-group btn-group-sm">
+			  <a href="{% url 'edit_installation' installation.pk %}" class="btn btn-info"><i class="fas fa-pen"></i></a>
+			  <a id="{{installation.pk}}" href="#" class="btn btn-danger"><i class="fas fa-trash"></i></a>
+			  </div>
 		  </td>
 		</tr>
 	      {% endfor %}
@@ -49,6 +53,8 @@
   {% else %}
 	<h1>No Installation Found</h1>
   {% endif %}
+  
+
 {% endblock %}
 
 {% block js %}

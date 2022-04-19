@@ -69,23 +69,35 @@
 		    <div>  
 		      <label for="from_date">From Time : </label>
 		      <div class="form-group">
-			<div class='input-group date' id='from_time'>
+				<div class="input-group date" id="fromdate" data-target-input="nearest">
+                    <input type="text" class="form-control datetimepicker-input" data-toggle="datetimepicker" data-target="#fromdate" name = "from_time" id = "from_time"  autocomplete="off"/>
+                    <div class="input-group-append" data-target="#fromdate" data-toggle="datetimepicker">
+                        <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                    </div>
+                </div>
+			<!-- <div class='input-group date' id='from_time'>
 			  <input type='text' class="form-control" name="from_time"/>
 			    <span class="input-group-addon">
 			      <span class="glyphicon glyphicon-calendar"></span>
 			    </span>
-			</div>
+			</div> -->
 		      </div>
 		    </div> 
 		    <div>  
 		      <label for="to_date">To Time : </label>
 		      <div class="form-group">
-			<div class='input-group date' id='to_time'>
+				<div class="input-group date" id="todate" data-target-input="nearest">
+                    <input type="text" class="form-control datetimepicker-input" data-toggle="datetimepicker" data-target="#todate" name = "to_time" id = "to_time" autocomplete="off"/>
+                    <div class="input-group-append" data-target="#todate" data-toggle="datetimepicker">
+                        <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                    </div>
+                </div>
+			<!-- <div class='input-group date' id='to_time'>
 			  <input type='text' class="form-control" name="to_time"/>
 			    <span class="input-group-addon">
 			      <span class="glyphicon glyphicon-calendar"></span>
 			    </span>
-			</div>
+			</div> -->
 		      </div>
 		    </div> 
 		    <div class="form-group">
@@ -101,6 +113,13 @@
 {% endblock %}
 
 {% block js %}
+
+
+
+
+
+
+
   	<script src="{% static 'js/MovingMarker.js' %}"></script>
 	<script>
 		let mymap = L.map('map').setView([19.122777, 72.894568 ],12);
@@ -417,7 +436,7 @@ console.log(res);
 					alert('Please select vehicle');
 					return false;
 				}
-				if ( ! $('div#from_time input').val() ){
+				/* if ( ! $('div#from_time input').val() ){
 			  		alert($('#from_time').val());
 					alert('Please Enter From Time');
 					return false;
@@ -425,7 +444,7 @@ console.log(res);
 				if ( ! $('div#to_time input').val() ){
 					alert('Please Enter To Time');
 					return false;
-				}
+				} */
 
 				if( route_line ){
 					route_line.remove();
@@ -502,5 +521,25 @@ function onChangeVehType() {
 	$('#selectVehicle').val('');
 }
 		  
+
+
+
+
+
+
+//Date and time picker
+$('#fromdate, #todate').datetimepicker({
+		useCurrent: false,
+	    format:'YYYY-MM-DD HH:mm:ss',
+		icons: {
+                time: 'far fa-clock'
+            }
+			
+        });
+
+
+
+
+
 	</script>
 {% endblock %}

@@ -46,6 +46,7 @@ urlpatterns = [
     path('reports/vehicle_route_history',views.vehicle_route_history,name='vehicle_route_history'),
     path('reports/vehicle_summery',views.vehicle_summery,name='vehicle_summery'),
     path('reports/vehicle_route_report',views.vehicle_route_report,name='vehicle_route_report'),
+    path('reports/generatePdfForVehicleRouteReport', views.generatePdfForVehicleRouteReport, name = 'generatePdfForVehicleRouteReport'),
 
     path('reports/vehicle_status_bin_rfid_tag',views.vehicle_status_bin_rfid_tag,name='vehicle_status_bin_rfid_tag'),
     path('reports/vehicle_status_bin_rfid_tag_status',views.vehicle_status_bin_rfid_tag_status,name='vehicle_status_bin_rfid_tag_status'),
@@ -59,6 +60,7 @@ urlpatterns = [
     path('reports/weight_zonewise',views.weight_zonewise,name='weight_zonewise'),
     path('reports/weight_history',views.weight_history,name='weight_history'),
     path('reports/get_vehicle_travel_history',views.get_vehicle_travel_history,name='get_vehicle_travel_history'),
+    
 #
 #    #all ajax urls
 #    path('ajax/get_unallocated_bins_from_ward/',views.get_unallocated_bins_from_ward,name='get_unallocated_bins_from_ward'),

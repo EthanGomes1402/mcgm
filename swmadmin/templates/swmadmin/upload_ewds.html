@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block title %}Upload EWD {% endblock %}
-
+{% block content_title %}Upload EWDS{% endblock %}
 {% block content %}
   <form method="post" novalidate enctype="multipart/form-data">
     {% csrf_token %}

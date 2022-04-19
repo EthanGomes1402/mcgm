@@ -6,7 +6,7 @@
 	<li class="breadcrumb-item"><a href="{% url 'home' %}">Boards</a></li>
 	<li class="breadcrumb-item active"></li>
 {% endblock %}
-
+{% block content_title %}Upload Stop Stations Data{% endblock %}
 {% block content %}
   <form method="post" novalidate enctype="multipart/form-data">
     {% csrf_token %}

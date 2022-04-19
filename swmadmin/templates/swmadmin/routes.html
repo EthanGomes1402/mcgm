@@ -21,10 +21,16 @@
  </style>
 {% endblock %}
 
+{% block content_title %}Routes{% endblock %}
 {% block content %}
+
+
+
+
+
   <div>
-	  <a href="{% url 'add_route' %}" class="vtms_buttons">Add Route</a>
-	  <a href="{% url 'upload_routes_and_bin_data' %}" class="vtms_buttons">Upload Routes</a>
+	  <a href="{% url 'add_route' %}" class="btn btn-warning   px-3"><b>Add Route</b></a>
+	  <a href="{% url 'upload_routes_and_bin_data' %}" class="btn btn-info  px-3 ml-2"><b>Upload Routes</b></a>
   </div>
   {% if routes %}
   <table class="table tablesorter">
@@ -82,7 +88,9 @@
 	  </td>
           <td>{{ route.ward }}</td>
 	  <td>
-		  <a id="{{route.id}}" href="#" class="vtms_buttons delete_route">Delete</a>
+	  <div class="btn-group btn-group-sm">
+		  <a id="{{route.id}}" href="#" class="btn btn-danger"><i class="fas fa-trash"></i></a>
+		  </div>
 	  </td>
         </tr>
       {% endfor %}
@@ -96,6 +104,9 @@
   <div id="spinner" style="display: none;" class="loader">
         <img src="{% static 'img/loader.gif' %}" class="img-responsive">
   </div>
+  
+ 
+  
 {% endblock %}
 
 {% block js %}

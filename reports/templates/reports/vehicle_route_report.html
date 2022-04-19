@@ -17,81 +17,339 @@
     margin: auto;
  }
  </style>
+
+
+
+<style>
+
+/* 	.rftablenew .bmclogo {
+
+		margin: auto;
+
+		display: block;
+
+		width: 14%;
+
+		margin-bottom: 20px;
+
+	} */
+
+	
+
+	.newtable-bg {
+
+		background: #cae0f9;
+
+		padding: 20px;
+
+		border-radius: 10px;
+
+	}
+
+	
+
+	.start-table {
+
+		margin-top: 20px;
+
+		padding-top: 20px;
+
+		border-top: 1px solid #4f8bcf;
+
+	}
+
+	
+
+	.newtable-bg .form-control {
+
+		border: 1px solid #4f8bcf;
+
+		color: #000;
+
+	}
+
+	
+
+	.start-table .table>thead:first-child>tr:first-child>th {
+
+		border: 1px solid #4f8bcf;
+
+	}
+
+	
+
+	.start-table .table-new {
+
+		background: #fff;
+
+		padding: 15px;
+
+	}
+
+	
+
+	.table-new .table-bordered>tbody>tr>td {
+
+		border: 1px solid #4f8bcf;
+
+	}
+
+</style>
+
+
+
+
+
+
 {% endblock %}
 
+{% block content_title %}Vehicle Route Report{% endblock %}
 {% block content %}
-	<div>
-		<div>
-			<form id="vehicle_summery_report" name="vehicle_summery_report">
-			  <div class="form-row">
-			    <div class="form-group col-md-3">  
-			      <label for="vehicle">Vehicle</label>
-			      <div class="form-group">
-                      <input type='text' class="form-control" name="vehicle" id="vehicle"/>
-			      </div>
-			    </div> 
-			    <div class="form-group col-md-3">  
-			      <label for="from_date">From Date </label>
-			      <div class="form-group">
-                    <div class='input-group date' id='from_time'>
-                      <input type='text' class="form-control" name="from_time"/>
-                        <span class="input-group-addon">
-                          <span class="glyphicon glyphicon-calendar"></span>
-                        </span>
+
+
+<!-- <marquee>This page testing is going on - Developer</marquee> -->
+
+<section class="content">
+    <div class="container-fluid">
+
+
+
+        <div class="row">
+            <div class="col-md-3">
+
+
+                <form id="vehicle_summery_report" name="vehicle_summery_report">
+                <label for="">Vehicle No</label>
+                <input type="text" class="form-control" placeholder="Enter Vehicle No." name="vehicle" id="vehicle">
+            </div>
+            <div class="col-md-3">
+                <label for="">From Date</label>
+                <div class="input-group date" id="fromdate" data-target-input="nearest">
+                    <input type="text" class="form-control datetimepicker-input" data-toggle="datetimepicker" data-target="#fromdate" name = "from_time" id = "from_time"  autocomplete="off"/>
+                    <div class="input-group-append" data-target="#fromdate" data-toggle="datetimepicker">
+                        <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                     </div>
-			      </div>
-			    </div> 
-			    <div class="form-group col-md-3">  
-			      <label for="to_date">To Date </label>
-			      <div class="form-group">
-                    <div class='input-group date' id='to_time'>
-                      <input type='text' class="form-control" name="to_time"/>
-                        <span class="input-group-addon">
-                          <span class="glyphicon glyphicon-calendar"></span>
-                        </span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label for="">To  Date</label>
+                <div class="input-group date" id="todate" data-target-input="nearest">
+                    <input type="text" class="form-control datetimepicker-input" data-toggle="datetimepicker" data-target="#todate" name = "to_time" id = "to_time" autocomplete="off"/>
+                    <div class="input-group-append" data-target="#todate" data-toggle="datetimepicker">
+                        <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                     </div>
-			      </div>
-			    </div>
-			    <div class="form-group col-md-3">  
-                  <label for="submit">.</label>
-			      <div class="form-group">
-                    <button type="submit" class="btn btn-primary">Submit</button>
-			      </div>
-			    </div> 
-			  </div>
-			</form>
-		</div>
-		<div width="100%" style="display:none;" id="vehicle_summery_data">
-			<button id="export_to_excel" style="float: right;">Export To Excel</button>
-			<button id="export_to_csv" style="float: right;">Export To CSV</button>
-			<button id="export_to_pdf" style="float: right;">Export To PDF</button>
-			<table  id="vehicle_summery" width="100%" class="table tablesorter">
-				<thead>
-					<tr>
-						<th>Index</th>
-						<th>Vehicle</th>
-						<th>Date</th>
-						<th>Time</th>
-						<th>Location</th>
-						<!--<th>Distance</th>-->
-						<th>Speed</th>
-					</tr>
-				</thead>
-				<tbody></tbody>
-			</table>
-		</div>
-		<div id="spinner" style="display: none;" class="loader">
-            <img src="{% static 'img/loader.gif' %}" class="img-responsive">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <!-- <button type = "submit" class="btn btn-success submit-btn">Submit</button> -->
+				<button type = "submit" class="btn btn-success submit-btn">Generate PDF Report</button>
+            </div>
+        </form>
+
+
         </div>
+    </div>
+	
+
+	<p id = "linktoaccesspdf"></p>
+	<div width="100%" class = "mt-3 " style="display:none;" id="vehicle_summery_data">
+		<div class = "mb-2 d-block">
+
+		<button class = "btn btn-danger  btn-sm px-3 ml-2" id="export_to_excel" style="float: right;">Export To Excel</button>
+		<button class = "btn btn-danger  btn-sm px-3 ml-2" id="export_to_csv" style="float: right;">Export To CSV</button>
+		<button class = "btn btn-danger  btn-sm px-3 ml-2" id="export_to_pdf" style="float: right;">Export To PDF</button>
+		<!-- <button class = "btn btn-danger  btn-sm px-3 ml-2" id="export_to_pdf2" style="float: right;">Export To PDF(Lite)</button> -->
+		<!-- <button class = "btn btn-danger  btn-sm px-3 ml-2" id="testbutton" style="float: right;">Export To PDF Test</button> -->
+
+		</div>
+		<!-- loader -->
+<div id = "spinner" class="loader-wrapper" style="display: none;">
+	<div class="truck-wrapper">
+		<div class="truck">
+			<div class="truck-container"></div>
+			<div class="wheel-back"></div>
+			<div class="wheel-front"></div>
+			<div class="smoke"></div>
+		</div>
 	</div>
+</div>
+
+		<div id = "printablearea" class="canvas_div_pdf">
+
+			<!--<img id = "logo" src = "{% static 'images2/mcgm-logo.png' %}" width = "80px" height = "80px" style = "margin-left: 460px; display: block;"> -->
+			
+
+			<div class="container-fluid rftablenew">
+
+				<div class="row w-100">
+		
+					<div class="col-md-12">
+						<img src="{% static 'images2/mcgm-logo.png' %}" alt="BMC Logo" class="img-fluid mx-auto d-block " width = "150">
+
+			<h3 style = "text-align: center;">Route Travel Report</h3>
+			<div class="newtable-bg">
+	
+				<div class="row">
+	
+					<div class="col-md-4">
+	
+						<div class="form-block">
+	
+							<div class="form-group">
+	
+								<label for="fromdate">From Time: </label><input type = "text" id = "fromtime" class="form-control" disabled></input></div>
+	
+						</div>
+	
+					</div>
+	
+					<div class="col-md-4">
+	
+						<div class="form-block">
+	
+							<div class="form-group">
+	
+								<label for="todate">To Time: </label>
+	
+								<input id = "totime" type="text" class="form-control" disabled></input>
+	
+	
+							</div>
+	
+						</div>
+	
+					</div>
+	
+					<div class="col-md-4">
+	
+						<div class="form-block">
+	
+							<div class="form-group">
+	
+								<label for="reportgendate">Report Generated On: </label><input disabled id = "timenow" type="text" class="form-control"></input></div>
+								
+						</div>
+	
+					</div>
+					
+				</div>
+
+
+
+
+				
+			<div class="row start-table">
+
+                <div class="col-md-12">
+
+                    <div class="table-new">
+			<!--<table  id="vehicle_summery" width="100%" class="table tablesorter"> -->
+				<table id = "vehicle_summery" class="table table-bordered tablesorter"> 
+			<thead>
+				<tr>
+					<th>Index</th>
+					<th>Vehicle</th>
+					<th>Date</th>
+					<th>Time</th>
+					<th>Location</th>
+					<th>Speed</th>
+					
+				</tr>
+				
+			</thead>
+			<tbody><tr>
+				<!-- <td>Index</td>
+				<td>Vehicle</td>
+				<td>Date</td>
+				<td>Time</td>
+				<td>Location</td>
+				<!--<th>Distance</th> //comment within comment
+				<td>Speed</td>
+			</tr> --></tbody>
+		</table>
+
+		</div>
+	</div>
+	</div>
+	</div>
+		
+					</div>
+		
+				</div> 
+
+			<!-- <h5 id = "fromtime"></h5>
+			<h5 id = "totime"></h5>
+			<h5 id = "timenow"></h5> -->
+
+
+			
+	</div>
+	</div>
+	</div>
+
+
+
+
+
+</section>
+
+
+
+
+<!-- loader -->
+<div id = "spinner2" class="loader-wrapper" style="display: none;">
+	<div class="truck-wrapper">
+		<div class="truck">
+			<div class="truck-container"></div>
+			<div class="wheel-back"></div>
+			<div class="wheel-front"></div>
+			<div class="smoke"></div>
+		</div>
+	</div>
+</div>
+
+
+
+
+<!-- 
+<div id="spinner" style="display: none;" class="loader">
+    <img src="{% static 'img/loader.gif' %}" class="img-responsive">
+</div> -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 {% endblock %}
 
 {% block js %}
+<!--Load scripts for pdf generation-->
+<!--<script src="https://code.jquery.com/jquery-1.12.4.js"></script> -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.min.js"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.js"></script>
   <script>
     var form_data = JSON.parse('{{ form_params | escapejs }}');
     form_data = form_data.areal_hierarchy_params;
 
-    $('#from_time').datetimepicker({
+    /* $('#from_time').datetimepicker({
        	useCurrent: false, //Important! See issue #1075
 	    format:'YYYY-MM-DD HH:mm:ss'
     });
@@ -99,7 +357,18 @@
     $('#to_time').datetimepicker({
        	useCurrent: false,
 	    format:'YYYY-MM-DD HH:mm:ss'
-    });
+    }); */
+
+	//Date and time picker
+	$('#fromdate, #todate').datetimepicker({
+		useCurrent: false,
+	    format:'YYYY-MM-DD HH:mm:ss',
+		icons: {
+                time: 'far fa-clock'
+            }
+			
+        });
+
 
     $("#from_time").on("dp.change", function (e) {
         $('#to_time').data("DateTimePicker").minDate(e.date);
@@ -110,65 +379,137 @@
     });
 
     $(document).ready(function(){
-        $("#vehicle_summery_report").submit(function(event) {
+        
 
-            //check if result have some data
-            if($("table#vehicle_summery tbody").children().length > 0 ){
-                $('#vehicle_summery tbody tr').remove();
-            }
 
-            event.preventDefault();
-            $('#spinner').show();
-            var submitted_form_data = $('#vehicle_summery_report').serialize();
 
-            $.ajax({
-                type:'POST',
-                url:'{% url "vehicle_route_report" %}',
-                data: { 'form_data' : submitted_form_data},
-                beforeSend: function(xhr) {
-                    xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
-                },
-                success:function(res){
-                    var indexcounter = 0;
-                    var html = [];
-                    var out  = [], o = -1;
-                    var rows = res.data;
-                    for( var row, iRow = -1; row = rows[++iRow]; ) {
-                        out[++o] ='<tr class="routerow"><td>';
-                        out[++o] = ++indexcounter;
-                        out[++o] = '</td><td>'; 
-                        out[++o] = row.vehicle;
-                        out[++o] = '</td><td>'; 
-                        out[++o] = row.date; 
-                        out[++o] = '</td><td>'; 
-                        out[++o] = row.time;  
-                        out[++o] = '</td><td>'; 
-                        out[++o] = row.area;
-                        out[++o] = '</td><td>';
-                        out[++o] = row.speed;
-                        out[++o] ='</td></tr>';
-                    }
+		$("#vehicle_summery_report").submit(function(event) {
 
-                    $('#vehicle_summery tbody').html(out.join(''));
-                    //$("table#vehicle_summery").formatTable();
+//check if result have some data
+if($("table#vehicle_summery tbody").children().length > 0 ){
+	$('#vehicle_summery tbody tr').remove();
+}
 
-                    if($("table#vehicle_summery tbody").children().length > 0 ) {
-                        //$('#vehicle_summery').tablesorter();
-                        $('#spinner').hide();
-                        $('div#vehicle_summery_data').show();
-                    }
-                    else {
-                        $('#spinner').hide();
-                        alert("No Records For Mentioned Criteria");
-                        return false;
-                    }
-                },
-                error:function(a,b,c){
-                    alert(b);
-                    alert(c);
-                }
-            });
-        });
+event.preventDefault();
+document.getElementById("linktoaccesspdf").innerHTML = "We are generating thousands of rows of data for you. Please Wait..."
+$('#spinner').show();
+$('#spinner2').show();
+var submitted_form_data = $('#vehicle_summery_report').serialize();
+
+$.ajax({
+	type:'POST',
+	url:'{% url "generatePdfForVehicleRouteReport" %}',
+	data: { 'form_data' : submitted_form_data},
+	beforeSend: function(xhr) {
+		xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+	},
+	success:function(res){
+
+
+		
+		/* var indexcounter = 0;
+		var html = [];
+		var out  = [], o = -1;
+		var rows = res.data;
+		var fromtime = res.fromtime;
+		var totime = res.totime;
+		var timenow = Date(Date.now()).toString();
+		var timelength = timenow.length;
+		var timenow = timenow.slice(0, timelength-30);
+		document.getElementById("fromtime").value = fromtime;
+		document.getElementById("totime").value = totime;
+		document.getElementById("timenow").value= timenow; */
+		/* document.getElementById("timenow").value= Date(Date.now()).toString(); */
+
+		
+		//next if else condition was added by ajit to dynamically adjust ui.
+		/* if(rows.length <= 1)
+		{
+			document.getElementById("sumarryreportdiv").style.height = "250px";
+		}
+		else{
+			document.getElementById("sumarryreportdiv").style.height = "98px";
+		}
+		 */
+		
+		
+		//out[++o] = "<tr style = \"font-weight: bold;\";><td>Index</td><td>Vehicle</td><td>Date</td><td>Time</td><td>Location</td><td>Speed</td></tr>";
+		
+		
+		
+		
+		
+		/* for( var row, iRow = -1; row = rows[++iRow]; ) {
+			out[++o] ='<tr class="routerow"><td>';
+			out[++o] = ++indexcounter;
+			out[++o] = '</td><td>'; 
+			out[++o] = row.vehicle;
+			out[++o] = '</td><td>'; 
+			out[++o] = row.date; 
+			out[++o] = '</td><td>'; 
+			out[++o] = row.time;  
+			out[++o] = '</td><td>'; 
+			out[++o] = row.area;
+			out[++o] = '</td><td>';
+			out[++o] = row.speed; 
+			out[++o] ='</td></tr>';
+		} */
+		/* $('#vehicle_summery tbody').html(out.join(''));
+		//$("table#vehicle_summery").formatTable();
+
+		if($("table#vehicle_summery tbody").children().length > 0 ) {
+			//$('#vehicle_summery').tablesorter();
+			$('#spinner').hide();
+			$('#spinner2').hide();
+			$('div#vehicle_summery_data').show();
+		}
+		else {
+			$('#spinner').hide();
+			$('#spinner2').hide();
+			alert("No Records For Mentioned Criteria");
+			return false;
+		} */
+
+
+		//alert(res);
+
+		$('#spinner').hide();
+		$('#spinner2').hide();
+		document.getElementById("linktoaccesspdf").innerHTML = "<a target = \"_blank\" href =\""+res+"\">Your report is ready! Click here to access it.</a>";
+		window.open(res, "_blank");
+
+
+
+	},
+	error:function(a,b,c){
+		alert(b);
+		alert(c);
+$('#spinner').hide();	
+	}
+});
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         $("button#export_to_excel").click(function() {
             let dNow = new Date();
@@ -187,11 +528,36 @@
         });
 
         $("button#export_to_pdf").click(function() {
+            //let dNow = new Date();
+            //let file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+
+            //$("#vehicle_summery").tableHTMLExport({type:'pdf',filename:"vehicle_history_report_" + file_time_str + ".pdf"});
+
+
+			generatepdf();
+
+        });
+
+
+		$("button#export_to_pdf2").click(function() {
             let dNow = new Date();
             let file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
 
             $("#vehicle_summery").tableHTMLExport({type:'pdf',filename:"vehicle_history_report_" + file_time_str + ".pdf"});
+
+
+			//generatepdf();
+
         });
+
+
+		/* $("button#testbutton").click(function() {
+            let dNow = new Date();
+            let file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+            $("#vehicle_summery").tableHTMLExport({type:'pdf',filename:"vehicle_history_report_" + file_time_str + ".pdf"});
+
+			//generatepdf();
+        }); */
     });
 
 function setAllDefElemValues(form_data) {
@@ -441,5 +807,87 @@ function onChangeGarage() {
 	}
 }
 
+
+
+
+
+
+
+function generatepdf(){
+
+	$('#spinner').show();
+
+var HTML_Width = $(".canvas_div_pdf").width();
+var HTML_Height = $(".canvas_div_pdf").height();
+var top_left_margin = 15;
+var PDF_Width = HTML_Width+(top_left_margin*2);
+var PDF_Height = (PDF_Width*1.5)+(top_left_margin*2);
+var canvas_image_width = HTML_Width;
+var canvas_image_height = HTML_Height;
+
+var totalPDFPages = Math.ceil(HTML_Height/PDF_Height)-1;
+var img = new Image();
+//img.crossOrigin="anonymous";
+//img.src = 'mcgm-logo.png';
+console.log("totalPDFPages are"+ totalPDFPages);
+
+
+
+
+//var base64img = getBase64Image(img);
+
+
+
+html2canvas($(".canvas_div_pdf")[0],{allowTaint:true}).then(function(canvas) {
+    canvas.getContext('2d');
+    
+    console.log(canvas.height+"  "+canvas.width);
+    
+    
+    var imgData = canvas.toDataURL();
+	console.log(imgData);
+    var pdf = new jsPDF('p', 'pt',  [PDF_Width, PDF_Height]);
+    pdf.addImage(imgData, 'JPG', top_left_margin, top_left_margin,canvas_image_width,canvas_image_height);
+    //pdf.addImage(img, 'PNG', 85, 5, 40, 40);
+    //pdf.addImage(base64img, 'png', 10, 78, 12, 15);
+    
+    for (var i = 1; i <= totalPDFPages; i++) { 
+		//console.log("Now working on page number: "+i);
+        pdf.addPage(PDF_Width, PDF_Height);
+        pdf.addImage(imgData, 'JPG', top_left_margin, -(PDF_Height*i)+(top_left_margin*4),canvas_image_width,canvas_image_height);
+		
+    }
+    
+    pdf.save("HTML-Document.pdf");
+	$('#spinner').hide();	
+});
+
+}
+
+
+
+
+
+
+
+
   </script>
 {% endblock %}  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

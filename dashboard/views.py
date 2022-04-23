@@ -160,7 +160,6 @@ def latest_vehicle_status_v2(request):
 
     for each_th_record_dict in Current_tracklog_history.objects.values('vehicle').annotate(max_dt=Max('datetime')).order_by('max_dt'):
         each_th_record = Current_tracklog_history.objects.get(datetime=each_th_record_dict['max_dt'],vehicle_id=each_th_record_dict['vehicle'])
-        totalcount+=1
         each_vehicle_record_data = dict()
         each_vehicle_record_data['veh'] = str(each_th_record.vehicle)
         each_vehicle_record_data['veh_ward'] = str(each_th_record.vehicle.ward)
@@ -225,6 +224,7 @@ def latest_vehicle_status_v2(request):
         else:
             othercount+=1
 
+        totalcount+=1
         if tm.date() < datetime.today().date():
            response_data['data']['offline'].append(each_vehicle_record_data)
         else:

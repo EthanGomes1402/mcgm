@@ -318,7 +318,7 @@
                         <div class="col-lg-3 col-6">
                             <div class="small-box bg-info">
                                 <div class="inner">
-                                    <h3 id = "totalvehiclecount"></h3>
+                                    <h3>{{ totalvehiclecount }}</h3>
                                     <p>Total No. of Vehicles</p>
                                 </div>
                                 <div class="icon">
@@ -333,7 +333,7 @@
                         <div class="col-lg-3 col-6">
                             <div class="small-box bg-success">
                                 <div class="inner">
-                                    <h3 id = "onlinevehiclecount"></h3>
+                                    <h3>{{  all_online_entries | length }}</h3>
                                     <p>Online</p>
                                 </div>
                                 <div class="icon">
@@ -348,7 +348,7 @@
                         <div class="col-lg-3 col-6">
                             <div class="small-box bg-danger">
                                 <div class="inner">
-                                    <h3>0</h3>
+                                    <h3>{{ all_offline_entries | length }}</h3>
                                     <p>Offline</p>
                                 </div>
                                 <div class="icon">
@@ -363,7 +363,7 @@
                         <div class="col-lg-3 col-6">
                             <div class="small-box bg-warning">
                                 <div class="inner">
-                                    <h3 id = "vehiclesummarycount"></h3>
+                                    <h3> {{totalvehiclecount}} </h3>
                                     <p>All Vehicle Summary</p>
                                 </div>
                                 <div class="icon">
@@ -535,18 +535,55 @@
                                 <div class="card-header">
                                     <h3 class="card-title">Dashboard </h3>
                                 </div>
-                                </div>
-                                </div>
-                                </div>
-                                </div>
-                                </section>
-
-
-
-
-
-
-
+                                <div class="card-body">
+                                    {% if all_offline_entries %}
+                                    <table id="vehicletable" class="table table-bordered table-striped tablesorter">
+                                        <thead>
+                                            <tr>
+                                                <th>Sr. No.</th>
+                                                <th>Vehicle</th>
+                                                <th>Type</th>
+                                                <th>Location</th>
+                                                <th>Time</th>
+                                                <th>Ward</th>
+                                                <th>Contractor</th>
+                                                <!--<th>Vehicle Status</th>
+                                                <th>Contractor</th> 
+                                                <th>Ward</th> -->
+                                                <th>View</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for each_entry in all_offline_entries reversed %}
+                                            <tr>
+                                                <td>{{ forloop.counter }}</td>
+                                                <td>{{ each_entry.veh  }}</td>
+                                                <td style = "text-transform: uppercase;">{{ each_entry.type }}</td>
+                                                <td>{{ each_entry.ward  }} </td>
+                                                <td>{{ each_entry.time | default_if_none:"" }}</td>
+                                                <td>{{ each_entry.veh_ward}}</td>
+                                                <td>{{ each_entry.veh_contractor}}</td>
+                                                <!--<td>{{ each_entry.trip_status }}</td>-->
+                                                <!--<td>{% firstof bin.ward bin.route.ward  %}</td>-->
+                                                <!--<td bgcolor="{{ each_entry.veh_class }}">{{ each_entry.veh_status }}</td>
+                                                <td bgcolor="{{ each_entry.speed_class }}">{{ each_entry.speed_status }}</td> 
+                                                <td></td> -->
+                                                <td class="area"><img src="{% static 'img/location.png' %}"><span style="display:none;">{{  each_entry.lat }},{{each_entry.lon }}</span> </td>
+                                            </tr>
+                                          {% endfor %}
+                                        </tbody>
+                                    </table>
+                                    {% else %}
+  	                                    <h1>No Data Found</h1>
+                                    {% endif %}
+                                    <!--<div id="loadpositionmap" style="display: none;" align="center">
+                                    </div>-->
+                                  </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             <!-- Main content -->
             <section class="content" id = "AllVehicles">
@@ -559,21 +596,7 @@
                                 </div>
                                 <!-- /.card-header -->
                                 <div class="card-body">
-                                    <!-- <div class="row mb-3">
-                                        <div class="col-md-6">
-                                            <button type="button" class="btn btn-danger  btn-sm px-3">
-                                                <i class="fa fa-file-word"></i> Excel</button>
-                                            <button type="button" class="btn btn-danger  btn-sm px-3 ml-2">
-                                                    <i class="fa fa-file-pdf"></i> Word</button>
-                                        </div>
-                                        <div class="col-md-4 ml-auto">
-                                            <div class="row mr-0">
-                                                <label class="col-md-3 mb-0 my-auto">Search:</label>
-                                                <input type="search" class="form-control form-control-sm col-md-9" placeholder="Search Vehicle" aria-controls="vehicletable">
-                                            </div>
-                                        </div>
-                                    </div> -->
-                                    {% if all_entries %}
+                                    {% if all_online_entries %}
                                     <table id="vehicletable" class="table table-bordered table-striped tablesorter">
                                         <thead>
                                             <tr>
@@ -584,14 +607,14 @@
                                                 <th>Time</th>
                                                 <th>Ward</th>
                                                 <th>Contractor</th>
-                                               <!-- <th>Vehicle Status</th>
+                                                <!--<th>Vehicle Status</th>
                                                 <th>Contractor</th> 
                                                 <th>Ward</th> -->
-                                                <th>Map View</th>
+                                                <th>View</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {% for each_entry in all_entries reversed %}
+                                            {% for each_entry in all_online_entries reversed %}
                                             <tr>
                                                 <td>{{ forloop.counter }}</td>
                                                 <td>{{ each_entry.veh  }}</td>
@@ -602,25 +625,20 @@
                                                 <td>{{ each_entry.veh_contractor}}</td>
                                                 <!--<td>{{ each_entry.trip_status }}</td>-->
                                                 <!--<td>{% firstof bin.ward bin.route.ward  %}</td>-->
-                                             <!--   <td bgcolor="{{ each_entry.veh_class }}">{{ each_entry.veh_status }}</td>
+                                                <!--<td bgcolor="{{ each_entry.veh_class }}">{{ each_entry.veh_status }}</td>
                                                 <td bgcolor="{{ each_entry.speed_class }}">{{ each_entry.speed_status }}</td> 
                                                 <td></td> -->
                                                 <td class="area"><img src="{% static 'img/location.png' %}"><span style="display:none;">{{  each_entry.lat }},{{each_entry.lon }}</span> </td>
                                             </tr>
                                           {% endfor %}
                                         </tbody>
-                                                
                                     </table>
                                     {% else %}
-  	<h1>No Data Found</h1>
-  {% endif %}
-  <div id="loadpositionmap" style="display: none;" align="center">
-  </div>
-  
-
-
-
-                                </div>
+  	                                    <h1>No Data Found</h1>
+                                    {% endif %}
+                                    <div id="loadpositionmap" style="display: none;" align="center">
+                                    </div>
+                                  </div>
                                 <!-- /.card-body -->
                             </div>
                         </div>
@@ -678,7 +696,7 @@
         });
 
 
-        updatevehiclecount();
+        //updatevehiclecount();
 
         function updatevehiclecount(){
 
@@ -695,8 +713,8 @@
 
             let msg = document.getElementById("vehicletable_info").innerHTML;
             var vcount = msg.slice(19,23);
-            document.getElementById("totalvehiclecount").innerHTML = result;
-            document.getElementById("onlinevehiclecount").innerHTML = result;
+            //document.getElementById("totalvehiclecount").innerHTML = result;
+            //document.getElementById("onlinevehiclecount").innerHTML = result;
             document.getElementById("vehiclesummarycount").innerHTML = result;
 
 

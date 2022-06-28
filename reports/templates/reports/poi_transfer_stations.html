@@ -7,12 +7,28 @@
   <form method="post" novalidate>
     {% csrf_token %}
     {{ form | crispy }} 	
+    <div class="form-row">
+    <div class="col-md-3">  
+      <label for="date">Report Generated On </label>
+        <div class="input-group date" id="reservationdate1" data-target-input="nearest">
+         <span class="form-control datetimepicker-input" data-target="#reservationdate1" id="demo" title="Date"></span>
+        </div>
+      </div>
+      </div>
+      <br>
     <button type="submit" class="btn btn-success">Submit</button>
   </form>
 {% endblock %}
 
 
 {% block js %}
+<script>
+     
+	var d = new Date();
+	document.getElementById("demo").innerHTML = d.toDateString();
+	
+	</script>
+
   <script>
     $(document).ready(function(){
     });

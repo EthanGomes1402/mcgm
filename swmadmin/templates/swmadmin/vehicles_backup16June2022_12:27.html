@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+	<h1>Vehicles</h1>
+{% endblock %}
+
+
+
+
+
+{% block content_title %}Vehicles{% endblock %}
+{% block content %}
+
+
+
+  <div>
+	  <a class="btn btn-warning  px-3" href="{% url 'add_vehicle' %}" ><b>Add New Vehicle</b></a>
+	  <a class="btn btn-info   px-3 ml-2" href="{% url 'upload_vehicle_data' %}"><b>Upload Vehicle excel</b></a>
+  </div>
+  {% if vehicles %}
+  <button class="btn btn-danger  btn-sm px-3 ml-2" id="export_to_excel" style="float: right;">Export To Excel</button>
+  <button class="btn btn-danger  btn-sm px-3 ml-2" id="export_to_csv" style="float: right;">Export To CSV</button>
+  <button class="btn btn-danger  btn-sm px-3 ml-2" id="export_to_pdf" style="float: right;">Export To PDF</button>
+  <table class="table tablesorter" id="vehicles">
+    <thead class="thead-inverse">
+      <tr>
+        <th>Vehicle</th>
+        <th>Engine</th>
+        <th>Chassis</th>
+	    <th>Maker</th>
+        <th>Type</th>
+        <th>Contractor</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for vehicle in vehicles %}
+        <tr>
+          <td>{{ vehicle.plate_number }} </td>
+          <td>{{ vehicle.engine_number}}</td>
+	      <td>{{ vehicle.chassis_number}}</td>
+          <td>{{ vehicle.maker }} </td>
+          <td>{{ vehicle.vehicle_type }}</td>
+          <td>{{ vehicle.contractor }}</td>
+          <td>
+		    <!-- <a href="{% url 'edit_vehicle' vehicle.pk %}" class="vtms_buttons">Edit</a>
+		    <a id="{{vehicle.pk}}" href="#" class="vtms_buttons delete_vehicle">Delete</a> -->
+
+
+
+        <div class="btn-group btn-group-sm">
+          <a href="{% url 'edit_vehicle' vehicle.pk %}" class="btn btn-info"><i class="fas fa-pen"></i></a>
+          <a id="{{vehicle.pk}}" href="#" class="btn btn-danger"><i class="fas fa-trash"></i></a>
+          </div>
+
+
+
+	      </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+	<h1>No Vehicle Found</h1>
+  {% endif %}
+
+
+
+
+
+
+
+
+
+
+
+{% endblock %}
+
+{% block js %}
+<script>
+	$(document).ready(function(){
+	    $('table').tablesorter({theme:'metro-dark'});
+        $("a.delete_vehicle").click(function () {
+            var veh_id = $(this).attr('id');
+            var $tr = $(this).closest('tr');
+
+            $.ajax({
+                type:'POST',
+                url:'{% url "delete_vehicle" %}',
+                data: {
+                    'id':veh_id 
+                },
+                beforeSend: function(xhr) {
+                    xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+                },
+                success:function(res){
+                    $tr.find('td').fadeOut(1000,function(){
+                        $tr.remove();
+                    })	
+                },
+                error:function(a,b,c){
+                    alert(b);
+                    alert(c);
+                }
+            });
+        });
+
+		$("button#export_to_excel").click(function() {
+			var dNow = new Date();
+			var file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+			$("#vehicles").table2excel({
+				name: "vehicles",
+				filename: "vehicles_" + file_time_str + ".xlsx"//do not include extension
+			});
+		});
+	   
+		$("button#export_to_csv").click(function() {
+			$("#vehicles").tableHTMLExport({type:'csv',filename:'vehicles.csv'});
+		});
+
+		$("button#export_to_pdf").click(function() {
+			$("#vehicles").tableHTMLExport({type:'pdf',filename:'vehicles.pdf'});
+		});
+	});
+</script>
+{% endblock %}

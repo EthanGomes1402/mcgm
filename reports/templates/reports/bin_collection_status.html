@@ -40,6 +40,7 @@
 			      </select>
 			    </div>
 			  </div>
+
 			  <div class="form-row">
 			    <div class="form-group col-md-4">
 			      <label for="selectMlc">Mlc</label>
@@ -55,19 +56,28 @@
                                 <option value="3">Third</option>
 			      </select>
 			    </div>
-			    <div class="form-group col-md-4">
-			      <label for="from_date">From Date </label>
-			      <div class="form-group">
-				<div class='input-group date' id='from_date'>
-				  <input type='text' class="form-control" name="from_date"/>
-				    <span class="input-group-addon">
-				      <span class="glyphicon glyphicon-calendar"></span>
-				    </span>
+			    <div class="col-md-4">
+					<label>From Date</label>
+					<div class="input-group date" id="reservationdate" data-target-input="nearest">
+						<input type="text" class="form-control datetimepicker-input" data-target="#reservationdate" />
+						<div class="input-group-append" data-target="#reservationdate" data-toggle="datetimepicker">
+							<div class="input-group-text"><i class="fa fa-calendar"></i></div>
+						</div>
+					</div>
 				</div>
-			      </div>
-			    </div>
 			  </div>
-			  <div class="form-row">
+			<div class="form-row">
+			 <div class="col-md-3 mt-4">  
+				<label for="date">Report Generated On </label>
+				<div class="input-group date" id="reservationdate1" data-target-input="nearest">
+					<span class="form-control datetimepicker-input" data-target="#reservationdate1" id="demo" title="Date"></span>
+				</div>
+			 </div>
+			</div>
+			
+			<br>
+			
+			<div class="form-row">
 			    <div class="col-md-4">
 			      <div class="form-group">
 				<button type="submit" class="btn btn-primary">Submit</button>
@@ -119,6 +129,14 @@
 {% endblock %}
 
 {% block js %}
+
+	<script>
+     
+	var d = new Date();
+	document.getElementById("demo").innerHTML = d.toDateString();
+	
+	</script>
+
   <script>
     var form_data = JSON.parse('{{ form_params | escapejs }}');
     form_data = form_data.areal_hierarchy_params;

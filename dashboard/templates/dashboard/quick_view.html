@@ -30,14 +30,14 @@
 		  <table class="table tablesorter">
 		    <tbody>
 			<tr>
-				<td class="bins"><img src="{% static 'img/bin2.png' %}"></td>
-				<td class="vehicles"><img src="{% static 'img/vehicle2.png' %}"></td>
-				<td class="garages"><img src="{% static 'img/garrage2.png' %}"></td>
+				<td class="bins"><img src="{% static 'img/bin2.png' %}" title="BINS"></td>
+				<td class="vehicles"><img src="{% static 'img/vehicle2.png' %}" title="VEHICLES"></td>
+				<td class="garages"><img src="{% static 'img/garrage2.png' %}" title="GARAGES"></td>
 			</tr>
 			<tr>
-				<td class="mlcs"><img src="{% static 'img/mlc2.png' %}"></td>
-				<td class="tnsstns"><img src="{% static 'img/tnsstn2.png' %}"></td>
-				<td class="dmpgnds"><img src="{% static 'img/dmpgnd2.png' %}"></td>
+				<td class="mlcs"><img src="{% static 'img/mlc2.png' %}" title="MLC"></td>
+				<td class="tnsstns"><img src="{% static 'img/tnsstn2.png' %}" title="TRANSFER STATIONS"></td>
+				<td class="dmpgnds"><img src="{% static 'img/dmpgnd2.png' %}" title="DUMPING GROUNDS"></td>
 			</tr>
 		    </tbody>
 		  </table>
@@ -148,6 +148,15 @@
 		var garage_icon = L.icon({
 		    iconUrl: '{% static 'img/garrage2.png' %}',
 		});
+
+        //var arrowIcon = L.icon({
+			//iconUrl: 'arrow_180.png',
+		//	iconUrl: '{% static 'img/arrow_180.png' %}',
+			//iconUrl: '{% static 'img/reddot.png' %}',
+		//	iconSize: [16,20],
+		//	});
+
+
 		$('div#from_time input').val('');
 		$('div#to_time input').val('');
 
@@ -292,6 +301,7 @@
 					},
 					success:function(res){
 						var mlc_locations = res.mlc_location;
+						console.log(mlc_locations);
 						var mlc_markers = L.markerClusterGroup();
 						for (var i = 0; i < mlc_locations.length; i++) {
 							mlc_markers.addLayer(L.marker([mlc_locations[i][2], mlc_locations[i][1]],{icon : mlc_icon }).bindPopup(mlc_locations[i][0]));
@@ -472,38 +482,249 @@ console.log(res);
 							return false;
 						}
 
-			  			route_line = L.polyline([]).addTo(mymap);
-			  			var stat_pos = res.data[0]; 
-						var earlier_position = L.latLng(res.data[0].lat,res.data[0].lon);
-						for (var i = 1; i < res.data.length; i++) {
-							var position = L.latLng(res.data[i].lat,res.data[i].lon);
-			 				if( position.equals(earlier_position)){
-			  					continue;
-			  				}
-			  				else{
-								vehicle_positions.push(position);
-			  					route_line.addLatLng(position);
-								earlier_position = position; 
-			  				}
-						}
 
-						moving_marker = L.Marker.movingMarker(vehicle_positions, 20000,{icon : bin_icon }).addTo(mymap);
-						moving_marker.start();
-			  			mymap.fitBounds(route_line.getBounds());
+			var arrow = res.data; 
+			var arrow_markers = L.markerClusterGroup();
+			console.log(res.data);
+          
+			
+            for (var i = 0; i < res.data.length; i++) {
+				//console.log(arrow[i].lat);
+				//console.log(arrow[i].lon);
+			  //arrow_markers.addLayer(L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}));
+			     //var pop_data = 'Location is : <br> 72.3466 <br> Speed :- 20.567 km/hr ';
+                 //var pop_data = 'Location is :'+arrow[i].lat+','+arrow[i].lon+ '<br> Speed :'+ arrow[i].speed + 'km/hr ';
+				 var pop_data = 'Speed: '+ arrow[i].speed + 'km/hr <br> Vehicle Reg: '+ arrow[i].v_id + ' <br> Date: '+arrow[i].time + '<br> Shift: '+arrow[i].shift + '<br> Position: '+arrow[i].lat+','+arrow[i].lon;
+                 //console.log('Arrow Heading of  '+ i +' is : '+ arrow[i].heading);
+				 //console.log(typeof parseInt(arrow[i].heading));
+				 var num_heading = parseInt(arrow[i].heading);
+				 //console.log(num_heading);
+				 round_heading = Math.round(num_heading/22)*22;
+				 //console.log(round_heading);
+				 str_heading = String(round_heading);
+                 //console.log(typeof str_heading);   //string HEADING
+                 
+				   //0------
+                 if(round_heading == 0){
+					console.log("THIS IS 0 DEG")
+					var arrowIcon = L.icon({
+						iconUrl: '{% static 'img/arrow_img/arrow_0.png' %}',
+						iconSize: [20,20],
+						});
+						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
 
-						/*
-			  			if( res.bin_location.length < 1 ){
-			  				alert("No Bins Found");
-			  				return false;
-			  			}
-						let bin_locations = res.bin_location;
-						let bin_markers = L.markerClusterGroup();
-						for (var i = 0; i < bin_locations.length; i++) {
-							bin_markers.addLayer(L.marker([bin_locations[i][2],bin_locations[i][1]],{icon : bin_icon }).bindPopup(bin_locations[i][0]));
-						}
-						mymap.addLayer(bin_markers);
-						mymap.fitBounds(bin_markers.getBounds());
-						*/
+				 }
+                 //***********
+
+                  //22------
+				 else if(round_heading == 22){
+					console.log("THIS IS 22 DEG")
+                    var arrowIcon = L.icon({
+						iconUrl: '{% static 'img/arrow_img/arrow_22.png' %}',
+						iconSize: [20,20],
+						});
+						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+				 }
+                 //***********  
+                  
+				 //44------
+				 else if(round_heading == 44){
+					console.log("THIS IS 44 DEG")
+                    var arrowIcon = L.icon({
+						iconUrl: '{% static 'img/arrow_img/arrow_44.png' %}',
+						iconSize: [20,20],
+						});
+						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+				 }
+				 //***********
+
+				 //66------
+				 else if(round_heading == 66){
+					console.log("THIS IS 66 DEG")
+                    var arrowIcon = L.icon({
+						iconUrl: '{% static 'img/arrow_img/arrow_66.png' %}',
+						iconSize: [20,20],
+						});
+						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+				 }
+				 //***********
+                  
+
+                 //90------
+				 else if(round_heading == 88){
+					console.log("THIS IS 90 DEG")
+                    var arrowIcon = L.icon({
+						iconUrl: '{% static 'img/arrow_img/arrow_90.png' %}',
+						iconSize: [20,20],
+						});
+						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+				 }
+				 //***********
+
+				 //110------
+				 else if(round_heading == 110){
+					console.log("THIS IS 110 DEG")
+                    var arrowIcon = L.icon({
+						iconUrl: '{% static 'img/arrow_img/arrow_110.png' %}',
+						iconSize: [20,20],
+						});
+						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+				 }
+				 //***********
+                 
+				 //132------
+				 else if(round_heading == 132){
+					console.log("THIS IS 132 DEG")
+                    var arrowIcon = L.icon({
+						iconUrl: '{% static 'img/arrow_img/arrow_132.png' %}',
+						iconSize: [20,20],
+						});
+						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+				 }
+				 //***********
+                 
+
+				 //154------
+				 else if(round_heading == 154){
+					console.log("THIS IS 154 DEG")
+                    var arrowIcon = L.icon({
+						iconUrl: '{% static 'img/arrow_img/arrow_154.png' %}',
+						iconSize: [20,20],
+						});
+						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+				 }
+				 //***********
+
+				 //180-----
+				 else if(round_heading == 176){
+					console.log("THIS IS 180 DEG")
+					var arrowIcon = L.icon({
+						iconUrl: '{% static 'img/arrow_img/arrow_180.png' %}',
+						iconSize: [20,20],
+						});
+						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+				 }
+
+
+				//198------
+				 else if(round_heading == 198){
+					console.log("THIS IS 198 DEG")
+                    var arrowIcon = L.icon({
+						iconUrl: '{% static 'img/arrow_img/arrow_198.png' %}',
+						iconSize: [20,20],
+						});
+						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+				 }
+				 //***********
+
+
+				 //220------
+				 else if(round_heading == 220){
+					console.log("THIS IS 220 DEG")
+                    var arrowIcon = L.icon({
+						iconUrl: '{% static 'img/arrow_img/arrow_220.png' %}',
+						iconSize: [20,20],
+						});
+						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+				 }
+				 //***********
+
+				 //242------
+				 else if(round_heading == 242){
+					console.log("THIS IS 242 DEG")
+                    var arrowIcon = L.icon({
+						iconUrl: '{% static 'img/arrow_img/arrow_242.png' %}',
+						iconSize: [20,20],
+						});
+						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+				 }
+				 //***********
+
+                 
+				 //270---------
+                 else if(round_heading == 264){
+					console.log("THIS IS 270 DEG")
+					var arrowIcon = L.icon({
+						iconUrl: '{% static 'img/arrow_img/arrow_270.png' %}',
+						iconSize: [20,20],
+						});
+						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+				 }
+                 //************
+
+				 //286------
+				 else if(round_heading == 286){
+					console.log("THIS IS 286 DEG")
+                    var arrowIcon = L.icon({
+						iconUrl: '{% static 'img/arrow_img/arrow_286.png' %}',
+						iconSize: [20,20],
+						});
+						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+				 }
+				 //***********
+
+
+				 //308------
+				 else if(round_heading == 308){
+					console.log("THIS IS 308 DEG")
+                    var arrowIcon = L.icon({
+						iconUrl: '{% static 'img/arrow_img/arrow_308.png' %}',
+						iconSize: [20,20],
+						});
+						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+				 }
+				 //***********
+                 
+				 //330------
+				 else if(round_heading == 330){
+					console.log("THIS IS 330 DEG")
+                    var arrowIcon = L.icon({
+						iconUrl: '{% static 'img/arrow_img/arrow_330.png' %}',
+						iconSize: [20,20],
+						});
+						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+				 }
+				 //***********
+
+				
+				 //360-----------
+				 else if(round_heading == 352){
+					console.log("THIS IS 360 DEG")
+					var arrowIcon = L.icon({
+						iconUrl: '{% static 'img/arrow_img/arrow_360.png' %}',
+						iconSize: [20,20],
+						});
+						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+				 }
+
+
+//#$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+				// var arr_icon = [];
+				 //var icon_line = "{% static 'arrow_img/arrow_"+str_heading+".png' %}"
+                // var icon_line = "arrow_"+str_heading+".png";
+                 //console.log(icon_line);
+               //  arr_icon.push(icon_line);
+				 //console.log(arr_icon[0]);
+      
+			   // var full = '{% static '+str_heading+' %}';
+				//var full = "'"+'{% static '+"'"+icon_line+"'";
+				//var full = "{% static '" + icon_line + "' %}";
+				//var full = 
+				//console.log(full);
+   
+				//var correct = "{% static 'img/arrow_180.png' %}";
+				//console.log(correct);
+                //Icon Set
+				//var arrowIcon = L.icon({
+				//	iconUrl: '{% static 'img/arrow_180.png' %}',
+				//	iconSize: [16,20],
+				//	});
+
+                // L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+			}
+
+		
 					},
 					error:function(a,b,c){
 						alert(b);

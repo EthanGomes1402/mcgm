@@ -46,7 +46,8 @@ urlpatterns = [
     path('reports/vehicle_route_history',views.vehicle_route_history,name='vehicle_route_history'),
     path('reports/vehicle_summery',views.vehicle_summery,name='vehicle_summery'),
     path('reports/vehicle_route_report',views.vehicle_route_report,name='vehicle_route_report'),
-    path('reports/generatePdfForVehicleRouteReport', views.generatePdfForVehicleRouteReport, name = 'generatePdfForVehicleRouteReport'),
+    #path('reports/generatePdfForVehicleRouteReport', views.generatePdfForVehicleRouteReport, name = 'generatePdfForVehicleRouteReport'),
+    path('reports/generatePdfForVehicleRouteReport', views.generateps2pdf, name = 'generatePdfForVehicleRouteReport'),
 
     path('reports/vehicle_status_bin_rfid_tag',views.vehicle_status_bin_rfid_tag,name='vehicle_status_bin_rfid_tag'),
     path('reports/vehicle_status_bin_rfid_tag_status',views.vehicle_status_bin_rfid_tag_status,name='vehicle_status_bin_rfid_tag_status'),
@@ -60,6 +61,31 @@ urlpatterns = [
     path('reports/weight_zonewise',views.weight_zonewise,name='weight_zonewise'),
     path('reports/weight_history',views.weight_history,name='weight_history'),
     path('reports/get_vehicle_travel_history',views.get_vehicle_travel_history,name='get_vehicle_travel_history'),
+    path('reports/get_ward_report', views.get_ward_report,name='get_ward_report'),
+    path('reports/get_weight_report', views.get_weight_report,name='get_weight_report'),
+    path('reports/get_vehicle_tracking_report', views.get_vehicle_tracking_report,name='get_vehicle_tracking_report'),
+    path('reports/get_vehicle_trace_report', views.get_vehicle_trace_report,name='get_vehicle_trace_report'),
+    path('reports/get_vehicle_status_report', views.get_vehicle_status_report,name='get_vehicle_status_report'),
+    path('reports/get_vehicle_history_report', views.get_vehicle_history_report,name='get_vehicle_history_report'),
+    path('reports/get_tracking_status_report', views.get_tracking_status_report,name='get_tracking_status_report'),
+    path('reports/get_location_report', views.get_location_report,name='get_location_report'),
+    path('reports/get_landfill_site_usage_report', views.get_landfill_site_usage_report,name='get_landfill_site_usage_report'),
+    path('reports/get_garage_traction_report', views.get_garage_traction_report,name='get_garage_traction_report'),
+    path('reports/get_garage_report', views.get_garage_report,name='get_garage_report'),
+    path('reports/get_garage_logsheet_report', views.get_garage_logsheet_report,name='get_garage_logsheet_report'),
+    path('reports/get_fuel_status_report', views.get_fuel_status_report,name='get_fuel_status_report'),
+    path('reports/get_bin_status_report', views.get_bin_status_report,name='get_bin_status_report'),
+    path('reports/get_alert_report', views.get_alert_report,name='get_alert_report'),
+    
+    path('reports/sendWeighEntryData',views.sendWeighEntryData,name='sendWeighEntryData'),
+    path('reports/sendWeighExitData',views.sendWeighExitData,name='sendWeighExitData'),
+  
+  
+    
+##URL :- http://59.163.51.238:8081/VTMSRESTService/rest/sendWeighEntryData    
+
+#path('reports/sendWeighExitData',views.sendWeighExitData,name='sendWeighExitData'),
+##URL :- http://59.163.51.238:8081/VTMSRESTService/rest/sendWeighExitData
     
 #
 #    #all ajax urls

@@ -46,6 +46,15 @@
 			    </div>
 			  </div>
 			  <div class="form-row">
+				<div class="col-md-3">  
+				  <label for="date">Report Generated On </label>
+					<div class="input-group date" id="reservationdate1" data-target-input="nearest">
+					 <span class="form-control datetimepicker-input" data-target="#reservationdate1" id="demo" title="Date"></span>
+					</div>
+				  </div>
+			  </div>
+				  <br>
+			  <div class="form-row">
 			    <div class="col-md-4">
 			      <div class="form-group">
 				<button type="submit" class="btn btn-primary">Submit</button>
@@ -81,6 +90,12 @@
 {% endblock %}
 
 {% block js %}
+<script>
+     
+	var d = new Date();
+	document.getElementById("demo").innerHTML = d.toDateString();
+	
+	</script>
   <script>
     var form_data = JSON.parse('{{ form_params | escapejs }}');
     form_data = form_data.areal_hierarchy_params;

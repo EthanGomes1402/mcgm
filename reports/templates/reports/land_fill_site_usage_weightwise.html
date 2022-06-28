@@ -29,27 +29,25 @@
 			      <select id="selectDumpingGround" class="form-control" name="selectDumpingGround">
 			      </select>
 			    </div>
-			    <div class="col-md-3">  
-			      <label for="from_date">From Date </label>
-			      <div class="form-group">
-				<div class='input-group date' id='from_time'>
-				  <input type='text' class="form-control" name="from_time"/>
-				    <span class="input-group-addon">
-				      <span class="glyphicon glyphicon-calendar"></span>
-				    </span>
-				</div>
-			      </div>
+				<div class="col-md-3">  
+					<label>From Date</label>
+					<div class="input-group date" id="reservationdate" data-target-input="nearest">
+						<input type="text" class="form-control datetimepicker-input" data-target="#reservationdate" />
+						<div class="input-group-append" data-target="#reservationdate" data-toggle="datetimepicker">
+							<div class="input-group-text"><i class="fa fa-calendar"></i></div>
+						</div>
+					</div>
+	
 			    </div> 
 			    <div class="col-md-3">  
-			      <label for="to_date">To Date </label>
-			      <div class="form-group">
-				<div class='input-group date' id='to_time'>
-				  <input type='text' class="form-control" name="to_time"/>
-				    <span class="input-group-addon">
-				      <span class="glyphicon glyphicon-calendar"></span>
-				    </span>
-				</div>
-			      </div>
+					<label>To Date</label>
+					<div class="input-group date" id="reservationdate1" data-target-input="nearest">
+						<input type="text" class="form-control datetimepicker-input" data-target="#reservationdate1" />
+						<div class="input-group-append" data-target="#reservationdate1" data-toggle="datetimepicker">
+							<div class="input-group-text"><i class="fa fa-calendar"></i></div>
+						</div>
+					</div>
+	
 			    </div> 
 			    <div class="form-group col-md-3">
 			      <label for="selectShift">Shift</label>
@@ -61,6 +59,17 @@
 			      </select>
 			    </div>
 			  </div>
+
+			  <div class="form-row">
+				<div class="col-md-3">  
+				  <label for="date">Report Generated On </label>
+				  <div class="input-group date" id="reservationdate1" data-target-input="nearest">
+					  <span class="form-control datetimepicker-input" data-target="#reservationdate1" id="demo" title="Date"></span>
+				  </div>
+				</div>
+			  </div>
+			  <br>
+			  
 			  <div class="form-row">
 			    <div class="col-md-4">
 			      <div class="form-group">
@@ -102,6 +111,14 @@
 {% endblock %}
 
 {% block js %}
+
+	<script>
+     
+	var d = new Date();
+	document.getElementById("demo").innerHTML = d.toDateString();
+	
+	</script>
+
   <script>
     var form_params= JSON.parse('{{ form_params | escapejs }}');
 

@@ -1,0 +1,612 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}Geofence Alert Report {% endblock %}
+
+{% block extrastylesheet %}
+ <style>
+  div.loader {
+    width: 100px;
+    height: 100px;
+    position: absolute;
+    top:0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+ }
+ </style>
+{% endblock %}
+
+{% block content %}
+	<div>
+		<div>
+			<form id="alert_geofence_report" name="alert_geofence_report">
+			  <div class="form-row">
+			    <div class="form-group col-md-4">
+			      <label for="selectDiv">Div</label>
+			      <select id="selectDiv" class="form-control" name="selectDiv" onchange="onChangeDiv()">
+			      </select>
+			    </div>
+			    <div class="form-group col-md-4">
+			      <label for="selectZone">Zone</label>
+			      <select id="selectZone" class="form-control" name="selectZone" onchange="onChangeZone()">
+			      </select>
+			    </div>
+			    <div class="form-group col-md-4">
+			      <label for="selectWardOrGarage">Wardwise/Garagewise</label>
+			      <select id="selectWardOrGarage" class="form-control" name="selectWardOrGarage" onchange="onChangeType()">
+				<option value="wardwise" selected="selected">Wardwise</option>
+				<option value="garagewise">Garagewise</option>
+			      </select>
+			    </div>
+			  </div>
+			  <div class="form-row">
+			    <div class="form-group col-md-4 wardwise">
+			      <label for="selectWard">Ward</label>
+			      <select id="selectWard" class="form-control" name="selectWard" onchange="onChangeWard()">
+			      </select>
+			    </div>
+			    <div class="form-group col-md-4 garagewise" style="display:none;">
+			      <label for="selectGarage">Garage</label>
+			      <select id="selectGarage" class="form-control" name="selectGarage" onchange="onChangeGarage()">
+			      </select>
+			    </div>
+			    <div class="form-group col-md-4">
+			      <label for="selectVehicle">Vehicle</label>
+			      <select id="selectVehicle" class="form-control" name="selectVehicle">
+			      </select>
+			    </div>
+			    <div class="form-group col-md-4">
+			      <label for="selectCategory">Category</label>
+			      <select id="selectCategory" class="form-control" name="selectCategory">
+				{% for each_sub_category in sub_category %}      
+					<option value="{{ each_sub_category.0 }}">{{ each_sub_category.1 }}</option>
+				{% endfor %}
+			      </select>
+			    </div>
+			  </div>
+		<div class="row">  
+			  <div class="col-md-4 mt-4">
+				<label>From Date</label>
+				<div class="input-group date" id="reservationdate" data-target-input="nearest">
+					<input type="text" class="form-control datetimepicker-input" data-target="#reservationdate" />
+					<div class="input-group-append" data-target="#reservationdate" data-toggle="datetimepicker">
+						<div class="input-group-text"><i class="fa fa-calendar"></i></div>
+					</div>
+				</div>
+			</div>
+		
+			<div class="col-md-4 mt-4">
+				<label>To Date</label>
+				<div class="input-group date" id="reservationdate1" data-target-input="nearest">
+					<input type="text" class="form-control datetimepicker-input" data-target="#reservationdate1" />
+					<div class="input-group-append" data-target="#reservationdate1" data-toggle="datetimepicker">
+						<div class="input-group-text"><i class="fa fa-calendar"></i></div>
+					</div>
+				</div>
+			</div>
+		</div>
+			<br>
+			  <div class="form-row">
+			    <div class="col-md-4">
+			      <div class="form-group">
+				<button type="submit" class="btn btn-primary">Submit</button>
+			      </div>
+			    </div>
+			  </div>
+			</form>
+		</div>
+		<div width="100%" style="display:none;" id="alert_geofence_data">
+			<div>
+			    <div class="col-md-12" style="text-align:center;border:1px solid red;">  
+				Geofence Alert Report	
+			    </div> 
+			</div>
+			<br>
+			<div>
+				<button id="export_to_excel" style="float: right;">Export To Excel</button>
+				<button id="export_to_csv" style="float: right;">Export To CSV</button>
+				<button id="export_to_pdf" style="float: right;">Export To PDF</button>
+				<table  id="alert_geofence" width="100%" class="table tablesorter">
+					<thead>
+						<tr>
+							<th>Vehicle</th>
+							<th>Alert</th>
+							<th>Message</th>
+							<th>Location</th>
+							<th>Category</th>
+							<th>Time</th>
+						</tr>
+					</thead>
+					<tbody></tbody>
+				</table>
+			</div>
+		</div>
+		<div id="spinner" style="display: none;" class="loader">
+                        <img src="{% static 'img/loader.gif' %}" class="img-responsive">
+                </div>
+	</div>
+{% endblock %}
+
+{% block js %}
+	<script>
+	var form_data = JSON.parse('{{ form_params | escapejs }}');
+	form_data = form_data.areal_hierarchy_params;
+	var div_additional_info = {};
+	var zone_additional_info = {};
+	var ward_additional_info = {};
+	var garage_additional_info = {};
+
+	setAllDefElemValues(form_data);
+
+	$('#from_time').datetimepicker({
+            	useCurrent: false, //Important! See issue #1075
+		format:'YYYY-MM-DD HH:mm:ss'
+	});
+
+        $('#to_time').datetimepicker({
+            	useCurrent: false,
+		format:'YYYY-MM-DD HH:mm:ss'
+        });
+
+        $("#from_time").on("dp.change", function (e) {
+            $('#to_time').data("DateTimePicker").minDate(e.date);
+        });
+
+        $("#to_time").on("dp.change", function (e) {
+            $('#from_time').data("DateTimePicker").maxDate(e.date);
+        });
+
+	$(document).ready(function(){
+		$("#alert_geofence_report").submit(function(event) {
+			if($("table#alert_geofence tbody").children().length > 0 ){
+				$('#alert_geofence tbody tr').remove();
+			}
+			event.preventDefault();
+			$('#spinner').show();
+			var submitted_form_data = $('#alert_geofence_report').serialize();
+			$.ajax({
+				type:'POST',
+				url:'{% url "alert_geofence" %}',
+				data: { 'form_data' : submitted_form_data},
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader("X-CSRFToken","{{ csrf_token }}");
+				},
+				success:function(res){
+					var indexcounter = 0;
+					$.each(res.data, function(index, each_alert) {
+						let eachrow = '<tr class="routerow">';
+						eachrow += '<td>' + each_alert.vehicle + '</td>' + '<td>' + (each_alert.alert || " ") + '</td>' + '<td>' + each_alert.message  + '</td>' + '<td>' + (each_alert.lat || " ") + '</td>' + '<td>' + (each_alert.sub_category || " ") + '</td><td>'+  each_alert.time +'</td></tr>';
+						$('#alert_geofence tbody').append(eachrow);
+					});
+
+					if($("table#alert_geofence tbody").children().length > 0 ) {
+						$('#alert_geofence').tablesorter();
+						$('#spinner').hide();
+						$('div#alert_geofence_data').show();
+					}
+					else {
+						$('#spinner').hide();
+						alert("No Alert Recorded For Mentioned Criteria");
+						return false;
+					}
+				},
+				error:function(a,b,c){
+					alert(b);
+					alert(c);
+				}
+			});
+		});
+
+		$("button#export_to_excel").click(function() {
+			var dNow = new Date();
+			var file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+			$("#alert_geofence").table2excel({
+				name: "alert_geofence_report",
+				filename: "vehicle_geofence_alert_report_" + file_time_str + ".xlsx"//do not include extension
+			});
+		});
+	   
+		$("button#export_to_csv").click(function() {
+			$("#alert_geofence").tableHTMLExport({type:'csv',filename:'sample.csv'});
+		});
+
+		$("button#export_to_pdf").click(function() {
+			$("#alert_geofence").tableHTMLExport({type:'pdf',filename:'sample.pdf'});
+		});
+	});
+
+function setAllDefElemValues(form_data) {
+	$('#selectDiv').empty();
+	$('#selectDiv').append($('<option></option>').val(0).html('All Divisions').attr("name", "defdiv"));
+	$('#selectZone').empty();
+	$('#selectZone').append($('<option></option>').val(0).html('All Zones').attr("name", "defzone"));
+	$('#selectWard').empty();
+	$('#selectWard').append($('<option></option>').val(0).html('All Wards').attr("name", "defward"));
+	$('#selectVehicle').empty();
+	$('#selectVehicle').append($('<option></option>').val(0).html('All Vehicles').attr("name", "defvehicle"));
+	$('#selectGarage').empty();
+	$('#selectGarage').append($('<option></option>').val(0).html('All Garages').attr("name", "defgarages"));
+	$("#selectWardOrGarage").val('wardwise');
+	$('div#from_time input').val('');
+	$('div#to_time input').val('');
+
+	var alldefdivs = new Array();
+	var alldefzones = new Array();
+	var alldefwards = new Array();
+	var alldefvehicles = new Array();
+	var alldefgarages = new Array();
+
+	$.each(form_data, function(each_div, zone_info) {
+		div_additional_info[each_div] = zone_info;
+		div_properties = each_div.split('_'); 
+		$('#selectDiv').append($('<option></option>').val(div_properties[1]).html(div_properties[0]).attr("name",div_properties[0]))
+		alldefdivs.push(div_properties[1]);
+		$.each(zone_info, function(each_zone, ward_info) {
+		    zone_additional_info[each_zone] = ward_info; 
+		    zone_properties = each_zone.split('_');
+		    $('#selectZone').append($('<option></option>').val(zone_properties[1]).html(zone_properties[0]).attr("name",zone_properties[0]))
+		    alldefzones.push(zone_properties[1]);
+		    $.each(ward_info, function(each_ward,other_info ) {
+			ward_additional_info[each_ward]=other_info;
+			ward_properties = each_ward.split('_');
+			$('#selectWard').append($('<option></option>').val(ward_properties[1]).html(ward_properties[0]).attr("name",ward_properties[0]));
+			alldefwards.push(ward_properties[1]);
+
+			$.each(other_info.garages, function(index,each_stop_station ) {
+		        	garage_additional_info[each_stop_station.id]=each_stop_station;
+			})
+
+			if( $("#selectWardOrGarage").val() === 'wardwise' ){    
+				$.each(other_info.vehicles, function(index,each_vehicle ) {
+				    $('#selectVehicle').append($('<option></option>').val(each_vehicle.id).html(each_vehicle.plate_number));
+				    alldefvehicles.push(each_vehicle.id);
+				});
+		        }
+			else{
+				$.each(other_info.garages, function(index,each_stop_station ) {
+				    $('#selectGarage').append($('<option></option>').val(each_stop_station.id).html(each_stop_station.name));
+				    alldefgarages.push(each_stop_station.id);
+				    $.each(each_stop_station.vehicles, function(index,each_stop_station_vehicle ) {
+				    	$('#selectVehicle').append($('<option></option>').val(each_stop_station_vehicle.id).html(each_stop_station_vehicle.plate_number));
+				    	alldefvehicles.push(each_stop_station_vehicle.id);
+				    });
+				});
+			}
+		    });
+		});
+	});
+
+	if( alldefdivs.length ){
+		var alldefaultdivs = alldefdivs.join('_');
+		document.getElementsByName('defdiv')[0].value = alldefaultdivs;
+	}
+
+	if( alldefzones.length ){
+		var alldefaultzones = alldefzones.join('_');
+		document.getElementsByName('defzone')[0].value = alldefaultzones;
+	}
+
+	if ( alldefwards.length ){
+		var alldefaultwards = alldefwards.join('_');
+		document.getElementsByName('defward')[0].value = alldefaultwards;
+	}
+
+	if ( alldefvehicles.length ){
+		var alldefaultvehicles = alldefvehicles.join('_');
+		document.getElementsByName('defvehicle')[0].value = alldefaultvehicles;
+	}
+
+	if ( alldefgarages.length ){
+		var alldefaultgarages = alldefgarages.join('_');
+		document.getElementsByName('defgarages')[0].value = alldefaultgarages;
+	}
+}
+
+function onChangeDiv() {
+    	var selected_div = $("#selectDiv").find('option:selected').attr("name") + '_' + $("#selectDiv").val();
+	if (!selected_div.includes("def")) {
+		$('#selectZone').empty();
+		$('#selectZone').append($('<option></option>').val(0).html('All Zones').attr("name", "defzone"));
+		$('#selectWard').empty();
+		$('#selectWard').append($('<option></option>').val(0).html('All Wards').attr("name", "defward"));
+		$('#selectVehicle').empty();
+		$('#selectVehicle').append($('<option></option>').val(0).html('All Vehicles').attr("name", "defvehicle"));
+		$('#selectGarage').empty();
+		$('#selectGarage').append($('<option></option>').val(0).html('All Garages').attr("name", "defgarages"));
+
+		var alldefzones = new Array();
+		var alldefwards = new Array();
+		var alldefvehicles = new Array();
+		var alldefgarages = new Array();
+
+		$.each(form_data[selected_div], function(each_zone, ward_info) {
+		    zone_properties = each_zone.split('_');
+		    $('#selectZone').append($('<option></option>').val(zone_properties[1]).html(zone_properties[0]).attr("name",zone_properties[0]))
+		    alldefzones.push(zone_properties[1]);
+		    $.each(ward_info, function(each_ward,other_info ) {
+			ward_properties = each_ward.split('_');
+			$('#selectWard').append($('<option></option>').val(ward_properties[1]).html(ward_properties[0]).attr("name",ward_properties[0]));
+			alldefwards.push(ward_properties[1]);
+
+			if( $("#selectWardOrGarage").val() === 'garagewise' ){
+				if(form_data[selected_div][each_zone][each_ward]['garages'].length ){
+					$.each(form_data[selected_div][each_zone][each_ward]['garages'], function(each_garage_index,garage_info) {
+						$('#selectGarage').append($('<option></option>').val(garage_info.id).html(garage_info.name).attr("name",garage_info.name));
+						alldefgarages.push(garage_info.id);
+							$.each(garage_info.vehicles, function(index,each_stop_station_vehicle ) {
+							    $('#selectVehicle').append($('<option></option>').val(each_stop_station_vehicle.id).html(each_stop_station_vehicle.plate_number));
+							    alldefvehicles.push(each_stop_station_vehicle.id);
+							});
+					});
+				}
+			}
+		    	else{
+				if(form_data[selected_div][each_zone][each_ward]['vehicles'].length ){
+					if( $("#selectWardOrGarage").val() === 'wardwise' ){ 
+						$.each(form_data[selected_div][each_zone][each_ward]['vehicles'], function(each_vehicle_index,vehicle_info) {
+							$('#selectVehicle').append($('<option></option>').val(vehicle_info.id).html(vehicle_info.plate_number).attr("name",vehicle_info.plate_number));
+							alldefvehicles.push(vehicle_info.id);
+						});
+					}	
+				}
+		    	}    
+		    });
+		});
+
+		if( alldefzones.length ){
+			var alldefaultzones = alldefzones.join('_');
+			document.getElementsByName('defzone')[0].value = alldefaultzones;
+		}
+
+		if ( alldefwards.length ){
+			var alldefaultwards = alldefwards.join('_');
+			document.getElementsByName('defward')[0].value = alldefaultwards;
+		}
+
+		if ( alldefvehicles.length ){
+			var alldefaultvehicles = alldefvehicles.join('_');
+			document.getElementsByName('defvehicle')[0].value = alldefaultvehicles;
+		}
+
+		if ( alldefgarages.length ){
+			var alldefaultgarages = alldefgarages.join('_');
+			document.getElementsByName('defgarages')[0].value = alldefaultgarages;
+		}
+	}
+	else{
+		setAllDefElemValues(form_data);
+	}
+}
+
+function onChangeZone() {
+    	var selected_div = $("#selectDiv").find('option:selected').attr("name") + '_' + $("#selectDiv").val();
+	var selected_zone = $("#selectZone").find('option:selected').attr("name") + '_'+ $("#selectZone").val();
+
+	if (!selected_zone.includes("def")) {
+		$('#selectWard').empty();
+		$('#selectWard').append($('<option></option>').val(0).html('All Wards').attr("name", "defward"));
+		$('#selectVehicle').empty();
+		$('#selectVehicle').append($('<option></option>').val(0).html('All Vehicles').attr("name", "defvehicle"));
+		$('#selectGarage').empty();
+		$('#selectGarage').append($('<option></option>').val(0).html('All Garages').attr("name", "defgarages"));
+
+		var alldefwards = new Array();
+		var alldefvehicles = new Array();
+		var alldefgarages = new Array();
+
+		$.each(zone_additional_info[selected_zone], function(each_ward,ward_info) {
+			ward_properties = each_ward.split('_');
+			$('#selectWard').append($('<option></option>').val(ward_properties[1]).html(ward_properties[0]).attr("name",ward_properties[0]));
+			alldefwards.push(ward_properties[1]);
+			if ( $("#selectWardOrGarage").val() === 'wardwise' ) {
+			if(zone_additional_info[selected_zone][each_ward]['vehicles'].length ){
+				$.each(zone_additional_info[selected_zone][each_ward]['vehicles'], function(each_vehicle_index,vehicle_info) {
+					$('#selectVehicle').append($('<option></option>').val(vehicle_info.id).html(vehicle_info.plate_number).attr("name",vehicle_info.plate_number));
+					alldefvehicles.push(vehicle_info.id);
+				});
+			}
+			}
+			else{
+				if(zone_additional_info[selected_zone][each_ward]['garages'].length ){
+					$.each(zone_additional_info[selected_zone][each_ward]['garages'], function(each_garage_index,garage_info) {
+						$('#selectGarage').append($('<option></option>').val(garage_info.id).html(garage_info.name).attr("name",garage_info.name));
+						alldefgarages.push(garage_info.id);
+						$.each(garage_info.vehicles, function(index,each_stop_station_vehicle ) {
+						    $('#selectVehicle').append($('<option></option>').val(each_stop_station_vehicle.id).html(each_stop_station_vehicle.plate_number));
+						    alldefvehicles.push(each_stop_station_vehicle.id);
+						});
+					});
+				}
+			}
+		});
+
+		if ( alldefwards.length ){
+			var alldefaultwards = alldefwards.join('_');
+			document.getElementsByName('defward')[0].value = alldefaultwards;
+		}
+
+		if ( alldefvehicles.length){
+			var alldefaultvehicles = alldefvehicles.join('_');
+			document.getElementsByName('defvehicle')[0].value = alldefaultvehicles;
+		}
+
+		if ( alldefgarages.length ){
+			var alldefaultgarages = alldefgarages.join('_');
+			document.getElementsByName('defgarages')[0].value = alldefaultgarages;
+		}
+	}
+	else{
+		var default_zones = $("#selectZone").val().split('_');
+		$('#selectWard').empty();
+		$('#selectWard').append($('<option></option>').val(0).html('All Wards').attr("name", "defward"));
+		$('#selectVehicle').empty();
+		$('#selectVehicle').append($('<option></option>').val(0).html('All Vehicles').attr("name", "defvehicle"));
+		$('#selectGarage').empty();
+		$('#selectGarage').append($('<option></option>').val(0).html('All Garages').attr("name", "defgarages"));
+
+		var alldefwards = new Array();
+		var alldefvehicles = new Array();
+		var alldefgarages = new Array();
+
+		$.each(zone_additional_info, function(each_zone,ward_info) {
+			zone_id = each_zone.split('_')[1]; 
+			if(default_zones.includes(zone_id)){
+				$.each(zone_additional_info[each_zone], function(each_ward,ward_info) {
+					ward_properties = each_ward.split('_');
+					$('#selectWard').append($('<option></option>').val(ward_properties[1]).html(ward_properties[0]).attr("name",ward_properties[0]));
+					alldefwards.push(ward_properties[1]);
+					if ( $("#selectWardOrGarage").val() === 'wardwise' ) {
+						if(zone_additional_info[each_zone][each_ward]['vehicles'].length ){
+							$.each(zone_additional_info[each_zone][each_ward]['vehicles'], function(each_vehicle_index,vehicle_info) {
+								$('#selectVehicle').append($('<option></option>').val(vehicle_info.id).html(vehicle_info.plate_number).attr("name",vehicle_info.plate_number));
+								alldefvehicles.push(vehicle_info.id);
+							});
+						}
+					}
+					else{
+						if(zone_additional_info[each_zone][each_ward]['garages'].length ){
+							$.each(zone_additional_info[each_zone][each_ward]['garages'],function(each_garage_index,garage_info) {
+								$('#selectGarage').append($('<option></option>').val(garage_info.id).html(garage_info.name).attr("name",garage_info.name));
+								alldefgarages.push(garage_info.id);
+								$.each(garage_info.vehicles, function(index,each_stop_station_vehicle ) {
+								    $('#selectVehicle').append($('<option></option>').val(each_stop_station_vehicle.id).html(each_stop_station_vehicle.plate_number));
+								    alldefvehicles.push(each_stop_station_vehicle.id);
+								});
+							});
+						}
+					}
+				});
+			}
+		});
+
+		if ( alldefwards.length ){
+			var alldefaultwards = alldefwards.join('_');
+			document.getElementsByName('defward')[0].value = alldefaultwards;
+		}
+
+		if ( alldefvehicles.length){
+			var alldefaultvehicles = alldefvehicles.join('_');
+			document.getElementsByName('defvehicle')[0].value = alldefaultvehicles;
+		}
+
+		if ( alldefgarages.length ){
+			var alldefaultgarages = alldefgarages.join('_');
+			document.getElementsByName('defgarages')[0].value = alldefaultgarages;
+		}
+	}
+}
+
+function onChangeWard() {
+    	var selected_div  = $("#selectDiv").find('option:selected').attr("name") + '_' + $("#selectDiv").val() ;
+	var selected_zone = $("#selectZone").find('option:selected').attr("name") + '_'+ $("#selectZone").val();
+	var selected_ward = $("#selectWard").find('option:selected').attr("name") + '_'+ $("#selectWard").val();
+
+	if (!selected_ward.includes("def")) {
+		$('#selectVehicle').empty();
+		$('#selectVehicle').append($('<option></option>').val(0).html('All Vehicles').attr("name", "defvehicle"));
+
+		var alldefvehicles = new Array();
+
+		if(ward_additional_info[selected_ward]['vehicles'].length ){
+			$.each(ward_additional_info[selected_ward]['vehicles'], function(each_vehicle_index,vehicle_info) {
+				$('#selectVehicle').append($('<option></option>').val(vehicle_info.id).html(vehicle_info.plate_number).attr("name",vehicle_info.plate_number));
+				alldefvehicles.push(vehicle_info.id);
+			});
+		}
+
+		if ( alldefvehicles.length){
+			var alldefaultvehicles = alldefvehicles.join('_');
+			document.getElementsByName('defvehicle')[0].value = alldefaultvehicles;
+		}
+	}
+	else{
+		var default_wards = $("#selectWard").val().split('_');
+		$('#selectVehicle').empty();
+		$('#selectVehicle').append($('<option></option>').val(0).html('All Vehicles').attr("name", "defvehicle"));
+
+		var alldefvehicles = new Array();
+
+		$.each(ward_additional_info, function(each_ward,detail_info) {
+			ward_id = each_ward.split('_')[1]; 
+			if(default_wards.includes(ward_id)){
+					if(ward_additional_info[each_ward]['vehicles'].length ){
+						$.each(ward_additional_info[each_ward]['vehicles'], function(each_vehicle_index,vehicle_info) {
+							$('#selectVehicle').append($('<option></option>').val(vehicle_info.id).html(vehicle_info.plate_number).attr("name",vehicle_info.plate_number));
+							alldefvehicles.push(vehicle_info.id);
+						});
+					}
+			}
+		});
+
+		if ( alldefvehicles.length){
+			var alldefaultvehicles = alldefvehicles.join('_');
+			document.getElementsByName('defvehicle')[0].value = alldefaultvehicles;
+		}
+	}
+}
+
+function onChangeGarage() {
+    	var selected_div  = $("#selectDiv").find('option:selected').attr("name") + '_' + $("#selectDiv").val() ;
+	var selected_zone = $("#selectZone").find('option:selected').attr("name") + '_'+ $("#selectZone").val();
+	var selected_ward = $("#selectWard").find('option:selected').attr("name") + '_'+ $("#selectWard").val();
+	var selected_garage = $("#selectGarage").find('option:selected').attr("name") + '_'+ $("#selectGarage").val();
+
+	var selected_garage_id = $("#selectGarage").val();
+
+	if (!selected_garage.includes("def")) {
+		$('#selectVehicle').empty();
+		$('#selectVehicle').append($('<option></option>').val(0).html('All Vehicles').attr("name", "defvehicle"));
+
+		var alldefvehicles = new Array();
+
+		if(garage_additional_info[selected_garage_id]['vehicles'].length ){
+			$.each(garage_additional_info[selected_garage_id]['vehicles'], function(each_vehicle_index,vehicle_info) {
+				$('#selectVehicle').append($('<option></option>').val(vehicle_info.id).html(vehicle_info.plate_number).attr("name",vehicle_info.plate_number));
+				alldefvehicles.push(vehicle_info.id);
+			});
+		}
+
+		if ( alldefvehicles.length){
+			var alldefaultvehicles = alldefvehicles.join('_');
+			document.getElementsByName('defvehicle')[0].value = alldefaultvehicles;
+		}
+	}
+	else{
+		var default_garages = selected_garage_id.split('_');
+		$('#selectVehicle').empty();
+		$('#selectVehicle').append($('<option></option>').val(0).html('All Vehicles').attr("name", "defvehicle"));
+
+		var alldefvehicles = new Array();
+
+		default_garages.forEach(function(each_garage_id,index){
+			if(garage_additional_info[each_garage_id]['vehicles'].length ){
+				$.each(garage_additional_info[each_garage_id]['vehicles'], function(each_vehicle_index,vehicle_info) {
+					$('#selectVehicle').append($('<option></option>').val(vehicle_info.id).html(vehicle_info.plate_number).attr("name",vehicle_info.plate_number));
+					alldefvehicles.push(vehicle_info.id);
+				});
+			}
+		});
+
+		var alldefaultvehicles = alldefvehicles.join('_');
+		document.getElementsByName('defvehicle')[0].value = alldefaultvehicles;
+	}
+}
+
+function onChangeType() {
+    	var selected_type  = $("#selectWardOrGarage").val();
+
+	if ( $("#selectWardOrGarage").val() === 'wardwise' ) {
+		$("div.wardwise").show();
+		$("div.garagewise").hide();
+	}
+	else{
+		$("div.garagewise").show();
+		$("div.wardwise").hide();
+	}
+	onChangeZone();
+}
+  </script>
+{% endblock %}  

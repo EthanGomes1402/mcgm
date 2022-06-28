@@ -750,8 +750,15 @@ def upload_vehicle_data(request):
 
             if not row_content[0]:
                 continue
+
             row_content[1] =  random_string(20)
             row_content[2] =  random_string(20)
+            row_content[0] =  row_content[0].strip()
+            row_content[3] =  row_content[3].strip()
+            row_content[5] =  row_content[5].strip()
+            row_content[6] =  row_content[6].strip()
+            row_content[7] =  row_content[7].strip()
+
             if row_content[2] and row_content[1] and row_content[6]:
                 user_cntr  = User.objects.get(username=row_content[6])
                 row_content[6] = user_cntr.appuser.bmc_contractor
@@ -789,6 +796,11 @@ def upload_installation_data(request):
 
             if not row_content[0]:
                 continue
+
+            row_content[0]=row_content[0].strip()
+            row_content[1]=str(row_content[1]).strip()
+            row_content[2]=str(row_content[2]).strip()
+            row_content[3]=row_content[3].strip()
 
             if row_content[0] and row_content[1] and row_content[2]:
                 try:
@@ -1733,7 +1745,7 @@ def get_all_bin_spot_from_ward(request):
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
 @login_required
-@user_passes_test(lambda user: user.is_superuser)
+#@user_passes_test(lambda user: user.is_superuser)
 def get_all_mlc_spot(request):
     mlcs = Stop_station.objects.filter(is_mlc=True)
     locations = list();

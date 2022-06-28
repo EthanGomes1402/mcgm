@@ -48,7 +48,8 @@ SHARED_APPS = [
     'bootstrap4',
     'floppyforms',
     'rest_framework',
-    'rest_framework_gis'
+    'rest_framework_gis',
+    
 ]
 
 TENANT_APPS = [
@@ -72,6 +73,8 @@ TENANT_APPS = [
     'floppyforms',
     'crispy_forms',
     'bootstrap4',
+    #'kronos',
+    #'django_crontab',
 ]
 
 INSTALLED_APPS = list(dict.fromkeys(list(SHARED_APPS + TENANT_APPS)))
@@ -102,7 +105,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-            ],
+            ]
         },
     },
 ]
@@ -182,3 +185,13 @@ DEFAULT_FILE_STORAGE = (
 LOGOUT_REDIRECT_URL = 'login'
 LOGIN_REDIRECT_URL = 'latest_vehicle_status'
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
+
+
+
+
+#CRONJOBS = [
+#    ('* * * * *' , 'dashboard.views.create_response_data_for_superuser', '>> /home/mcgm/Development/mcgm/mcgm/dashboard/cron.log')
+#]
+
+
+

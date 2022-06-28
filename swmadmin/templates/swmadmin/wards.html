@@ -24,7 +24,7 @@
         <tr>
 	  <td>{{ ward.name }}</td>
 	  <td>{{ ward.code }}</td>
-	  <td>this is ward {{ ward.name }}</td>
+	  <td>{{ ward.description }}</td>
 	  <td class="area"><img src="{% static 'img/location.png' %}"><span style="display:none;">{{ ward.ward_fence.geojson }}</span></td>
 	  <td>
 		  <a href="{% url 'edit_ward' ward.pk %}" class="vtms_buttons">Edit</a>

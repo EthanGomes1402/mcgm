@@ -14,12 +14,42 @@ mycoord = SpatialReference(4326)
 trans = CoordTransform(gcoord, mycoord)
 
 VEHICLE_TYPE = (
-        ("mc","Mini Compactor"),
-        ("lc","Large Compactor"),
-        ("scv","Small Compactor Vehicle"),
-        ("sw","Sweeper Vehicle"),
-        ("ww","Watch & Ward"),
-        ("dw","Dry Waste"),
+        ("DGV","Dog Van"),
+        ("BKV","Break Down"),
+        ("LC","Refuse Compactor"),
+        ("JCB","Bakayantra (JCB)"),
+        ("DMP","Dumper"),
+        ("MC","Refuse Mini Compactor"),
+        ("SUMO","Sumo"),
+        ("BUS","Bus"),
+        ("HERV","Hearse"),
+        ("AMB ","Ambulance"),
+        ("SCO","Scorpio"),
+        ("BOL","Bolero"),
+        ("CAR","Car"),
+        ("WAT","Water Tanker"),
+        ("MMO","Mobile Medical Opthalmic Van"),
+        ("RDV","Raid Van"),
+        ("BB","Blood Bank"),
+        ("DW","Dry Waste Tempo"),
+        ("TRUCK","Truck"),
+        ("CIMP","Cattle Impound Van"),
+        ("ENCR","Encrochment"),
+        ("MPS","Mechanical Power Sweeper"),
+        ("TEC","Mak Lifton (Tree Cutting)"),
+        ("WRE","Wrecker"),
+        ("HYVA","HYVA Prime Mover"),
+        ("CET","Cesspool Tanker"),
+        ("JEEP","Jeep"),
+        ("WW","Ward & Watch"),
+        ("MEV","Meatvan"),
+        ("SCV","Small Closed Vehicle"),
+        ("SL","Side Loading Compactor"),
+        ("FT","Tanker Fire Fighter"),
+        ("BCM","Beach Cleaning Machine"),
+        ("SSL","Steer Skid Loader"),
+        ("TT","Tractor Trailer"),
+        ("IV","Insecticide Vehicle"),
     )
 
 SHIFT = (
@@ -88,7 +118,7 @@ class Route(models.Model):
 
 class Vehicle(models.Model):
     plate_number      = models.CharField(max_length=20, unique=True)
-    vehicle_type      = models.CharField(max_length=10, choices=VEHICLE_TYPE,default='scv')
+    vehicle_type      = models.CharField(max_length=10, choices=VEHICLE_TYPE,default='SCV')
     engine_number     = models.CharField(max_length=20, unique=True)
     chassis_number    = models.CharField(max_length=20, unique=True)
     contractor        = models.ForeignKey(Bmc_contractor,on_delete=models.CASCADE,null=True)

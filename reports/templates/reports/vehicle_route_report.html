@@ -120,12 +120,14 @@
 
                 <form id="vehicle_summery_report" name="vehicle_summery_report">
                 <label for="">Vehicle No</label>
-                <input type="text" class="form-control" placeholder="Enter Vehicle No." name="vehicle" id="vehicle">
+				<!-- <small>(Eg: MH01DR1234)</small> -->
+                <input type="text" class="form-control" placeholder="Enter Vehicle No." style="text-transform: uppercase" name="vehicle" id="vehicle" required list="vehicleList" autocomplete="off">
+				<datalist id="vehicleList"></datalist>
             </div>
             <div class="col-md-3">
                 <label for="">From Date</label>
                 <div class="input-group date" id="fromdate" data-target-input="nearest">
-                    <input type="text" class="form-control datetimepicker-input" data-toggle="datetimepicker" data-target="#fromdate" name = "from_time" id = "from_time"  autocomplete="off"/>
+                    <input type="text" class="form-control datetimepicker-input" data-toggle="datetimepicker" data-target="#fromdate" name = "from_time" id = "from_time"  autocomplete="off" required/>
                     <div class="input-group-append" data-target="#fromdate" data-toggle="datetimepicker">
                         <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                     </div>
@@ -134,7 +136,7 @@
             <div class="col-md-3">
                 <label for="">To  Date</label>
                 <div class="input-group date" id="todate" data-target-input="nearest">
-                    <input type="text" class="form-control datetimepicker-input" data-toggle="datetimepicker" data-target="#todate" name = "to_time" id = "to_time" autocomplete="off"/>
+                    <input type="text" class="form-control datetimepicker-input" data-toggle="datetimepicker" data-target="#todate" name = "to_time" id = "to_time" autocomplete="off" required/>
                     <div class="input-group-append" data-target="#todate" data-toggle="datetimepicker">
                         <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                     </div>
@@ -142,8 +144,21 @@
             </div>
             <div class="col-md-3">
                 <!-- <button type = "submit" class="btn btn-success submit-btn">Submit</button> -->
-				<button type = "submit" class="btn btn-success submit-btn">Generate PDF Report</button>
+				<button type = "submit" class="btn btn-success submit-btn" id = "id001" onclick="setTimeout(disableFunction, 1);">Generate PDF Report</button>
             </div>
+			
+			<div class="col-md-9">
+				<br>
+				<label style = "display: inline-block;">Select Time Delay: </label>&emsp;
+				<input type="radio" id="1" name="timedelay" value="1" style = "display: inline-block;" checked="checked">
+				<label for="1" style = "display: inline-block;">1 minute</label>&emsp;
+				<input type="radio" id="2" name="timedelay" value="2" style = "display: inline-block;">
+				<label for="2" style = "display: inline-block;">2 minute</label>&emsp;
+				<input type="radio" id="5" name="timedelay" value="5" style = "display: inline-block;">
+				<label for="5" style = "display: inline-block;">5 minute</label>&emsp;
+				<input type="radio" id="10" name="timedelay" value="10" style = "display: inline-block;">
+				<label for="10" style = "display: inline-block;">10 minute</label>
+			</div>
         </form>
 
 
@@ -341,11 +356,22 @@
 {% endblock %}
 
 {% block js %}
+
+<script>
+	function disableFunction() {
+    document.getElementById("id001").disabled = 'true';
+}
+
+</script>
 <!--Load scripts for pdf generation-->
 <!--<script src="https://code.jquery.com/jquery-1.12.4.js"></script> -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.min.js"></script>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.js"></script>
   <script>
+
+
+
+	
     var form_data = JSON.parse('{{ form_params | escapejs }}');
     form_data = form_data.areal_hierarchy_params;
 
@@ -381,7 +407,7 @@
     $(document).ready(function(){
         
 
-
+		
 
 		$("#vehicle_summery_report").submit(function(event) {
 
@@ -489,6 +515,7 @@ $('#spinner').hide();
 });
 });
 
+	});
 
 
 
@@ -510,8 +537,7 @@ $('#spinner').hide();
 
 
 
-
-        $("button#export_to_excel").click(function() {
+/*         $("button#export_to_excel").click(function() {
             let dNow = new Date();
             let file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
             $("#vehicle_summery").table2excel({
@@ -534,7 +560,7 @@ $('#spinner').hide();
             //$("#vehicle_summery").tableHTMLExport({type:'pdf',filename:"vehicle_history_report_" + file_time_str + ".pdf"});
 
 
-			generatepdf();
+			//generatepdf();
 
         });
 
@@ -549,16 +575,7 @@ $('#spinner').hide();
 			//generatepdf();
 
         });
-
-
-		/* $("button#testbutton").click(function() {
-            let dNow = new Date();
-            let file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
-            $("#vehicle_summery").tableHTMLExport({type:'pdf',filename:"vehicle_history_report_" + file_time_str + ".pdf"});
-
-			//generatepdf();
-        }); */
-    });
+     */
 
 function setAllDefElemValues(form_data) {
 	$('#selectDiv').empty();
@@ -813,7 +830,7 @@ function onChangeGarage() {
 
 
 
-function generatepdf(){
+/* function generatepdf(){
 
 	$('#spinner').show();
 
@@ -862,8 +879,20 @@ html2canvas($(".canvas_div_pdf")[0],{allowTaint:true}).then(function(canvas) {
 	$('#spinner').hide();	
 });
 
-}
+} */
 
+populateVehicleListDropDown();
+function populateVehicleListDropDown(){
+
+var vehlist = document.getElementById("vehicleList");
+
+for (var key in localStorage) {
+    if (localStorage.hasOwnProperty(key)) {
+        //console.log(key + " -> " + localStorage[key]);
+		vehlist.innerHTML = vehlist.innerHTML+"<option value=\""+key+"\" />";
+    }
+}
+}
 
 
 

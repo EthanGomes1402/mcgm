@@ -1,0 +1,336 @@
+
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block content_title %} Vehicle History Report {% endblock %}
+{% block content %}
+        
+
+            <!-- Main content -->
+            <section class="content">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="reports p-4">
+                                <div class="row g-3 align-items-center">
+                                    <div class="col-md-3">
+        <label>Type</label>
+                                        <select class="form-select form-control" aria-label="Default select example" name="a_obj" id="a_obj" onChange="fill_b_obj(this.value)">
+                                              <option value="Hotel">Landfill Site Usage</option>
+                                              <option value="Rest">Tracking Status Report</option>
+                                              <option value="Asso">Vehicle History</option>
+                                              <option value="Affi">Vehicle Status Report</option>
+                                          </select>
+                                       <!-- <label>Type</label>
+                                        <select class="form-select form-control" aria-label="Default select example" name="a_obj" id="a_obj" onChange="fill_b_obj(this.value)">
+                                              <option value="Hotel">Ward Report</option>
+        
+                                          </select>-->
+                                    </div>
+                                    <div class="col-md-3">
+        <label>Subtype</label>
+                                        <select class="form-select  form-control" aria-label="Default select example" name="b_obj" id="b_obj" onChange="fill_c_obj(this.value)">
+                                            <option value="">-----------------------</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+        <label>Divisions</label>
+                                        <select class="form-select  form-control    " aria-label="Default select example" name="c_obj" id="c_obj" onChange="fill_d_obj(this.value)">
+                                            <option value="">-----------------------</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>Ward / Garage</label>
+                                        <select class="form-select  form-control" aria-label="Default select example" name="d_obj" id="d_obj" onChange="fill_e_obj(this.value)">
+                                            <option value="">-----------------------</option>
+                                        </select>
+                                    </div>
+                                  <!--  <div class="col-md-3 mt-3">
+                                        <label>Report From </label>
+                    <form name="requestForm">
+                                        <input type="text" class="form-control" name="CheckInDateDiv" id="CheckInDateDiv" onclick="cal1xx.select(document.requestForm.CheckInDate,'anchor82','dd/MM/yyyy');" value="^CheckInDateDiv^" tabindex="5" readonly required>
+                                        <input name="CheckInDate" id="CheckInDate" value="^CheckInDate^" size="11" maxlength="10" onclick="cal1xx.select(document.requestForm.CheckInDate,'anchor82','dd/MM/yyyy');" type="hidden" required>
+                                        <a href="javascript:void(0);" onclick="cal1xx.select(document.requestForm.CheckInDate,'anchor82','dd/MM/yyyy')" name="anchor82" id="anchor82" tabindex="5"><i class="fa-solid fa-calendar-days"></i></a>
+                                        <div id="div1" style="position: absolute; visibility: hidden; margin:-25px 0 0 -138px;"></div>
+                    </form>
+                                    </div>
+                                    <div class="col-md-3 mt-3">
+                                        <label>Day </label>
+                                        <select name="NoOfNights" id="NoOfNights" onchange="setDepDate(document.getElementById('CheckInDate'), document.getElementById('CheckOutDate'), document.getElementById('NoOfNights').value);" class="form-control" tabindex="6">
+                                              <option value="1" selected="selected">1</option>
+                                          </select>
+                                    </div>
+                                    <div class="col-md-3 mt-3">
+                                        <label> Report Upto </label>
+                                        <input name="CheckOutDateDiv" id="CheckOutDateDiv" value="^CheckOutDateDiv^" readonly="readonly" size="12" class="uneditable-input form-control" type="text">
+                                        <input name="CheckOutDate" id="CheckOutDate" value="^CheckOutDate^" class="form-control" size="11" maxlength="10" type="hidden" readonly>
+                                    </div>
+                                    -->
+                                    <div class="col-md-2 mt-3">
+                                        <button class="btn btn-success" onclick="function1()" id="submit">Submit</button>
+                                    </div>
+                                </div>
+        
+                                <div id="showResult"></div>
+        
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        
+
+        <footer class="main-footer">
+            <strong>Copyright &copy; 2022 <a href="#">Qdnet Pvt. Ltd.</a>.</strong> All rights reserved.
+        </footer>
+
+
+    </div>
+    <!-- ./wrapper -->
+
+
+    <div class="modal fade" id="modal-default">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Map View</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+         <span aria-hidden="true">&times;</span>
+        </button>
+                </div>
+                <div class="modal-body">
+                    <p>Map here</p>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid main-area" id="id1">
+        <div class="col-md-12 mt-5">
+            <div class="table-main p-4">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            
+                            
+                            <th scope="col">Vehicle No</th>
+                            <th scope="col">Total Run Time</th>
+                            <th scope="col">Total Halt Time</th>
+                            <th scope="col">Total Distance</th>
+                            <th scope="col">Total Alerts</th>
+                            
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <center> <h3>No Data Found!</h3> </center>
+                       
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        document.getElementById("id1").style.display="none";
+        
+        
+            function function1(){
+                document.getElementById("id1").style.display="block";
+        }
+        
+            </script>
+        
+     <!-- jQuery -->
+     <script src="js/jquery.min.js"></script>
+     <script src="js/bootstrap.bundle.min.js"></script>
+     <script src="js/jquery.dataTables.min.js"></script>
+     <script src="js/dataTables.bootstrap4.min.js"></script>
+     <script src="js/jquery.overlayScrollbars.min.js"></script>
+ 
+     <script src="js/adminlte.min.js"></script>
+ 
+ 
+     <script type="text/javascript" src="js/checkInCal.js"></script>
+     <script id="jscal1xx">
+         var cal1xx = new CalendarPopup("div1");
+         cal1xx.showNavigationDropdowns();
+     </script>
+ 
+     <script>
+         function showdate() {
+             currentDate = new Date()
+             currentDate.setDate(currentDate.getDate() + 2);
+             with(currentDate) {
+                 var curDay = getDate();
+                 var curMonth = eval(getMonth() + 1);
+                 if (/^.$/.test(curDay)) {
+                     curDay = "0" + curDay;
+                 }
+                 if (/^.$/.test(curMonth)) {
+                     curMonth = "0" + curMonth;
+                 }
+                 document.getElementById('CheckInDate').value = curDay + "/" + curMonth + "/" + getFullYear();
+             }
+             return setDepDate(document.getElementById('CheckInDate'), document.getElementById('CheckOutDate'), document.getElementById('NoOfNights').value);
+         }
+ 
+         function setDepDate(dateArr, dateDep, nights) {
+             if (!/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateArr.value) || !/^\d+$/.test(nights)) {
+                 return;
+             }
+             var myMonth = {
+                 '01': 'Jan',
+                 '02': 'Feb',
+                 '03': 'Mar',
+                 '04': 'Apr',
+                 '05': 'May',
+                 '06': 'Jun',
+                 '07': 'Jul',
+                 '08': 'Aug',
+                 '09': 'Sep',
+                 '10': 'Oct',
+                 '11': 'Nov',
+                 '12': 'Dec'
+             };
+             var arrDate = dateArr.value.split("/");
+             var nextDateObj = new Date(arrDate[2], arrDate[1] - 1, arrDate[0]);
+             nextDateObj.setDate(nextDateObj.getDate() + eval(nights));
+             var nextDay = nextDateObj.getDate();
+             var nextMonth = nextDateObj.getMonth() + 1;
+             var nextYear = nextDateObj.getFullYear();
+             if (/^.$/.test(nextDay)) {
+                 nextDay = "0" + nextDay;
+             }
+             if (/^.$/.test(nextMonth)) {
+                 nextMonth = "0" + nextMonth;
+             }
+             if (/^.$/.test(nextYear)) {
+                 nextYear = "0" + nextYear;
+             }
+             dateDep.value = nextDay + "/" + nextMonth + "/" + nextYear;
+             document.getElementById('CheckInDateDiv').value = arrDate[0] + " " + myMonth[arrDate[1]] + " " + arrDate[2];
+             document.getElementById('CheckOutDateDiv').value = nextDay + " " + myMonth[nextMonth] + " " + nextYear;
+         }
+ 
+         function displayAllowedOccupants() {
+             var AdultsTotalObjRef = document.requestForm.AdultsTotal;
+             var ChildsTotalObjRef = document.requestForm.ChildsTotal;
+             var NoofRoomsObjRef = document.requestForm.NoofRooms;
+             var NoOfRooms = NoofRoomsObjRef[NoofRoomsObjRef.selectedIndex].value;
+             var ExtraAdultsBedObjRef = document.requestForm.NoOfExtraBeds;
+             AdultsTotalObjRef.options.length = 0;
+             for (var rms = 1; rms <= NoOfRooms; rms++) {
+                 for (var adlts = 1; adlts <= (rms * 2); adlts++) {
+                     AdultsTotalObjRef.options[adlts - 1] = new Option(adlts, adlts);
+                 }
+             }
+             AdultsTotalObjRef.options.selectedIndex = NoOfRooms - 1;
+ 
+             ChildsTotalObjRef.options.length = 0;
+             ChildsTotalObjRef.options[0] = new Option("0", "0");
+             for (var rms = 1; rms <= NoOfRooms; rms++) {
+                 for (var childs = 1; childs <= (rms * 1); childs++) {
+                     ChildsTotalObjRef.options[childs] = new Option(childs, childs);
+                 }
+             }
+ 
+             ExtraAdultsBedObjRef.options.length = 0;
+             ExtraAdultsBedObjRef.options[0] = new Option("0", "0");
+             for (var rms = 1; rms <= NoOfRooms; rms++) {
+                 for (var childs = 1; childs <= (rms * 1); childs++) {
+                     ExtraAdultsBedObjRef.options[childs] = new Option(childs, childs);
+                 }
+             }
+             // 			document.getElementById("NoOfExtraBeds").value = 0;
+         }
+ 
+         // -->
+     </script>
+ 
+     <script>
+         $('#vehicletable').DataTable({
+             "paging": true,
+             "lengthChange": false,
+             "searching": false,
+             "ordering": true,
+             "info": true,
+             "autoWidth": false,
+             "responsive": true,
+         });
+     </script>
+ 
+     <script>
+         var b_obj_data = {};
+         b_obj_data['Hotel'] = new Array('Dumping Ground by current date', 'Garbage Traction-by Dumping Ground', 'Weight brought-in at Dumping Ground Report');
+         b_obj_data['Rest'] = new Array('Disconnected', 'NoGps', 'Non Tracking', 'Tracking', 'Under Maintenance');
+         b_obj_data['Asso'] = new Array('Route Report', 'Vehicle History');
+         b_obj_data['Affi'] = new Array('RFID Bin Tag Report', 'RFID Bin Tag Status', 'RFID Bin Unregistered Tag Report', 'Vehicle Status Report', 'Vehicle Windshiled Tag Report');
+ 
+         var c_obj_data = {};
+         c_obj_data['Dumping Ground by current date'] = new Array('Deonar Dumping Ground', 'Kanjurmarg Dumping Ground', 'Mulund Dumping Ground');
+         c_obj_data['Garbage Traction-by Dumping Ground'] = new Array('Deonar Dumping Ground', 'Kanjurmarg Dumping Ground', 'Mulund Dumping Ground');
+         c_obj_data['Weight brought-in at Dumping Ground Report'] = new Array('Deonar Dumping Ground', 'Kanjurmarg Dumping Ground', 'Mulund Dumping Ground');
+         c_obj_data['Disconnected'] = new Array('BKC', 'city', 'Eastern', 'Eastern Freeway & SCLR', 'Western');
+         c_obj_data['NoGps'] = new Array('BKC', 'city', 'Eastern', 'Eastern Freeway & SCLR', 'Western');
+         c_obj_data['Non Tracking'] = new Array('BKC', 'city', 'Eastern', 'Eastern Freeway & SCLR', 'Western');
+         c_obj_data['Tracking'] = new Array('BKC', 'city', 'Eastern', 'Eastern Freeway & SCLR', 'Western');
+         c_obj_data['Under Maintenance'] = new Array('BKC', 'city', 'Eastern', 'Eastern Freeway & SCLR', 'Western');
+         c_obj_data['Route Report'] = new Array('goa', 'panjim_pilar');
+         c_obj_data['Vehicle History'] = new Array('ahmedabad', 'baroda', 'gandhi_nagar');
+         c_obj_data['RFID Bin Tag Report'] = new Array('raipur');
+         c_obj_data['RFID Bin Tag Status'] = new Array('daman');
+         c_obj_data['RFID Bin Unregistered Tag Report'] = new Array('goa');
+         c_obj_data['Vehicle Status Report'] = new Array('ahmedabad', 'anand', 'baroda', 'gandhi_nagar', 'vallabh_vidyanagar');
+         c_obj_data['Vehicle Windshiled Tag Report'] = new Array('gwalior', 'indore');
+ 
+         var d_obj_data = {};
+         d_obj_data['city'] = new Array('Agripada Garage', 'Ambulance Garage', 'Asphalt Garage', 'Chinchpokali', 'Dadar Garage', 'D-Ward Garage', 'Ghatkopar', 'G-North Garage', 'Mahalakshmi Transfer Station Garage', 'Motor Shop Garage', 'Prabhadevi Garage', 'Ward A', 'Ward B', 'Ward C', 'Ward D', 'Ward E', 'Ward F North', 'Ward F South', 'Ward G North', 'Ward G South', 'Worli Transport Garage');
+         d_obj_data['Eastern'] = new Array('Bulldozer Garage', 'Chembur Garage', 'Kurla Transfer Station', 'Kurla Transport Garage', 'Meat Van Garage', 'M/s SMS Envoclean PVt LTD Bio medical waste', 'Mulund', 'Pant Nagar Garage', 'Ward L', 'Ward M East', 'Ward M West', 'Ward N', 'Ward S', 'Ward T');
+         d_obj_data['Western'] = new Array('Bandra Garage', 'Borivali Garage', 'Gorai Garage', 'Gorai Transfer Station', 'JVDS', 'LGMalad', 'Malad Garage', 'Santracruz', 'Garage', 'Versova Lagoon Transfer Station', 'Ward H East', 'Ward H West', 'Ward K East', 'Ward K West', 'Ward P North', 'Ward P South', 'Ward R Central', 'Ward R North', 'Ward R South', 'Workshop Garage');
+ 
+         function fill_b_obj(obj_value) {
+             const b_data = b_obj_data[obj_value];
+             changeSelect("b_obj", b_data, b_data);
+         }
+ 
+         function fill_c_obj(obj_value) {
+             const c_data = c_obj_data[obj_value];
+             changeSelect("c_obj", c_data, c_data);
+         }
+ 
+         function fill_d_obj(obj_value) {
+             const d_data = d_obj_data[obj_value];
+             changeSelect("d_obj", d_data, d_data);
+         }
+ 
+         function fill_e_obj(obj_value) {
+             const e_data = e_obj_data[obj_value];
+             changeSelect("e_obj", e_data, e_data);
+         }
+ 
+         function changeSelect(fieldID, newOptions, newValues) {
+             const selectField = document.getElementById(fieldID);
+             selectField.options.length = 0;
+             for (i = 0; i < newOptions.length; i++) {
+                 selectField.options[selectField.length] = new Option(newOptions[i], newValues[i]);
+             }
+         }
+     </script>
+ 
+     <script>
+         $(document).ready(function() {
+             $("#submit").click(function() {
+                 $("#showResult").load("reportstable.html");
+             });
+         });
+     </script>
+ 
+ 
+
+</body>
+{% endblock %}

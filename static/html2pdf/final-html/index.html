@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>VTMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/all.min.css">
+    <link rel="stylesheet" href="css/OverlayScrollbars.min.css">
+    <link rel="stylesheet" href="css/adminlte.min.css">
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        table { page-break-after:auto }
+        tr    { page-break-inside:avoid; page-break-after:auto }
+        td    { page-break-inside:avoid; page-break-after:auto }
+        thead { display: table-row-group; }
+    tfoot { display:table-footer-group }
+
+
+    .row {
+    display: -webkit-box; /* wkhtmltopdf uses this one */
+    display: flex;
+    -webkit-box-pack: center; /* wkhtmltopdf uses this one */
+    justify-content: center;
+}
+
+.row > div {
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+    flex: 1;
+}
+
+.row > div:last-child {
+    margin-right: 0;
+}
+    </style>
+</head>
+
+<body class="hold-transition sidebar-mini layout-navbar-fixed">
+
+        
+
+<h1 style = "text-align=center;">Report Generated On: currentdatetime</h1>
+
+        <div class="">
+            <section class="content-header">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-info">
+                                <div class="inner">
+                                    <h3>totalnumberofvehicles</h3>
+                                    <p>Total No. of Vehicles</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas "><img src="images/vehicle.png" alt="No of Vehicles" width="80"></i>
+                                </div>
+                                <a href="#" class="small-box-footer">
+                              Click Here <i class="fas fa-arrow-circle-right"></i>
+                            </a>
+                            </div>
+                        </div>
+                        <!-- ./col -->
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-success">
+                                <div class="inner">
+                                    <h3>totalonlinevehicles</h3>
+                                    <p>Online</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas "><img src="images/online.png" alt="Online Vehicle" width="80"></i>
+                                </div>
+                                <a href="#" class="small-box-footer">
+                                    Click Here <i class="fas fa-arrow-circle-right"></i>
+                            </a>
+                            </div>
+                        </div>
+                        <!-- ./col -->
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-danger">
+                                <div class="inner">
+                                    <h3>totalofflinevehicles</h3>
+                                    <p>Offline</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas "><img src="images/offline.png" alt="Offline Vehicle" width="80"></i>
+                                </div>
+                                <a href="#" class="small-box-footer">
+                                    Click Here <i class="fas fa-arrow-circle-right"></i>
+                            </a>
+                            </div>
+                        </div>
+                        <!-- ./col -->
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-warning">
+                                <div class="inner">
+                                    <h3>totalnumberofvehicles</h3>
+                                    <p>All Vehicle Summary</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas "><img src="images/report1.png" alt="Reports" width="50"></i>
+                                </div>
+                                <a href="#" class="small-box-footer">
+                              More info <i class="fas fa-arrow-circle-right"></i>
+                            </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Main content -->
+            <section class="content">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card mb-5">
+                                <div class="card-header">
+                                    <h3 class="card-title">Dashboard </h3>
+                                </div>
+                                <!-- /.card-header -->
+                                <div class="card-body">
+                                    <table id="vehicletable" class="table table-bordered table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Sr. No.</th>
+                                                <th>Vehicle</th>
+                                                <th>Type</th>
+                                                <th>Location</th>
+                                                <th>Time</th>
+                                                <th>Ward</th>
+                                                <th>Contractor</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            tablebodyrows
+                                            </tbody>
+                                    </table>
+                                </div>
+                                <!-- /.card-body -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <footer class="main-footer">
+            <strong>Copyright &copy; 2022 <a href="#">Qdnet Pvt. Ltd.</a>.</strong> All rights reserved.
+        </footer>
+
+
+
+
+    <div class="modal fade" id="modal-default">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Map View</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+         <span aria-hidden="true">&times;</span>
+        </button>
+                </div>
+                <div class="modal-body">
+                    <p>Map here</p>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="js/jquery.dataTables.min.js"></script>
+    <script src="js/dataTables.bootstrap4.min.js"></script>
+    <script src="js/jquery.overlayScrollbars.min.js"></script>
+
+    <script src="js/adminlte.min.js"></script>
+
+    <script>
+        $('#vehicletable').DataTable({
+            "paging": false,
+            "lengthChange": false,
+            "searching": false,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": true,
+        });
+    </script>
+</body>
+
+</html>

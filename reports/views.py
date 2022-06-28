@@ -31,8 +31,10 @@ from itertools import chain
 import codecs
 import math
 from datetime import datetime
-import pdfkit
 import os
+from rest_framework.decorators import api_view, renderer_classes      #***ETH
+import logging
+import psycopg2      #***ETH
 
 gcoord = SpatialReference(3857)
 mycoord = SpatialReference(4326)
@@ -780,6 +782,51 @@ def stoppage(request):
     return render(request,'reports/stoppage.html',{ 'form_params' : form_params })
 
 #done
+def get_ward_report(request):
+    return render(request,'reports/ward_report.html')
+
+def get_weight_report(request):
+    return render(request,'reports/weight_report.html')
+
+def get_vehicle_tracking_report(request):
+    return render(request,'reports/vehicle_tracking_report.html')
+
+def get_vehicle_trace_report(request):
+    return render(request,'reports/vehicle_trace_report.html')
+
+def get_vehicle_status_report(request):
+    return render(request,'reports/vehicle_status_report.html')
+
+def get_vehicle_history_report(request):
+    return render(request,'reports/vehicle_history_report.html')
+
+def get_tracking_status_report(request):
+    return render(request,'reports/tracking_status_report.html')
+
+def get_location_report(request):
+    return render(request,'reports/location_report.html')
+
+def get_landfill_site_usage_report(request):
+    return render(request,'reports/landfill_site_usage_report.html')
+
+def get_garage_traction_report(request):
+    return render(request,'reports/garage_traction_report.html')
+
+def get_garage_report(request):
+    return render(request,'reports/garage_report.html')
+
+def get_garage_logsheet_report(request):
+    return render(request,'reports/garage_logsheet_report.html')
+
+def get_fuel_status_report(request):
+    return render(request,'reports/fuel_status_report.html')
+
+def get_bin_status_report(request):
+    return render(request,'reports/bin_status_report.html')
+
+def get_alert_report(request):
+    return render(request,'reports/alert_report.html')
+
 def vehicle_route_history(request):
     set_session_reporting_form_params(request)
     form_params = request.session['reports_form_params']
@@ -825,6 +872,7 @@ def vehicle_summery(request):
         from_time = dateutil.parser.parse(form_data['from_time'])
         to_time = dateutil.parser.parse(form_data['to_time'])
         vehicles  = list(map(lambda vehicle : Vehicle.objects.get(pk=vehicle) , form_data['selectVehicle'].split("_")))
+    return render(request,'reports/vehicle_summery.html',{ 'form_params' : form_params } )
 
 def by_datetime(ele):
     return ele.datetime
@@ -1373,6 +1421,11 @@ def get_vehicle_travel_history(request):
         each_vehicle_record_data['lon'] = str(each_vehicle_record.longitude)
         each_vehicle_record_data['time'] = str(each_vehicle_record.datetime)
         each_vehicle_record_data['id'] = str(each_vehicle_record.id)
+        each_vehicle_record_data['heading'] = str(each_vehicle_record.heading)   #Change made on 9th June
+        each_vehicle_record_data['speed'] = str(each_vehicle_record.speed)
+        each_vehicle_record_data['shift'] = str(each_vehicle_record.shift)
+        each_vehicle_record_data['v_id'] = str(each_vehicle_record.vehicle_id)
+        each_vehicle_record_data['plate_no'] = str(form_data['selectVehicle'])
         response_data['data'].append(each_vehicle_record_data)
     #vehicles  = list(map(lambda vehicle : Vehicle.objects.get(pk=vehicle) , form_data['selectVehicle'].split("_")))
     return HttpResponse(json.dumps(response_data),content_type="application/json")
@@ -1383,7 +1436,14 @@ def get_vehicle_travel_history(request):
 
 
 
-def generatePdfForVehicleRouteReport(request):
+
+
+#///////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+def generateps2pdf(request):
     set_session_reporting_form_params(request)
     form_params = request.session['reports_form_params']
 
@@ -1397,6 +1457,7 @@ def generatePdfForVehicleRouteReport(request):
         to_time   = dateutil.parser.parse(form_data['to_time'])
         #response_data['totime'] = str(to_time)
         plate_no  = form_data['vehicle']
+        timedelay = form_data['timedelay']
         vehicle   = Vehicle.objects.get(plate_number=plate_no)
         vc = chain(vehicle.vehicle_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime').distinct('datetime'), vehicle.current_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime').distinct('datetime'))
         sorted_vc = sorted(vc,key=by_datetime)
@@ -1412,234 +1473,274 @@ def generatePdfForVehicleRouteReport(request):
             key, value = line.split(":::")
             mydict[key] = value
         #ajit code block 1 ends here
-        each_vehicle_record_data = dict()
-        
-        
-        #HTML Generation Code, to later conver to PDF:
-        loopcounter = 0
-        htmlfilename = "/home/mcgm/Development/mcgm/mcgm/static/pdfreports/"+str(plate_no)+"_"+str(from_time)+"_to_"+str(to_time)+".html"
+
+
+        psfilename = "/home/mcgm/Development/mcgm/mcgm/static/pdfreports/"+str(plate_no)+"_"+str(from_time)+"_to_"+str(to_time)+".ps"
         pdffilename = "/home/mcgm/Development/mcgm/mcgm/static/pdfreports/"+str(plate_no)+"_"+str(from_time)+"_to_"+str(to_time)+".pdf"
+        pdffilelink = "//swm.vtms.cleanupmumbai.com/static/pdfreports/"+str(plate_no)+"_"+str(from_time)+"_to_"+str(to_time)+".pdf"
+        #replace all bad unix characters with underscores
+        psfilename = psfilename.replace(" ", "_")
+        psfilename = psfilename.replace(":", "_")
+        pdffilename = pdffilename.replace(" ", "_")
+        pdffilename = pdffilename.replace(":", "_")
+        pdffilelink = pdffilelink.replace(" ", "_")
+        pdffilelink= pdffilelink.replace(":", "_")
+        pdffilelink = "http:"+pdffilelink
+
+
+
+
         now = datetime.now()
         # dd/mm/YY H:M:S
         dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
 
 
-        staticpagehead = """<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-    <meta name="description" content="" />
-
-    <meta name="author" content="" />
-
-    <meta name="generator" content="" />
-
-    <title>Route Travel Report</title>
-
-
-
-<!-- CSS -->
-<link href="http://rfwastemanagement.com/css/bootstrap.min.css" rel="stylesheet" />
-<style>
-
-    .rftablenew .bmclogo {
-
-        margin: auto;
-
-        display: block;
-
-        width: 14%;
-
-        margin-bottom: 20px;
-
-    }
-
-    
-
-    .newtable-bg {
-
-        background: #cae0f9;
-
-        padding: 20px;
-
-        border-radius: 10px;
-
-    }
-
-    
-
-    .start-table {
-
-        margin-top: 20px;
-
-        padding-top: 20px;
-
-        border-top: 1px solid #4f8bcf;
-
-    }
-
-    
-
-    .newtable-bg .form-control {
-
-        border: 1px solid #4f8bcf;
-
-        color: #000;
-
-    }
-
-    
-
-    .start-table .table>thead:first-child>tr:first-child>th {
-
-        border: 1px solid #4f8bcf;
-
-    }
-
-    
-
-    .start-table .table-new {
-
-        background: #fff;
-
-        padding: 15px;
-
-    }
-
-    
-
-    .table-new .table-bordered>tbody>tr>td {
-
-        border: 1px solid #4f8bcf;
-
-    }
-
-</style>
-
-</head>
-
-
-<body>
-
-
-
-    <div class="container-fluid rftablenew">
-
-        <div class="row">
-
-            <div class="col-md-12">
-
-                <img src="http://swm.vtms.cleanupmumbai.com/static/images2/mcgm-logo.png" alt="BMC Logo" class="img-responsive bmclogo">
-
-            </div>
-
-        </div>
-<h3 style = "text-align: center;">Route Travel Report</h3>"""
-
-
-
-        datedatahtml = """<div class="newtable-bg">
-
-            <div class="row">
-
-                <div class="col-md-4">
-
-                    <div class="form-inline">
-
-                        <div class="form-group" style = "text-align: 'center'">
-
-                            <label for="fromdate">From: </label><input type="fromdate" value = \""""+str(from_time)+"""" class="form-control"></div>
-
-                    </div>
-
-                </div>
-
-                <div class="col-md-4">
-
-                    <div class="form-inline">
-
-                        <div class="form-group" style = "text-align: 'center'">
-
-                            <label for="todate">To: </label>
-
-<input type="todate" value = \""""+str(to_time)+"""" class="form-control">
-
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <div class="col-md-4">
-
-                    <div class="form-inline">
-
-                        <div class="form-group" >
-
-                            <label for="reportgendate">Report Generated Date: </label><input type="reportgendate" value = \""""+dt_string+"""" class="form-control"></div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-
-            <div class="row start-table">
-
-                <div class="col-md-12">
-
-                    <div class="table-new">
-
-                        <table class="table table-bordered">
-
-
-                            <thead>
-
-                                <th>Index</th>
-
-                                <th>Vehicle</th>
-
-                                <th width = "14%">Date</th>
-
-                                <th>Time</th>
-
-                                <th>Location</th>
-
-                                <th>Speed</th>
-
-                            </thead>
-                            
-                            <tbody>"""
-        
+        page1 = """%!PS-Adobe-2.0
+
+%%FIRST_PAGE_START
+%%IMAGE
+/MCGM_LOGO
+{
+save
+/showpage {} bind def
+238 600 translate
+0.5 0.5 scale
+(/home/mcgm/Development/mcgm/mcgm/static/pdfreports/mcgmlogo.eps) run
+restore
+}def
+
+%%PROCEDURE
+/ReportNamefont
+/Times findfont 20 scalefont def
+
+/WORDS_FONT
+/Helvetica-Bold findfont 12 scalefont def
+
+/WORDS_DATA_FONT
+/Helvetica findfont 12 scalefont def
+
+/PrintReportName {
+0 setgray 
+216 550 moveto
+ReportNamefont setfont
+(Route Travel Report) show
+}def
+
+/FirstPageBorder
+{
+40 300 moveto
+515 0 rlineto
+0 230 rlineto
+-515 0 rlineto
+0 -400 rlineto 
+closepath
+%10 setlinewidth 
+1 0.83 0.83 setrgbcolor fill
+stroke
+} def
+
+/FirstPageFromBoxBorder
+{
+65 470 moveto
+460 0 rlineto
+0 20 rlineto
+-460 0 rlineto
+0 -20 rlineto 
+closepath
+%10 setlinewidth 
+1 1 1 setrgbcolor fill
+stroke
+} def
+
+/FirstPageTOBoxBorder
+{
+65 400 moveto
+460 0 rlineto
+0 20 rlineto
+-460 0 rlineto
+0 -20 rlineto 
+closepath
+%10 setlinewidth 
+1 1 1 setrgbcolor fill
+stroke
+} def
+
+/FirstPage3rdBoxBorder
+{
+65 330 moveto
+460 0 rlineto
+0 20 rlineto
+-460 0 rlineto
+0 -20 rlineto 
+closepath
+%10 setlinewidth 
+1 1 1 setrgbcolor fill
+stroke
+} def
+%%FIRST_PAGE_FINISH
+
+%%SECOND_PAGE_START
+%PROCEDURE
+/HEADER_FONT
+/Helvetica-Bold findfont 10 scalefont def
+
+/DATA_FONT
+/Helvetica findfont 9 scalefont def
+
+%%%%%%%%%%%%PRINTING CODE %%MAIN CODE%%%%%%%%%%%%%%%%%%
+%%%%%%%%%FIRSTPAGE 
+1
+{
+FirstPageBorder
+FirstPageFromBoxBorder
+FirstPageTOBoxBorder
+FirstPage3rdBoxBorder
+PrintReportName
+MCGM_LOGO
+
+%FROM_WORD_1st_PAGE
+0 setgray 65 500 moveto
+WORDS_FONT setfont
+(From:) show
+
+%FROM_WORD_1st_PAGE
+0 setgray 73 476 moveto
+WORDS_DATA_FONT setfont
+("""+str(from_time)+""") show
+
+%TO_WORD_1st_PAGE
+0 setgray 65 430 moveto
+WORDS_FONT setfont
+(To:) show
+
+%FROM_WORD_1st_PAGE
+0 setgray 73 406 moveto
+WORDS_DATA_FONT setfont
+("""+str(to_time)+""") show
+
+%3rd_WORD_1st_PAGE
+0 setgray 65 360 moveto
+WORDS_FONT setfont
+(Report Generated Date:) show
+
+%FROM_WORD_1st_PAGE
+0 setgray 73 336 moveto
+WORDS_DATA_FONT setfont
+("""+dt_string+""") show
+
+showpage
+} repeat"""
 
 
         # Append-adds at last
         #htmlfile = open(htmlfilename, "a")  # append mode
-        htmlfile = open(htmlfilename, "a", encoding="utf-8")
-        htmlfile.write(staticpagehead)
-        htmlfile.write(datedatahtml)
-        
+        psfile = open(psfilename, "a", encoding="utf-8")
+        psfile.write(page1)
+
+
+
+
+        loopcounter = 0
+        pagerowcounter = 0
         for each_vehicle_record in sorted_vc:
             #logic to skip consecutive stationary entries 
-            if each_vehicle_record.speed == 0.0:
-                if each_vehicle_record.speed in speed_zero.keys():
-                    continue
-                else:
-                    speed_zero[each_vehicle_record.speed]=1
-            else:
-                speed_zero = {}
+            #if each_vehicle_record.speed == 0.0:
+            #    if each_vehicle_record.speed in speed_zero.keys():
+            #        continue
+            #    else:
+            #        speed_zero[each_vehicle_record.speed]=1
+            #else:
+            #    speed_zero = {}
 
             #logic to keep a entry for a minute  
             tm_upto_minute = each_vehicle_record.datetime.strftime("%d_%m_%Y_%H_%M")
             if tm_upto_minute in seen.keys():
                 continue
             else:
-                seen[tm_upto_minute]=1
+                if(timedelay == "1"):
+                    seen[tm_upto_minute]=1
+                elif(timedelay == "2"):
+                    seen[tm_upto_minute]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=1)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                elif(timedelay == "5"):
+                    seen[tm_upto_minute]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=1)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=2)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=3)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=4)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                #10-min delay
+                else:
+                    seen[tm_upto_minute]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=1)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=2)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=3)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=4)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=5)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+                
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=6)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=7)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=8)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=9)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                
+                
 
 #            location=Point(float(each_vehicle_record.longitude), float(each_vehicle_record.latitude))
 #            area    = None
@@ -1680,52 +1781,1624 @@ def generatePdfForVehicleRouteReport(request):
             #ajit code block 2 ends here
 
 
-
-
-            #each_vehicle_record_data = dict()
-            #each_vehicle_record_data['vehicle']     = plate_no
-            #each_vehicle_record_data['date']        = str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))
-            #each_vehicle_record_data['time']        = str(each_vehicle_record.datetime.strftime("%H:%M:%S"))
-            #each_vehicle_record_data['area']        = resultaddress
-            #each_vehicle_record_data['speed']       = str(each_vehicle_record.speed)
-            #response_data['data'].append(each_vehicle_record_data)
-
-
-
-            loopcounter+=1
-
             finalresultaddress = ""
             finalresultaddress = finalresultaddress.join(resultaddress)
+            finalresultaddress = finalresultaddress[0:40]
+            finalresultaddress = finalresultaddress.replace("(", " ")
+            finalresultaddress = finalresultaddress.replace(")", " ")
+            charcount = 40
+            if(len(finalresultaddress) == 40):
+                while(finalresultaddress[charcount-1]!= " " ):
+                    charcount-=1
+            finalresultaddress = finalresultaddress = finalresultaddress[0:charcount]
 
             finalspeed = ""
             finalspeed = finalspeed.join(str(each_vehicle_record.speed))
-            appenddata = """<tr>
-                                    <td>"""+str(loopcounter)+"""</td>
-                                    <td>"""+str(plate_no)+"""</td>
-                                    <td>"""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+"""</td>
-                                    <td>"""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+"""</td>
-                                    <td>"""+finalresultaddress+"""</td>
-                                    <td>"""+finalspeed+"""</td>
-                                </tr>"""
-
-            htmlfile.write(appenddata)
 
 
-        staticbottomdata = """</tbody>
-                    </div>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div></body>
-</html>"""
-        htmlfile.write(staticbottomdata)
-        htmlfile.close()
+            if(pagerowcounter == 0):
+                staticdata = """\n%%%%%%%%%SECONDPAGE
+%%SECOND_PAGE_NUMBERS_TO_BE_PRINTED%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+1
+{
+%TABLE BORDER
+newpath
+50 54 moveto     %BOTTOM CORNER
+0 680 rlineto    %Y-AXIS UP
+496 0 rlineto    %X-AXIS RIGHT
+0 -680 rlineto   %Y-AXIS DOWN
+-496 0 rlineto   %X-AXIS LEFT
+0 setlinewidth   %THICKNESS
+stroke           %PRINT
 
-        pdfkit.from_file(htmlfilename, pdffilename)
-        os.remove(htmlfilename)
-        pdfaccesslink = "http://swm.vtms.cleanupmumbai.com/static/pdfreports/"+str(plate_no)+"_"+str(from_time)+"_to_"+str(to_time)+".pdf"
-        return HttpResponse(pdfaccesslink)
+%COLUMN LINES(1,2,3,4,5)
+newpath
+85 54 moveto    %TO CHANGE VERTICAL LINES
+0 680 rlineto   %BOTTOM-UP LENGTH
+stroke
 
-        #return HttpResponse(json.dumps(response_data),content_type="application/json")
+newpath
+150 54 moveto
+0 680 rlineto
+stroke
+
+newpath
+215 54 moveto
+0 680 rlineto
+stroke
+
+newpath
+270 54 moveto
+0 680 rlineto
+stroke
+
+newpath
+490 54 moveto
+0 680 rlineto
+stroke
+
+newpath
+50 734 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 714 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 694 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 674 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 654 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 634 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 614 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 594 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 574 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 554 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 534 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 514 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 494 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 474 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 454 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 434 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 414 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 394 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 374 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 354 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 334 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 314 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 294 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 274 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 254 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 234 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 214 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 194 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 174 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 154 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 134 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 114 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 94 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 74 moveto
+496 0 rlineto
+stroke
+
+%-----------------------
+%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 55 720 moveto   %CHANGE THIS TO MOVE HEADERS
+HEADER_FONT setfont
+(Index) show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 98 720 moveto   %CHANGE THIS TO MOVE HEADERS
+HEADER_FONT setfont
+(Vehicle) show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 168 720 moveto   %CHANGE THIS TO MOVE HEADERS
+HEADER_FONT setfont
+(Date) show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 231 720 moveto   %CHANGE THIS TO MOVE HEADERS
+HEADER_FONT setfont
+(Time) show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 350 720 moveto   %CHANGE THIS TO MOVE HEADERS
+HEADER_FONT setfont
+(Location) show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 505 720 moveto   %CHANGE THIS TO MOVE HEADERS
+HEADER_FONT setfont
+(Speed) show
+%----------------------------"""
+                
+                psfile.write(staticdata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+
+            elif(pagerowcounter == 1):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 700 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 700 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 700 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 700 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 700 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 700 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 2):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 680 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 680 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 680 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 680 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 680 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 680 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+
+            elif(pagerowcounter == 3):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 660 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 660 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 660 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 660 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 660 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 660 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 4):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 640 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 640 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 640 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 640 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 640 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 640 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+
+            elif(pagerowcounter == 5):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 620 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 620 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 620 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 620 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 620 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 620 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 6):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 600 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 600 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 600 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 600 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 600 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 600 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+
+            elif(pagerowcounter == 7):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 580 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 580 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 580 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 580 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 580 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 580 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+
+            elif(pagerowcounter == 8):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 560 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 560 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 560 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 560 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 560 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 560 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 9):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 540 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 540 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 540 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 540 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 540 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 540 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 10):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 520 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 520 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 520 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 520 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 520 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 520 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+
+            elif(pagerowcounter == 11):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 500 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 500 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 500 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 500 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 500 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 500 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 12):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 480 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 480 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 480 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 480 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 480 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 480 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 13):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 460 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 460 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 460 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 460 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 460 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 460 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 14):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 440 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 440 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 440 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 440 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 440 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 440 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+
+            elif(pagerowcounter == 15):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 420 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 420 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 420 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 420 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 420 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 420 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+
+
+            elif(pagerowcounter == 16):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 400 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 400 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 400 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 400 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 400 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 400 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+
+            elif(pagerowcounter == 17):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 380 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 380 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 380 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 380 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 380 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 380 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+
+            elif(pagerowcounter == 18):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 360 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 360 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 360 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 360 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 360 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 360 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 19):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 340 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 340 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 340 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 340 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 340 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 340 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 20):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 320 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 320 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 320 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 320 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 320 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 320 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 21):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 300 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 300 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 300 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 300 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 300 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 300 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 22):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 280 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 280 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 280 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 280 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 280 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 280 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+
+            elif(pagerowcounter == 23):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 260 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 260 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 260 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 260 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 260 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 260 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 24):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 240 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 240 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 240 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 240 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 240 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 240 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 25):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 220 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 220 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 220 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 220 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 220 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 220 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 26):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 200 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 200 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 200 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 200 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 200 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 200 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 27):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 180 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 180 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 180 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 180 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 180 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 180 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 28):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 160 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 160 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 160 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 160 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 160 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 160 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 29):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 140 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 140 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 140 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 140 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 140 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 140 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 30):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 120 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 120 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 120 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 120 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 120 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 120 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 31):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 100 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 100 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 100 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 100 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 100 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 100 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 32):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 80 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 80 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 80 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 80 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 80 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 80 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 33):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 60 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 60 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 60 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 60 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 60 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 60 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------
+showpage
+} repeat"""
+
+                psfile.write(appenddata)
+                pagerowcounter = 0
+                loopcounter+=1
+
+        if(pagerowcounter != 33):
+            appenddata = """
+showpage
+} repeat"""
+            psfile.write(appenddata)
+        psfile.close()
+        pdfgenerationcommand = "ps2pdf -dNOSAFER "+psfilename+" "+pdffilename
+        
+        """ each_vehicle_record_data = dict()
+        each_vehicle_record_data['vehicle']     = plate_no
+        each_vehicle_record_data['date']        = str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))
+        each_vehicle_record_data['time']        = str(each_vehicle_record.datetime.strftime("%H:%M:%S"))
+        each_vehicle_record_data['area']        = resultaddress
+        each_vehicle_record_data['speed']       = str(each_vehicle_record.speed)
+        response_data['data'].append(each_vehicle_record_data) """
+        os.system(pdfgenerationcommand)
+        os.remove(psfilename)
+        #pdfaccesslink = "http://swm.vtms.cleanupmumbai.com/static/pdfreports/"+str(plate_no)+"_"+str(from_time)+"_to_"+str(to_time)+".pdf"
+        return HttpResponse(pdffilelink)
     return render(request,'reports/vehicle_route_report.html',{ 'form_params' : form_params})
+
+#API PART
+
+@api_view(['POST'])
+def sendWeighEntryData(request):
+    if request.method == 'POST':
+     data = request.data
+     
+     if len(data) == 12:
+      
+      try:
+        connection = psycopg2.connect(user="mcgm",
+                                  password="mcgm",
+                                  host="localhost",
+                                  port="5432",
+                                  database="mcgm")
+        cursor = connection.cursor()
+        postgres_insert_query = """ INSERT INTO swm.sendweighentrydata (unique_transaction_id, weighbridge, trans_date, trans_time, vehicle_no, dc_no, act_shift, type_of_garage, vehicletype, gross_weight, new_weight, updatedby) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
+    
+        #record_to_insert = (1663602, 'WB-D-Test', '2020\/12\/24', '1:56 PM', 'MH03CV0943', 10652, 'I', 'DEBRIS', 'PVT TORAS', 26960, 17460, 'SOMNATHS')
+        #record_to_insert = (data["Unique_Transaction_ID"], data["Weighbridge_UL"], data["Trans_Date_UL"], data["Trans_Time_UL"], data["Vehicle_No"], data["Act_Shift_UL"], data["Unladen_Weight"], data["Act_Net_Weight"], data["Updated_by_UL"], data["Ward"], data["Image"])
+        record_to_insert = (data["Unique_Transaction_ID"], data["Weighbridge"], data["Trans_Date"], data["Trans_Time"], data["Vehicle_No"], data["DC_No"], data["Act_Shift"], data["Type_of_Garbage"], data["Vehicle_Type"], data["Gross_Weight"], data["Net_Weight"], data["Updated_by"])
+        cursor.execute(postgres_insert_query, record_to_insert)
+        connection.commit()
+        count = cursor.rowcount
+      
+      except (Exception, psycopg2.Error) as error:  
+        print("Failed to insert ", error)  
+      finally:
+       if connection:
+        cursor.close()
+        connection.close()
+        print("PostgreSQL connection is closed")  
+        
+      return JsonResponse({"response":"ACK","Transaction_ID": data["Unique_Transaction_ID"]},content_type="application/json")
+    return JsonResponse({"response": "Error - Resend Packet"},content_type="application/json")   
+  
+  
+@api_view(['POST'])
+def sendWeighExitData(request):
+    if request.method == 'POST':
+     data = request.data
+     
+     if len(data) == 11:
+      
+      try:
+        connection = psycopg2.connect(user="mcgm",
+                                  password="mcgm",
+                                  host="localhost",
+                                  port="5432",
+                                  database="mcgm")
+        cursor = connection.cursor()
+        postgres_insert_query = """ INSERT INTO swm.sendweighexitdata (unique_transaction_id, weighbridge_ul, trans_date_ul, trans_time_ul, vehicle_no, act_shift_ul, unladen_weight, act_net_weight, updatedby_ul, ward, invehicle_image) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
+        #record_to_insert = (24546, 'WB-D-Test', '2020\/12\/24', '1:49 PM', 'MH01AP7022', 'I', 9790, 6090, data["Updated_by"], 'N', 'http:\/\/45.117.74.126\/vehicleImages\/1663527.jpg')
+        record_to_insert = (data["Unique_Transaction_ID"], data["Weighbridge_UL"], data["Trans_Date_UL"], data["Trans_Time_UL"], data["Vehicle_No"], data["Act_Shift_UL"], data["Unladen_Weight"], data["Act_Net_Weight"], data["Updated_by_UL"], data["Ward"], data["Image"])
+        cursor.execute(postgres_insert_query, record_to_insert)
+        connection.commit()
+        count = cursor.rowcount
+      
+      except (Exception, psycopg2.Error) as error:  
+        print("Failed to insert ", error)  
+      finally:
+       if connection:
+        cursor.close()
+        connection.close()
+        print("PostgreSQL connection is closed")  
+        
+      return JsonResponse({"response":"ACK","Transaction_ID": data["Unique_Transaction_ID"]},content_type="application/json")
+    return JsonResponse({"response": "Error - Resend Packet"},content_type="application/json")

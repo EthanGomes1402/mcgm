@@ -6,14 +6,48 @@ import floppyforms as forms1
 from dal import autocomplete
 
 VEHICLE_TYPE = (
-        ("mc","Mini Compactor"),
-        ("lc","Large Compactor"),
-        ("swm","Sweeper Vehicle Machine"),
-        ("scv","Small Compactor Vehicle"),
-        ("sl","Sleeper Vehicle"),
-        ("dw","Dry Waste"),
-    )
-YEARS = [(year,year) for year in range(1950,2021,1)]
+    ('---Please select vehicle type---',    
+       (
+        ("DGV","Dog Van"),
+        ("BKV","Break Down"),
+        ("LC","Refuse Compactor"),
+        ("JCB","Bakayantra (JCB)"),
+        ("DMP","Dumper"),
+        ("MC","Refuse Mini Compactor"),
+        ("SUMO","Sumo"),
+        ("BUS","Bus"),
+        ("HERV","Hearse"),
+        ("AMB ","Ambulance"),
+        ("SCO","Scorpio"),
+        ("BOL","Bolero"),
+        ("CAR","Car"),
+        ("WAT","Water Tanker"),
+        ("MMO","Mobile Medical Opthalmic Van"),
+        ("RDV","Raid Van"),
+        ("BB","Blood Bank"),
+        ("DW","Dry Waste Tempo"),
+        ("TRUCK","Truck"),
+        ("CIMP","Cattle Impound Van"),
+        ("ENCR","Encrochment"),
+        ("MPS","Mechanical Power Sweeper"),
+        ("TEC","Mak Lifton (Tree Cutting)"),
+        ("WRE","Wrecker"),
+        ("HYVA","HYVA Prime Mover"),
+        ("CET","Cesspool Tanker"),
+        ("JEEP","Jeep"),
+        ("WW","Ward & Watch"),
+        ("MEV","Meatvan"),
+        ("SCV","Small Closed Vehicle"),
+        ("SL","Side Loading Compactor"),
+        ("FT","Tanker Fire Fighter"),
+        ("BCM","Beach Cleaning Machine"),
+        ("SSL","Steer Skid Loader"),
+        ("TT","Tractor Trailer"),
+        ("IV","Insecticide Vehicle"),
+       )
+    ),
+)
+YEARS = [(year,year) for year in range(1950,2023,1)]
 SHIFT = (
         ('1', "Morning"),
         ('2', "Afternoon"),
@@ -137,17 +171,18 @@ class VehicleEditForm(NewVehicleForm):
 
 class NewStopStationForm(forms.ModelForm):
     name = forms.CharField(label = 'Name :')
-    is_mlc    = forms.BooleanField(required=False)
-    is_chkpst = forms.BooleanField(required=False)
-    is_tnsstn = forms.BooleanField(required=False)
-    is_dmpgnd = forms.BooleanField(required=False)
-    is_garage = forms.BooleanField(required=False)
+    is_mlc    = forms.BooleanField(required=False,label = 'IS_ML_CHOWKI')
+    is_chkpst = forms.BooleanField(required=False,label = 'IS_CHECKPOST')
+    is_tnsstn = forms.BooleanField(required=False,label = 'IS_TRANSFER_STATION')
+    is_dmpgnd = forms.BooleanField(required=False,label = 'IS_DUMPING_GROUND')
+    is_garage = forms.BooleanField(required=False,label = 'IS_GARAGE')
     ward = forms.ModelChoiceField(queryset = Ward.objects.filter(is_active='t').order_by('name'),required=False)
     stop_station_fence =forms1.gis.PolygonField(widget=PolygonWidget(attrs={ 'map_width': 1050,'map_height': 1050 }),required=False)
     class Meta:
         model= Stop_station
         fields=['name','is_mlc','is_chkpst','is_tnsstn','is_dmpgnd','is_garage','ward','stop_station_fence']
-
+      
+        
 class StopStationEditForm(NewStopStationForm):
     pass
 
@@ -171,6 +206,7 @@ class NewContractorForm(forms.ModelForm):
     mobile = forms.CharField(label = 'Mobile :')
     fax = forms.CharField(label = 'Fax :',required=False)
     email = forms.CharField(label = 'Email :')
+    user  = forms.ModelChoiceField(queryset=User.objects.order_by('username'))
 
     class Meta:
         model= Contractor

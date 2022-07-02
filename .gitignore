@@ -2,5 +2,5 @@
 *.swp
 *.swn
 static/pdfreports/*
-dashboard/loaddatafast/
-static/html2pdf/
+dashboard/loaddatafast/*
+static/html2pdf/*

@@ -1,0 +1,121 @@
+{% load static %}
+{% load crispy_forms_tags %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="cache-control" content="no-cache"> <!-- tells browser not to cache -->
+<meta http-equiv="expires" content="0"> <!-- says that the cache expires 'now' -->
+<meta http-equiv="pragma" content="no-cache"> <!-- says not to use cached stuff, if there is any -->
+    <title>VTMS-Log in</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css2/all.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css2/adminlte.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css2/icheck-bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css2/style.css' %}">
+</head>
+
+<body class="hold-transition login-page">
+
+
+
+    
+
+
+
+
+    <div class="login-box">
+        <div class="login-logo">
+            <img src="{% static 'images2/mcgm-logo.png' %}" alt="Vehicle Transport Management System
+            " width="150" class="d-block mx-auto">
+            <h3 class="mt-2 ">Vehicle Transport Management System</h3>
+
+        </div>
+        <!-- /.login-logo -->
+        <div class="card">
+            <div class="card-body login-card-body">
+                <p class="login-box-msg ">Log in to start your session</p>
+
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ next }}">
+                    {{ form | crispy}}
+                    <button type="submit" class="btn btn-primary btn-block btn-lg text-uppercase">Log in</button>
+                  </form>
+
+               <!--  <form action="#" method="post">
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" placeholder="Username">
+                        <div class="input-group-append">
+                            <div class="input-group-text">
+                                <span class="fas fa-envelope"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="input-group mb-3">
+                        <input type="password" class="form-control" placeholder="Password">
+                        <div class="input-group-append">
+                            <div class="input-group-text">
+                                <span class="fas fa-lock"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-8">
+                            
+                        <div class="col-4">
+                            <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+                        </div>
+                    </div>
+                </form> -->
+                <!-- <hr> -->
+                <!-- <div class="row mt-4">
+                    <div class="col-md-6">
+                        <p>
+                            <a href="#">Forgot  password?</a>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="text-right">
+                            New to VTMS? <a href="accounts/signup.html">Sign Up</a>
+                        </p>
+                    </div>
+                </div> -->
+
+
+            </div>
+            <!-- /.login-card-body -->
+        </div>
+    </div>
+
+    <!-- loader -->
+    <div id = "pleasewait" class="loader-wrapper" style = "display: none">
+        <div class="truck-wrapper">
+            <div class="truck">
+                <div class="truck-container"></div>
+                <div class="wheel-back"></div>
+                <div class="wheel-front"></div>
+                <div class="smoke"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="{% static 'js2/jquery.min.js' %}"></script>
+    <script src="{% static 'js2/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'js2/adminlte.min.js' %}"></script>
+    <script>
+        $('form').submit(function() {
+        $(this).find("button[type='submit']").prop('disabled',true);
+        document.getElementById("pleasewait").style.display = "block";
+});
+    </script>
+
+
+    
+</body>
+
+</html>

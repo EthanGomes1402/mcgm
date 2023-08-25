@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+	<h1>Div From Mumbai</h1>
+{% endblock %}
+{% block content_title %}Divs{% endblock %}
+{% block content %}
+
+
+  <div>
+	  <a href="{% url 'add_div' %}" class="btn btn-warning  px-3"><b>Add New div</b></a>
+  </div>
+  {% if divs %}
+  <table class="table tablesorter">
+    <thead class="thead-inverse">
+      <tr>
+        <th>Div</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th align="center">Area</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for div in divs %}
+        <tr>
+	  <td>{{ div.name }}</td>
+	  <td>{{ div.short_name }}</td>
+	  <td>this is div {{ div.name }}</td>
+	  <td class="area" id="area_{{div.pk}}"><img src="{% static 'img/location.png' %}"></td>
+	  <td>
+	  <div class="btn-group btn-group-sm">
+		  <a href="{% url 'edit_div' div.pk %}" class="btn btn-info"><i class="fas fa-pen"></i></a>
+		  <a id="{{div.pk}}" href="#" class="btn btn-danger"><i class="fas fa-trash"></i></a>
+		  </div>
+	  </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  	<h1>No Divs Found</h1>
+  {% endif %}
+  <div id="loadpositionmap" style="display: none;" align="center">
+  </div>
+
+{% endblock %}
+
+{% block js %}
+	<script>
+		let mymap = L.map('loadpositionmap').setView([ 19.122777 ,72.894568] ,12);
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+		subdomain :['a','b','c']
+		}).addTo(mymap);
+
+		$(document).ready(function(){
+			var area;
+			$('table').tablesorter({theme:'metro-dark'});
+			$("td.area").click(function () {
+				if( area ){
+					mymap.removeLayer(area);
+				}
+
+				div_id= $(this).attr('id').split('_')[1];
+				$.ajax({
+					type:'GET',
+					url:'{% url "get_div_area" %}',
+					data: {
+						'id':div_id 
+					},
+					beforeSend: function(xhr) {
+						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+					},
+					success:function(res){
+						let div = JSON.parse(res.div_fence);
+						area = L.geoJSON(div,{
+							style: function(feature){
+								return {
+									color  : 'red',
+									weight : 3,
+									fillColor: 'black'
+								}
+							},
+							onEachFeature: function(feature,layer){
+								layer.bindPopup("<b>div : </b>");
+							}
+						}).addTo(mymap)
+
+						mymap.fitBounds(area.getBounds());
+						$("#loadpositionmap").dialog({
+							modal: true,
+							autoOpen: false,
+							title: " Ward ",
+							width: 800,
+							height:800
+						});
+						$("#loadpositionmap").dialog('open');
+						mymap.invalidateSize();
+					},
+					error:function(a,b,c){
+						alert(b);
+						alert(c);
+					}
+				});
+			});
+		});
+
+		$("a.delete_div").click(function () {
+			var div_id = $(this).attr('id');
+			$.ajax({
+				type:'POST',
+				url:'{% url "delete_div" %}',
+				data: {
+					'id':div_id 
+				},
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+				},
+				success:function(res){
+					alert(res.status);
+				},
+				error:function(a,b,c){
+					alert(b);
+					alert(c);
+				}
+			});
+		});
+	</script>
+{% endblock %}

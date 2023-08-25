@@ -49,9 +49,13 @@
 <ul class="navbar-nav ml-auto">
     <!-- Navbar Search -->
     <div class="contact-bg">
+
         <li class="nav-item">
-            <h5 class="mb-0">Help Desk</h5>
-        </li>
+            <a class="nav-link" data-widget="" href="{% url 'helpdesk' %}" role="button">
+            <b class="mb-0">Help Desk</b> 
+            </a>
+       </li>
+ 
         <li class="nav-item">
             <a class="nav-link" data-widget="" href="#" role="button">
                 <i class="fas fa-phone-alt"></i> +91 22 2925 0372 / +91 9769784764
@@ -152,7 +156,69 @@
                                 <p>Vehicle Route Report</p>
                             </a>
                         </li>
-                        {% if user.is_authenticated and user.is_superuser %}
+                 
+                        <li class="nav-item">
+                            <a href="{% url 'password_form' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Route Allocation</p>
+                            </a>
+                        </li>
+
+                       
+                        <li class="nav-item">
+                            <a href="{% url 'distance_report' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Distance Report</p>
+                            </a>
+                        </li>
+
+                     
+
+                     <li class="nav-item">
+                        <a href="{% url 'weight_report' %}" class="nav-link">
+                            <i class="far fa-circle nav-icon"></i>
+                            <p>Weight Report</p>
+                        </a>
+                    </li>
+                     
+                    {% if user.is_authenticated and user.is_superuser %}
+                    <li class="nav-item">
+                        <a href="{% url 'view_bins' %}" class="nav-link">
+                            <i class="far fa-circle nav-icon"></i>
+                            <p>Old Route Information</p>
+                        </a>
+                    </li>
+                    {% endif %}
+                   
+
+                    <li class="nav-item">
+                        <a href="{% url 'info_report_test' %}" class="nav-link">
+                            <i class="far fa-circle nav-icon"></i>
+                            <p>Route Information</p>
+                        </a>
+                    </li>
+                    
+                   
+                            
+                    <li class="nav-item">
+                        <a href="{% url 'route_compliance' %}" class="nav-link">
+                            <i class="far fa-circle nav-icon"></i>
+                            <p>Route Compliance</p>
+                        </a>
+                    </li>
+
+                    {% if user.is_authenticated and user.is_superuser %}
+                    <li class="nav-item">
+                        <a href="{% url 'wet_waste_report' %}" class="nav-link">
+                            <i class="far fa-circle nav-icon"></i>
+                            <p>Wet Waste Report</p>
+                        </a>
+                    </li>
+                    {% endif %}
+                   
+
+                       <!--
+
                         <div class="ml-3 new-menu">
                         <li class="sidebar-dropdown">
                             <div class="dropdown">
@@ -298,7 +364,9 @@
                           </div>
                           </li>
                           </div>
-                        {% endif %}
+
+                        -->
+                    
 			<br>
                     </ul>
                 </li>
@@ -568,4 +636,5 @@
     {% endblock %}
   </body>
   </html>
+
 

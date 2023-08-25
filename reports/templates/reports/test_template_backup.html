@@ -1,0 +1,1233 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %} Vehicle Route Report {% endblock %}
+
+{% block extrastylesheet %}
+ <style>
+  div.loader {
+    width: 100px;
+    height: 100px;
+    position: absolute;
+    top:0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+ }
+ </style>
+
+
+
+<style>
+
+/* 	.rftablenew .bmclogo {
+
+		margin: auto;
+
+		display: block;
+
+		width: 14%;
+
+		margin-bottom: 20px;
+
+	} */
+
+	
+
+	.newtable-bg {
+
+		background: #cae0f9;
+
+		padding: 20px;
+
+		border-radius: 10px;
+
+	}
+
+	
+
+	.start-table {
+
+		margin-top: 20px;
+
+		padding-top: 20px;
+
+		border-top: 1px solid #4f8bcf;
+
+	}
+
+	
+
+	.newtable-bg .form-control {
+
+		border: 1px solid #4f8bcf;
+
+		color: #000;
+
+	}
+
+	
+
+	.start-table .table>thead:first-child>tr:first-child>th {
+
+		border: 1px solid #4f8bcf;
+
+	}
+
+	
+
+	.start-table .table-new {
+
+		background: #fff;
+
+		padding: 15px;
+
+	}
+
+	
+
+	.table-new .table-bordered>tbody>tr>td {
+
+		border: 1px solid #4f8bcf;
+
+	}
+
+</style>
+
+
+
+
+
+
+{% endblock %}
+
+{% block content_title %}Distance Report{% endblock %}
+{% block content %}
+
+
+<!-- <marquee>This page testing is going on - Developer</marquee> -->
+
+<section class="content">
+    <div class="container-fluid">
+
+        <div class="row">
+          <div class="col-md-12">
+
+            <form id="vehicle_summery_report" name="vehicle_summery_report" method="POST">
+				{% csrf_token %}
+                <div class = "row">
+                <div class="col-md-4" style="width:30%">
+                    <label for="">Date</label>
+                    <div class="input-group date" id="date1" data-target-input="nearest">
+                    <input type="date" class="form-control" data-toggle=" " data-target="#date1" name = "date1" id = "date1"  autocomplete="off" required/>
+                    <div class="input-group-append" data-target="#date1" data-toggle=" ">
+                       
+                    </div>
+                    </div>
+                </div>
+
+			    <div class="col-md-4" style="width:30%">
+                <label for="">Shift</label>
+				<!-- <small>(Eg: MH01DR1234)</small> -->
+                <input type="text" class="form-control" placeholder="Enter Shift No." name="shift" id="shift" required list="shiftList" autocomplete="off">
+				<datalist id="shiftList">
+                    <option value="" disabled>Select</option>
+                    <option value="1"> 1 (6am-2pm) </option>
+                    <option value="2"> 2 (2pm-10pm) </option>
+                    <option value="3"> 3 (10pm-6am) </option>
+                </datalist>
+                </div>
+            </div>
+                <div class="col-md-4">
+                <!-- <button type = "submit" class="btn btn-success submit-btn">Submit</button> -->
+				    <!--<button type = "submit" class="btn btn-success submit-btn" id = "id001" onclick="setTimeout(disableFunction, 1);">Generate Report</button>-->
+					<button type = "submit" class="btn btn-success submit-btn" id = "id001" >Generate Report</button>
+				</div>
+			
+			
+            </form>
+         </div>
+        </div>
+    </div>
+<!--	
+	{% for res in trial_res.plate_number %}
+	<p>VEHICLE IS :  {{res}}</p>
+	{% endfor %}
+
+	{% for res in trial_res.vehicle_type %}
+	<p>VEHICLE TYPE IS :  {{res}}</p>
+	{% endfor %}
+
+	
+
+	{% for res in trial_res.data %}
+    <p>DISTANCE IS :  {{res}}</p>
+    {% endfor %}
+
+
+    {% for res in trial_res.date %}
+    <p>DATE IS :  {{res}}</p>
+    {% endfor %}
+
+    {% for res in trial_res.shift %}
+    <p>SHIFT IS :  {{res}}</p>
+    {% endfor %}
+
+-->
+	<!--<p id = "linktoaccesspdf"></p> -->
+	<div width="100%" class = "mt-3 " style="display:none;" id="vehicle_summery_data">
+		<!--
+        <div class = "mb-2 d-block">
+
+		<button class = "btn btn-danger  btn-sm px-3 ml-2" id="export_to_excel" style="float: right;">Export To Excel</button>
+		<button class = "btn btn-danger  btn-sm px-3 ml-2" id="export_to_csv" style="float: right;">Export To CSV</button>
+		<button class = "btn btn-danger  btn-sm px-3 ml-2" id="export_to_pdf" style="float: right;">Export To PDF</button>
+		 <button class = "btn btn-danger  btn-sm px-3 ml-2" id="export_to_pdf2" style="float: right;">Export To PDF(Lite)</button> -->
+		<!-- <button class = "btn btn-danger  btn-sm px-3 ml-2" id="testbutton" style="float: right;">Export To PDF Test</button> -->
+
+		</div>
+    
+		<!-- loader -->
+<div id = "spinner" class="loader-wrapper" style="display: none;">
+	<div class="truck-wrapper">
+		<div class="truck">
+			<div class="truck-container"></div>
+			<div class="wheel-back"></div>
+			<div class="wheel-front"></div>
+			<div class="smoke"></div>
+		</div>
+	</div>
+</div>
+
+		<div id = "printablearea" class="canvas_div_pdf">
+
+			<!--<img id = "logo" src = "{% static 'images2/mcgm-logo.png' %}" width = "80px" height = "80px" style = "margin-left: 460px; display: block;"> -->
+			
+
+			<div class="container-fluid rftablenew">
+
+				<div class="row w-100">
+		
+					<div class="col-md-12">
+						<img src="{% static 'images2/mcgm-logo.png' %}" alt="BMC Logo" class="img-fluid mx-auto d-block " width = "150">
+
+			<h3 style = "text-align: center;">Distance Report</h3>
+			<div class="newtable-bg">
+	
+				<div class="row">
+	
+					<div class="col-md-4">
+	
+						<div class="form-block">
+	
+							<div class="form-group">
+	
+								<label for="date1">Report For Date: </label>
+                                <span class="form-control datetimepicker-input" data-target="#reservationdate1" id="" title="Date">
+                     {% for res in trial_res.date %}
+                                {{res}}
+                                {% endfor %}
+                                </span>    
+                            </div>
+                                
+					 
+					
+						</div>
+	
+					</div>
+	
+
+                    <div class="col-md-4">
+	
+						<div class="form-block">
+	
+							<div class="form-group">
+	
+								<label for="date1">Shift: </label>
+                                <span class="form-control datetimepicker-input" data-target="#reservationdate1" id="" title="Date">
+                     {% for res in trial_res.shift %}
+                                {{res}}
+                                {% endfor %}
+                                </span>    
+                            </div>
+                                
+					 
+					
+						</div>
+	
+					</div>
+
+
+	
+					<div class="col-md-4">
+	
+						<div class="form-block">
+	
+							<div class="form-group">
+	
+								<label for="reportgendate">Report Generated On: </label>
+								<span class="form-control datetimepicker-input" data-target="#reservationdate1" id="demo" title="Date"></span>
+                            </div>
+					    </div>
+					</div>
+	
+					</div>
+					
+				</div>
+
+
+
+
+				
+			<div class="row start-table">
+
+                <div class="col-md-12">
+
+                    <div class="table-new">
+				<table id = "vehicle_summery" class="table table-bordered tablesorter"> 
+			<thead>
+				<tr>
+					<th>Sr No.</th>
+					<th>Vehicle Type</th>
+					<th>Vehicle Number</th>
+                    <th>Route Code</th>
+                    <th>Route Name</th>
+					<th>Distance Travelled (in KMS)</th>
+					
+				</tr>
+				
+			</thead>
+			<tbody>
+            <!--
+            {% for res in trial_res %}
+            <tr>
+                
+                <td>{{ forloop.counter }}</td>
+                
+                {% for res in trial_res.vehicle_type %}
+                
+                <td>{{res}}</td>
+                {% endfor %}
+                
+
+                
+                {% for res in trial_res.plate_number %}
+                
+                <td>{{res}}</td>
+                {% endfor %}
+                
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                
+               {% for res in trial_res.data %}
+                
+                <td>{{res}}</td>
+                {% endfor %}
+                
+            </tr>
+
+            {% endfor %}
+            -->
+            
+
+            
+            <tr>
+                <td>1</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.0}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.0 }}</td>
+                {% endfor %}
+
+
+                {% for res in trial_res.route_code %}
+                <td>{{ res.0 }}</td>
+                {% endfor %}
+
+	            {% for res in trial_res.route_name %}
+                <td>{{ res.0 }}</td>
+                {% endfor %}
+
+                {% for res in trial_res.data %}
+                <td>{{res.0}}</td>
+                {% endfor %}
+            </tr>
+            
+            
+            
+            <tr>
+                <td>2</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.1}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.1 }}</td>
+                {% endfor %}
+
+
+                {% for res in trial_res.route_code %}
+                <td>{{ res.1 }}</td>
+                {% endfor %}
+
+	            {% for res in trial_res.route_name %}
+                <td>{{ res.1 }}</td>
+                {% endfor %}
+
+                {% for res in trial_res.data %}
+                <td>{{res.1}}</td>
+                {% endfor %}
+            </tr>
+
+
+<tr>
+                <td>3</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.2}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.2 }}</td>
+                {% endfor %}
+
+
+                {% for res in trial_res.route_code %}
+                <td>{{ res.2 }}</td>
+                {% endfor %}
+
+	            {% for res in trial_res.route_name %}
+                <td>{{ res.2 }}</td>
+                {% endfor %}
+
+                {% for res in trial_res.data %}
+                <td>{{res.2}}</td>
+                {% endfor %}
+            </tr>
+
+
+            <tr>
+                <td>4</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.3}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.3 }}</td>
+                {% endfor %}
+
+
+                {% for res in trial_res.route_code %}
+                <td>{{ res.3 }}</td>
+                {% endfor %}
+
+	            {% for res in trial_res.route_name %}
+                <td>{{ res.3 }}</td>
+                {% endfor %}
+
+                {% for res in trial_res.data %}
+                <td>{{res.3}}</td>
+                {% endfor %}
+            </tr>
+
+
+            <tr>
+                <td>5</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.4}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.4 }}</td>
+                {% endfor %}
+
+
+                {% for res in trial_res.route_code %}
+                <td>{{ res.4 }}</td>
+                {% endfor %}
+
+	            {% for res in trial_res.route_name %}
+                <td>{{ res.4 }}</td>
+                {% endfor %}
+
+                {% for res in trial_res.data %}
+                <td>{{res.4}}</td>
+                {% endfor %}
+            </tr>
+
+
+            <tr>
+                <td>6</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.5}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.5 }}</td>
+                {% endfor %}
+
+
+                {% for res in trial_res.route_code %}
+                <td>{{ res.5 }}</td>
+                {% endfor %}
+
+	            {% for res in trial_res.route_name %}
+                <td>{{ res.5 }}</td>
+                {% endfor %}
+
+                {% for res in trial_res.data %}
+                <td>{{res.5}}</td>
+                {% endfor %}
+            </tr>
+
+            <tr>
+                <td>7</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.6}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.6 }}</td>
+                {% endfor %}
+
+
+                {% for res in trial_res.route_code %}
+                <td>{{ res.6 }}</td>
+                {% endfor %}
+
+	            {% for res in trial_res.route_name %}
+                <td>{{ res.6 }}</td>
+                {% endfor %}
+
+                {% for res in trial_res.data %}
+                <td>{{res.6}}</td>
+                {% endfor %}
+            </tr>
+
+
+<tr>
+                <td>8</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.7}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.7 }}</td>
+                {% endfor %}
+
+
+                {% for res in trial_res.route_code %}
+                <td>{{ res.7 }}</td>
+                {% endfor %}
+
+	            {% for res in trial_res.route_name %}
+                <td>{{ res.7 }}</td>
+                {% endfor %}
+
+                {% for res in trial_res.data %}
+                <td>{{res.7}}</td>
+                {% endfor %}
+            </tr>
+
+            <tr>
+                <td>9</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.8}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.8 }}</td>
+                {% endfor %}
+
+
+                {% for res in trial_res.route_code %}
+                <td>{{ res.8 }}</td>
+                {% endfor %}
+
+	            {% for res in trial_res.route_name %}
+                <td>{{ res.8 }}</td>
+                {% endfor %}
+
+                {% for res in trial_res.data %}
+                <td>{{res.8}}</td>
+                {% endfor %}
+            </tr>
+
+<tr>
+                <td>10</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.9}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.9 }}</td>
+                {% endfor %}
+
+
+                {% for res in trial_res.route_code %}
+                <td>{{ res.9 }}</td>
+                {% endfor %}
+
+	            {% for res in trial_res.route_name %}
+                <td>{{ res.9 }}</td>
+                {% endfor %}
+
+                {% for res in trial_res.data %}
+                <td>{{res.9}}</td>
+                {% endfor %}
+            </tr>
+
+ 
+
+<!--
+<tr>
+ 
+                {% for res in trial_res.vehicle_type %} 
+               
+                {{forloop.counter}}
+               
+                
+                <td>{{res.vehicle_type.i}}</td>
+                <td>{{res.plate_number.i}}</td>
+                <td>{{res.route_code.i}}</td>
+                <td>{{res.route_name.i}}</td>
+                <td>{{res.data.i}}</td>
+                
+                {% endfor %}
+  
+
+               
+            </tr>
+-->
+
+<!--
+            <tr>
+                <td>3</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.2}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.2 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.2}}</td>
+                {% endfor %}
+            </tr>
+
+
+            <tr>
+                <td>4</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.3}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.3 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.3}}</td>
+                {% endfor %}
+            </tr>
+            
+            
+            
+            <tr>
+                <td>5</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.4}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.4 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.4}}</td>
+                {% endfor %}
+            </tr>
+            
+
+            <tr>
+                <td>6</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.5}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.5 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.5}}</td>
+                {% endfor %}
+            </tr>
+
+
+            <tr>
+                <td>7</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.6}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.6 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.6}}</td>
+                {% endfor %}
+            </tr>
+            
+            
+            
+            <tr>
+                <td>8</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.7}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.7 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.7}}</td>
+                {% endfor %}
+            </tr>
+            
+
+            <tr>
+                <td>9</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.8}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.8 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.8}}</td>
+                {% endfor %}
+            </tr>
+
+
+            <tr>
+                <td>10</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.9}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.9 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.9}}</td>
+                {% endfor %}
+            </tr>
+            
+            
+            
+            <tr>
+                <td>11</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.10}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.10 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.10}}</td>
+                {% endfor %}
+            </tr>
+            
+
+            <tr>
+                <td>12</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.11}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.11 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.11}}</td>
+                {% endfor %}
+            </tr>
+            -->
+<!--
+            <tr>
+                <td>13</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.12}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.12 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.12}}</td>
+                {% endfor %}
+            </tr>
+            
+            
+            
+            <tr>
+                <td>14</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.13}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.13 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.13}}</td>
+                {% endfor %}
+            </tr>
+            
+
+            <tr>
+                <td>15</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.14}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.14 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.14}}</td>
+                {% endfor %}
+            </tr>
+
+            <tr>
+                <td>16</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.15}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.15 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.15}}</td>
+                {% endfor %}
+            </tr>
+            
+            
+            
+            <tr>
+                <td>17</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.16}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.16 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.16}}</td>
+                {% endfor %}
+            </tr>
+            
+
+            <tr>
+                <td>18</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.17}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.17 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.7}}</td>
+                {% endfor %}
+            </tr>
+
+            <tr>
+                <td>19</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.18}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.18 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.18}}</td>
+                {% endfor %}
+            </tr>
+            
+            
+            
+            <tr>
+                <td>20</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.19}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.19 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.19}}</td>
+                {% endfor %}
+            </tr>
+            
+
+            <tr>
+                <td>21</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.20}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.20 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.20}}</td>
+                {% endfor %}
+            </tr>
+
+            <tr>
+                <td>22</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.21}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.21 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.21}}</td>
+                {% endfor %}
+            </tr>
+            
+            
+            
+            <tr>
+                <td>23</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.22}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.22 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.22}}</td>
+                {% endfor %}
+            </tr>
+            
+
+            <tr>
+                <td>24</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.23}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.23 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.23}}</td>
+                {% endfor %}
+            </tr>
+
+            <tr>
+                <td>25</td>
+                {% for res in trial_res.vehicle_type %}
+                <td>{{res.24}}</td>
+                {% endfor %}
+
+                {% for res in trial_res.plate_number %}
+                <td>{{ res.24 }}</td>
+                {% endfor %}
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                {% for res in trial_res.data %}
+                <td>{{res.24}}</td>
+                {% endfor %}
+            </tr>
+            
+            -->
+            
+
+            
+            
+            </tbody>
+		</table>
+        <br><br>
+		</div>
+	</div>
+	</div>
+	</div>
+		
+					</div>
+		
+				</div> 
+
+			<!-- <h5 id = "fromtime"></h5>
+			<h5 id = "totime"></h5>
+			<h5 id = "timenow"></h5> -->
+
+
+			
+	</div>
+	</div>
+	</div>
+
+
+
+
+
+</section>
+
+
+
+
+<!-- loader -->
+<div id = "spinner2" class="loader-wrapper" style="display: none;">
+	<div class="truck-wrapper">
+		<div class="truck">
+			<div class="truck-container"></div>
+			<div class="wheel-back"></div>
+			<div class="wheel-front"></div>
+			<div class="smoke"></div>
+		</div>
+	</div>
+</div>
+
+
+
+
+<!-- 
+<div id="spinner" style="display: none;" class="loader">
+    <img src="{% static 'img/loader.gif' %}" class="img-responsive">
+</div> -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{% endblock %}
+
+{% block js %}
+<script>
+     
+	var d = new Date();
+	document.getElementById("demo").innerHTML = d.toDateString();
+	
+	</script>
+<script>
+	function disableFunction() {
+    document.getElementById("id001").disabled = 'true';
+}
+
+</script>
+<!--Load scripts for pdf generation-->
+<!--<script src="https://code.jquery.com/jquery-1.12.4.js"></script> -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.min.js"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.js"></script>
+  <script>
+
+
+
+	
+    var form_data = JSON.parse('{{ response_data | escapejs }}');
+    form_data = form_data.areal_hierarchy_params;
+
+
+
+
+
+    $(document).ready(function(){
+    $("#vehicle_summery_report").submit(function(event) {
+
+//check if result have some data
+if($("table#vehicle_summery tbody").children().length > 0 ){
+	$('#vehicle_summery tbody tr').remove();
+}
+
+event.preventDefault();
+//document.getElementById("linktoaccesspdf").innerHTML = "We are generating thousands of rows of data for you. Please Wait..."
+$('#spinner').show();
+$('#spinner2').show();
+var submitted_form_data = $('#vehicle_summery_report').serialize();
+
+$.ajax({
+	type:'POST',
+	url:'{% url "distance_report" %}',
+	data: { 'form_data' : submitted_form_data},
+	beforeSend: function(xhr) {
+		xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+	},
+	success:function(res){
+
+
+		$('#spinner').hide();
+		$('#spinner2').hide();
+		document.getElementById("linktoaccesspdf").innerHTML = "<a target = \"_blank\" href =\""+res+"\">Your report is ready! Click here to access it.</a>";
+		window.open(res, "_blank");
+
+
+
+	},
+	error:function(a,b,c){
+		alert(b);
+		alert(c);
+$('#spinner').hide();	
+	}
+});
+});
+
+	});
+
+
+
+
+
+
+
+
+
+
+  </script>
+{% endblock %}  

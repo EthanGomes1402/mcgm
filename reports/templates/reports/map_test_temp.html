@@ -1,0 +1,181 @@
+
+{% block extrastylesheet %}
+
+
+<style>
+html,
+
+body{
+    margin: 0px;
+    height: 100%;
+} 
+
+div.leaflet-top.leaflet-right{ display: none !important; width: 0px  !important; height: 0px  !important; }
+
+</style>
+
+
+
+
+
+
+{% endblock %}
+
+
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Map View</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"
+   integrity="sha512-hoalWLoI8r4UszCkZ5kL8vayOGVae1oxXe/2A4AO6J9+580uKHDO3JdHb7NzwwzK5xr/Fs0W40kiNHxM9vyTtQ=="
+   crossorigin=""/>
+   
+  
+
+
+ </head>
+<body>
+
+	  <div class="box" id="map" style="width:100%;height:100%; box-sizing: border-box;" class="col-md-9" >
+	  </div>
+
+<script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"
+   integrity="sha512-BB3hKbKWOc9Ez/TAwyWxNXeoV9c1v6FIeYiBieIWkpLjauysF18NzgR1MBNBXf8/KABdlkX68nAhlwcDFLGPCQ=="
+   crossorigin=""></script>
+
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
+
+
+<link rel="stylesheet" href="{% static 'js/leaflet_routing_machine.js' %}">
+      <script src="{% static 'js/leaflet_routing_machine.js' %}"></script>
+
+
+<script>
+             var map = L.map('map').setView([19.1, 72.8], 11);
+             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap'
+}).addTo(map); 
+
+
+
+
+
+var bin_arr_lat = [] ;
+var bin_arr_lon = [] ;
+
+"{% for res1 in bin_data %}"
+var bin_code = "{{res1.bin_code}}"
+var bin_lat = "{{res1.bin_lat}}"
+var bin_lon = "{{res1.bin_lon}}"
+var route_code = "{{res1.route_code}}"
+var bin_compliance = "{{res1.bin_compliance}}"
+var bin_name = "{{res1.bin_name}}"
+var is_ML_CP = "{{res1.is_ML_CP}}"
+//bin_arr_data = bin_lat + "," + bin_lon 
+//bin_arr.push(bin_arr_data)
+
+bin_arr_lat.push(bin_lat);
+bin_arr_lon.push(bin_lon);
+
+
+
+var pop_data_bin = 'Route Code: '+ route_code + ' <br> Bin No: '+ bin_code + ' <br> Bin Name: '+ bin_name +  '<br> Bin Location: '+bin_lat+','+bin_lon;
+
+    
+   
+    if(is_ML_CP == 'ML'){
+        var binIcon = L.icon({
+            iconUrl: '{% static 'img/mlc.png' %}',
+            
+            iconSize: [40, 40],
+            });
+
+    }
+    else if(is_ML_CP == 'CP'){
+        var binIcon = L.icon({
+            iconUrl: '{% static 'img/mlc.png' %}',
+            
+            iconSize: [40, 40],
+            });
+    }
+
+
+    else if(is_ML_CP == 'Bin'){
+        var binIcon = L.icon({
+            iconUrl: '{% static 'img/bin2.png' %}',
+            
+            iconSize: [40, 40],
+            });
+    }
+    
+
+    //console.log(lat+" "+lon)
+    var marker = L.marker([bin_lat,bin_lon], {icon: binIcon}).bindPopup(pop_data_bin).addTo(map);
+   // var marker = L.marker([vehicle[i][1],vehicle[i][2]], {icon: arrowIcon}).bindPopup(vehicle[i][0]).addTo(map);
+
+"{% endfor %}"
+
+console.log("BIN LAT IS: "+bin_arr_lat);
+console.log("BIN LON IS: "+bin_arr_lon);
+
+
+
+
+
+var myIcon = L.icon({
+    iconUrl: '{% static 'img/new_bin.png' %}',
+    iconSize: [1, 1],
+    iconAnchor: [1, 1],
+    popupAnchor: [0, -10]
+});           
+
+var control = L.Routing.control({
+    createMarker: function(i, waypoint, n) {
+            return L.marker(waypoint.latLng, {
+                routeWhileDragging: false,
+                icon: myIcon
+            });
+        },
+        waypoints: [
+          
+        ],
+        routeWhileDragging: true,
+    
+        
+        lineOptions: {
+            styles: [{
+                color: 	'#0096FF',
+                //color: 	'#5d25ab',
+                opacity: 5,
+                interactive: false,
+                weight: 8
+            }]
+            
+        }
+    
+    }).addTo(map); 
+
+    
+
+    var waypointsArray = []
+    
+   // length_val =  10;
+    for (var i = 0; i < bin_arr_lat.length; i++) {
+      control_val = L.latLng(bin_arr_lat[i],bin_arr_lon[i]);
+      waypointsArray.push(control_val);
+    }                                                                                      
+
+    control.setWaypoints(waypointsArray);
+
+    //L.Routing.lineArrow().addTo(control);
+
+
+  </script>
+</body>
+</html>
+

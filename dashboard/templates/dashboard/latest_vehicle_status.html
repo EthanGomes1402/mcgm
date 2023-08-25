@@ -64,8 +64,10 @@
                 <!-- Navbar Search -->
                 <div class="contact-bg">
                     <li class="nav-item">
-                        <h5 class="mb-0">Help Desk</h5>
-                    </li>
+                        <a class="nav-link" data-widget="" href="{% url 'helpdesk' %}" role="button">
+                         <b class="mb-0">Help Desk</b> 
+                        </a>
+                   </li>
                     <li class="nav-item">
                         <a class="nav-link" data-widget="" href="#" role="button">
                             <i class="fas fa-phone-alt"></i> +91 22 2925 0372 / +91 9769784764
@@ -182,7 +184,67 @@
                                         <p>Vehicle Route Report</p>
                                     </a>
                                 </li>
+
+                                <li class="nav-item">
+                                    <a href="{% url 'password_form' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Route Allocation</p>
+                                    </a>
+                                </li>
+
+                                
+                                
+                                <li class="nav-item">
+                                    <a href="{% url 'distance_report' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Distance Report</p>
+                                    </a>
+                                </li>
+
+
+                                <li class="nav-item">
+                                    <a href="{% url 'weight_report' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Weight Report</p>
+                                    </a>
+                                </li>
+
                                 {% if user.is_authenticated and user.is_superuser %}
+                                <li class="nav-item">
+                                    <a href="{% url 'view_bins' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Old Route Information</p>
+                                    </a>
+                                </li>
+                                
+                                {% endif %}
+
+                                <li class="nav-item">
+                                    <a href="{% url 'info_report_test' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Route Information</p>
+                                    </a>
+                                </li>
+                                
+                          
+                                <li class="nav-item">
+                                    <a href="{% url 'route_compliance' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Route Compliance</p>
+                                    </a>
+                                </li>
+
+                                {% if user.is_authenticated and user.is_superuser %}
+                                <li class="nav-item">
+                                    <a href="{% url 'wet_waste_report' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Wet Waste Report</p>
+                                   </a>
+                                </li>
+                                {% endif %}
+                               
+                                <!--
+                        
                                 <div class="ml-3 new-menu">
                                 <li class="sidebar-dropdown">
                                     <div class="dropdown">
@@ -328,7 +390,10 @@
                                   </div>
                                   </li>
                                   </div>
-                                {% endif %}
+                                 
+                                  -->
+
+                                
                             </ul>
                         </li>
 
@@ -531,68 +596,223 @@
                 <div class="container-fluid">
                     <div class="row">
                         <div class="col-md-6 vehicle-summary">
-                            <div class="card mb-5" style = "margin-left: 55%; width: 100%;">
+                            <div class="card mb-5" style = " width: 1000px;">
                                 <div class="card-header">
                                     <h3 class="card-title">All Vehicle Summary</h3> 
-
+                                    
                                 </div>
 
 
 
                             <div class="progress-group">
-                                MC
-                                <span class="float-right"><b id = "mccount"></b></span>
+                                Refuse Mini Compactor
+                                <span class="float-right">Total:  <b id = "mccount"></b></span>
                                 <div class="progress progress-sm">
-                                    <div id = "mccountpercent" class="progress-bar bg-primary" ></div>
+                                    <div id = "mccountpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
                                 </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="refuse_mini_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="refuse_mini_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "refuse_mini_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "refuse_mini_off"; style="color:#dc3545"></b></span>
                             </div>
 
                             <div class="progress-group">
-                                LC
-                                <span class="float-right"><b id = "lccount"></b></span>
+                                Refuse Compactor
+                                <span class="float-right">Total:  <b id = "lccount"></b></span>
                                 <div class="progress progress-sm">
-                                    <div id = "lccountpercent" class="progress-bar bg-danger" ></div>
+                                    <div id = "lccountpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
                                 </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="refuse_com_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="refuse_com_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "refuse_com_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "refuse_com_off"; style="color:#dc3545"></b></span>
                             </div>
 
 
                             <div class="progress-group">
-                                SCV
-                                <span class="float-right"><b id = "scvcount"></b></span>
+                                         Small Closed Vehicle
+                                <span class="float-right">Total:  <b id = "scvcount"></b></span>
                                 <div class="progress progress-sm">
-                                    <div id = "scvcountpercent" class="progress-bar  bg-success" ></div>
+                                    <div id = "scvcountpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
                                 </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="small_closed_veh_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="small_closed_veh_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "small_closed_veh_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "small_closed_veh_off"; style="color:#dc3545"></b></span>
                             </div>
+
+
                             <div class="progress-group">
-                                WW
-                                <span class="float-right"><b id = "wwcount"></b></span>
+                                Watch and Ward
+                                <span class="float-right">Total:  <b id = "wwcount"></b></span>
                                 <div class="progress progress-sm">
-                                    <div id = "wwcountpercent" class="progress-bar bg-warning" ></div>
+                                    <div id = "wwcountpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
                                 </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="watch_and_ward_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="watch_and_ward_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "watch_and_ward_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "watch_and_ward_off"; style="color:#dc3545"></b></span>
                             </div>
+
+
                             <div class="progress-group">
-                                DW
-                                <span class="float-right"><b id = "dwcount"></b></span>
+                                Tempo
+                                <span class="float-right">Total:  <b id = "dwcount"></b></span>
                                 <div class="progress progress-sm">
-                                    <div id = "dwcountpercent" class="progress-bar bg-secondary" ></div>
+                                    <div id = "dwcountpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
                                 </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="tempo_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="tempo_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "tempo_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "tempo_off"; style="color:#dc3545"></b></span>
                             </div>
+                            
                             <div class="progress-group">
-                                SW
-                                <span class="float-right"><b id = "swcount"></b></span>
+                                Side Loading Compactor
+                                <span class="float-right">Total:  <b id = "slcount"></b></span>
                                 <div class="progress progress-sm">
-                                    <div id = "swcountpercent" class="progress-bar bg-info" ></div>
+                                    <div id = "slcountpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
                                 </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="side_loader_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="side_loader_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "side_loader_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "side_loader_off"; style="color:#dc3545"></b></span>
+                            </div>
+
+
+                            <div class="progress-group">
+                                Mechanical Power Sweeper
+                                <span class="float-right">Total:  <b id = "mpscount"></b></span>
+                                <div class="progress progress-sm">
+                                    <div id = "mpscountpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="mech_power_sw_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="mech_power_sw_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "mech_power_sw_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "mech_power_sw_off"; style="color:#dc3545"></b></span>
+                            </div>
+
+                            <div class="progress-group">
+                                Dumper
+                                <span class="float-right">Total:  <b id = "dmpcount"></b></span>
+                                <div class="progress progress-sm">
+                                    <div id = "dmpcountpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="dumper_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="dumper_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "dumper_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "dumper_off"; style="color:#dc3545"></b></span>
+                            </div>
+
+                            <div class="progress-group">
+                                Bakayantra (JCB)
+                                <span class="float-right">Total:  <b id = "jcbcount"></b></span>
+                                <div class="progress progress-sm">
+                                    <div id = "jcbcountpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="bakayantra_jcb_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="bakayantra_jcb_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "bakayantra_jcb_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "bakayantra_jcb_off"; style="color:#dc3545"></b></span>
                             </div>
                         
+
+                            <div class="progress-group">
+                                Compactor
+                                <span class="float-right">Total:  <b id = "compactorcount"></b></span>
+                                <div class="progress progress-sm">
+                                    <div id = "compactorcountpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="only_comp_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="only_comp_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "only_comp_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "only_comp_off"; style="color:#dc3545"></b></span>
+                            </div>
+
+                            <div class="progress-group">
+                                Beach Cleaning Machine
+                                <span class="float-right">Total:  <b id = "beach_cleaning_count"></b></span>
+                                <div class="progress progress-sm">
+                                    <div id = "beach_cleaning_countpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="beach_clean_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="beach_clean_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "beach_clean_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "beach_clean_off"; style="color:#dc3545"></b></span>
+                            </div>
                             
+
+                            <div class="progress-group">
+                                Tractor Trailer
+                                <span class="float-right">Total:  <b id = "tractor_trailer_count"></b></span>
+                                <div class="progress progress-sm">
+                                    <div id = "tractor_trailer_countpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="trac_trail_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="trac_trail_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "trac_trail_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "trac_trail_off"; style="color:#dc3545"></b></span>
+                            </div>
+
+                            <div class="progress-group">
+                                Steer Skid Loader
+                                <span class="float-right">Total:  <b id = "skid_loader_count"></b></span>
+                                <div class="progress progress-sm">
+                                    <div id = "skid_loader_countpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="str_sk_loader_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="str_sk_loader_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "str_sk_loader_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "str_sk_loader_off"; style="color:#dc3545"></b></span>
+                            </div>
 
                             <div class="progress-group">
                                 Other
                                 <span class="float-right"><b id = "othercount"></b></span>
                                 <div class="progress progress-sm">
-                                    <div id = "othercountpercent" class="progress-bar bg-info" ></div>
+                                    <div id = "othercountpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
                                 </div>
+
+
                             </div>
                             </div>
 
@@ -951,7 +1171,7 @@
             var c = "{{mccount}}";
             var d = "{{wwcount}}";
             var e = "{{dwcount}}";
-            var f = "{{swcount}}";
+            var f = "{{mpscount}}";
             var g = "{{othercount}}";
 
             var result = parseInt(a) + parseInt(b) + parseInt(c) + parseInt(d) + parseInt(e) + parseInt(f) + parseInt(g);
@@ -965,7 +1185,7 @@
             var scvcountpercent = (a/result)*100;
             var wwcountpercent = (d/result)*100;
             var dwcountpercent = (e/result)*100;
-            var swcountpercent = (f/result)*100;
+            var mpscountpercent = (f/result)*100;
             var othercountpercent = (g/result)*100;
 
             document.getElementById("mccountpercent").style.width = String(mccountpercent)+"%";
@@ -973,7 +1193,7 @@
             document.getElementById("scvcountpercent").style.width = String(scvcountpercent)+"%";
             document.getElementById("wwcountpercent").style.width = String(wwcountpercent)+"%";
             document.getElementById("dwcountpercent").style.width = String(dwcountpercent)+"%";
-            document.getElementById("swcountpercent").style.width = String(swcountpercent)+"%";
+            document.getElementById("mpscountpercent").style.width = String(mpscountpercent)+"%";
             document.getElementById("othercountpercent").style.width = String(othercountpercent)+"%"; */
         }
 
@@ -1233,9 +1453,58 @@ crossorigin=""></script>
                 var scvcount = 0;
                 var wwcount = 0;
                 var dwcount = 0;
-                var swcount = 0;
+                var slcount = 0;
+                var mpscount = 0;
+                var dmpcount = 0;
+                var jcbcount = 0;
+
+                //CHANGE
+                var compactorcount = 0;
+                var beach_cleaning_count = 0;
+                var tractor_trailer_count = 0;
+                var skid_loader_count = 0;
                 var othercount = 0;
                 var totalcount = 0;
+
+                var mccountonline = 0;   //Trial
+                var mccountoffline = 0; 
+
+                var lccountonline = 0;
+                var lccountoffline = 0;
+
+                var scvcountonline = 0;
+                var scvcountoffline = 0;
+
+                var wwcountonline = 0;
+                var wwcountoffline = 0;
+
+                var dwcountonline = 0;
+                var dwcountoffline = 0;
+
+                var slcountonline = 0;
+                var slcountoffline = 0;
+
+                var mpscountonline = 0;
+                var mpscountoffline = 0;
+
+                var dmpcountonline = 0;
+                var dmpcountoffline = 0;
+
+                var jcbcountonline = 0;
+                var jcbcountoffline = 0;
+
+                ////////////////////
+                var compactorcountonline = 0;
+                var compactorcountoffline = 0;
+
+                var beach_cleaning_countonline = 0;
+                var beach_cleaning_countoffline = 0;
+
+                var tractor_trailer_countonline = 0;
+                var tractor_trailer_countoffline = 0;
+
+                var skid_loader_countonline = 0;
+                var skid_loader_countoffline = 0;
 
                 {% for each_entry in all_offline_entries reversed %}
                 
@@ -1272,18 +1541,34 @@ crossorigin=""></script>
 
 
                 //counting types of vehicles here:
-                if(cell3.innerHTML == "MC" || cell3.innerHTML == "mc")
-                {mccount++;}
-                else if(cell3.innerHTML == "LC" || cell3.innerHTML == "lc")
-                {lccount++;}
-                else if(cell3.innerHTML == "SCV" || cell3.innerHTML == "scv")
-                {scvcount++;}
-                else if(cell3.innerHTML == "WW" || cell3.innerHTML == "ww")
-                {wwcount++;}
-                else if(cell3.innerHTML == "DW" || cell3.innerHTML == "dw")
-                {dwcount++;}
-                else if(cell3.innerHTML == "SW" || cell3.innerHTML == "sw")
-                {swcount++;}
+                if(cell3.innerHTML == "Refuse_Mini_Compactor" || cell3.innerHTML == "refuse_mini_compactor")
+                {mccountoffline++;}
+                else if(cell3.innerHTML == "Refuse_Compactor" || cell3.innerHTML == "refuse_compactor")
+                {lccountoffline++;}
+                else if(cell3.innerHTML == "Small_Closed_Vehicle" || cell3.innerHTML == "small_closed_vehicle")
+                {scvcountoffline++;}
+                else if(cell3.innerHTML == "Ward_and_Watch" || cell3.innerHTML == "ward_and_watch")
+                {wwcountoffline++;}
+                else if(cell3.innerHTML == "Tempo" || cell3.innerHTML == "tempo")
+                {dwcountoffline++;}
+                else if(cell3.innerHTML == "Side_Loading_Compactor" || cell3.innerHTML == "side_loading_compactor")
+                {slcountoffline++;}
+                else if(cell3.innerHTML == "Mechanical_Power_Sweeper" || cell3.innerHTML == "mechanical_power_sweeper")
+                {mpscountoffline++;}
+                else if(cell3.innerHTML == "Dumper" || cell3.innerHTML == "dumper")
+                {dmpcountoffline++;}
+                else if(cell3.innerHTML == "Bakayantra(JCB)" || cell3.innerHTML == "bakayantra(JCB)")
+                {jcbcountoffline++;}
+                
+                //CHANGE
+                else if(cell3.innerHTML == "Compactor" || cell3.innerHTML == "compactor")
+                {compactorcountoffline++;}
+                else if(cell3.innerHTML == "Beach_Cleaning_Machine" || cell3.innerHTML == "beach_cleaning_machine")
+                {beach_cleaning_countoffline++;}
+                else if(cell3.innerHTML == "Tractor_Trailer" || cell3.innerHTML == "tractor_trailer")
+                {tractor_trailer_countoffline++;}
+                else if(cell3.innerHTML == "Steer_Skid_Loader" || cell3.innerHTML == "STEER_SKID_LOADER")
+                {skid_loader_countoffline++;}
                 else{othercount++;}
                 totalcount++;
 
@@ -1298,18 +1583,33 @@ crossorigin=""></script>
 
 
                 {% for each_entry in all_online_entries reversed %}
-                if("{{ each_entry.type }}" == "MC"   || "{{ each_entry.type }}" == "mc")
-                {mccount++;}
-                else if("{{ each_entry.type }}" == "LC" || "{{ each_entry.type }}" == "lc")
-                {lccount++;}
-                else if("{{ each_entry.type }}" == "SCV" || "{{ each_entry.type }}" == "scv")
-                {scvcount++;}
-                else if("{{ each_entry.type }}" == "WW" || "{{ each_entry.type }}" == "ww")
-                {wwcount++;}
-                else if("{{ each_entry.type }}" == "DW" || "{{ each_entry.type }}" == "dw")
-                {dwcount++;}
-                else if("{{ each_entry.type }}" == "SW" || "{{ each_entry.type }}" == "sw")
-                {swcount++;}
+                if("{{ each_entry.type }}" == "Refuse_Mini_Compactor"   || "{{ each_entry.type }}" == "refuse_mini_compactor")
+                {mccountonline++;}
+                else if("{{ each_entry.type }}" == "Refuse_Compactor" || "{{ each_entry.type }}" == "refuse_compactor")
+                {lccountonline++;}
+                else if("{{ each_entry.type }}" == "Small_Closed_Vehicle" || "{{ each_entry.type }}" == "small_closed_vehicle")
+                {scvcountonline++;}
+                else if("{{ each_entry.type }}" == "Ward_and_Watch" || "{{ each_entry.type }}" == "ward_and_watch")
+                {wwcountonline++;}
+                else if("{{ each_entry.type }}" == "Side_Loading_Compactor" || "{{ each_entry.type }}" == "side_loading_compactor")
+                {slcountonline++;}
+                else if("{{ each_entry.type }}" == "Tempo" || "{{ each_entry.type }}" == "tempo")
+                {dwcountonline++;}
+                else if("{{ each_entry.type }}" == "Mechanical_Power_Sweeper" || "{{ each_entry.type }}" == "mechanical_power_sweeper")
+                {mpscountonline++;}
+                else if("{{ each_entry.type }}" == "Dumper" || "{{ each_entry.type }}" == "dumper")
+                {dmpcountonline++;}
+                else if("{{ each_entry.type }}" == "Bakayantra(JCB)" || "{{ each_entry.type }}" == "bakayantra(JCB)")
+                {jcbcountonline++;}
+
+                else if("{{ each_entry.type }}" == "Compactor" || "{{ each_entry.type }}" == "Compactor")
+                {compactorcountonline++;}
+                else if("{{ each_entry.type }}" == "Beach_Cleaning_Machine" || "{{ each_entry.type }}" == "beach_cleaning_machine")
+                {beach_cleaning_countonline++;}
+                else if("{{ each_entry.type }}" == "Tractor_Trailer" || "{{ each_entry.type }}" == "tractor_trailer")
+                {tractor_trailer_countonline++;}
+                else if("{{ each_entry.type }}" == "Steer_Skid_Loader" || "{{ each_entry.type }}" == "STEER_SKID_LOADER")
+                {skid_loader_countonline++;}
                 else
                 {othercount++;}
                 totalcount++;
@@ -1319,16 +1619,132 @@ crossorigin=""></script>
 
                 {% endfor %}
 
+                mccount = mccountoffline + mccountonline;
+                lccount = lccountoffline + lccountonline;
+                scvcount = scvcountoffline + scvcountonline;
+                wwcount = wwcountoffline + wwcountonline;
+                dwcount = dwcountoffline + dwcountonline;
+                slcount = slcountoffline + slcountonline;
+                mpscount = mpscountoffline + mpscountonline;
+                dmpcount = dmpcountoffline + dmpcountonline;
+                jcbcount = jcbcountoffline + jcbcountonline;
 
+                //
+                compactorcount = compactorcountoffline + compactorcountonline;
+                beach_cleaning_count = beach_cleaning_countoffline + beach_cleaning_countonline;
+                tractor_trailer_count = tractor_trailer_countoffline + tractor_trailer_countonline;
+                skid_loader_count = skid_loader_countoffline + skid_loader_countonline;
+                
+                ////////////////////////////
+
+                var refuse_mini_off = mccountoffline;
+                var refuse_mini_on = mccountonline;
+
+                var refuse_com_off = lccountoffline;
+                var refuse_com_on = lccountonline;
+
+                var small_closed_veh_off = scvcountoffline;
+                var small_closed_veh_on = scvcountonline;
+                
+                var watch_and_ward_off = wwcountoffline;
+                var watch_and_ward_on = wwcountonline;
+
+                var tempo_off = dwcountoffline;
+                var tempo_on = dwcountonline;
+
+                var side_loader_off = slcountoffline;
+                var side_loader_on = slcountonline;
+
+                var mech_power_sw_off = mpscountoffline;
+                var mech_power_sw_on = mpscountonline;
+
+                var dumper_off = dmpcountoffline;
+                var dumper_on = dmpcountonline;
+
+                var bakayantra_jcb_off = jcbcountoffline;
+                var bakayantra_jcb_on = jcbcountonline;
+
+
+                //
+                var only_comp_off = compactorcountoffline;
+                var only_comp_on = compactorcountonline;
+
+                var beach_clean_off = beach_cleaning_countoffline;
+                var beach_clean_on = beach_cleaning_countonline;
+                
+                var trac_trail_off = tractor_trailer_countoffline;
+                var trac_trail_on = tractor_trailer_countonline;
+
+                var str_sk_loader_off = skid_loader_countoffline;
+                var str_sk_loader_on = skid_loader_countonline;
+                ///////////////////////////////
 
                 var mccountpercent = (mccount/totalcount)*100;
                 var lccountpercent = (lccount/totalcount)*100;
                 var scvcountpercent = (scvcount/totalcount)*100;
                 var wwcountpercent = (wwcount/totalcount)*100;
                 var dwcountpercent = (dwcount/totalcount)*100;
-                var swcountpercent = (swcount/totalcount)*100;
+                var slcountpercent = (slcount/totalcount)*100;
+                var mpscountpercent = (mpscount/totalcount)*100;
+                var dmpcountpercent = (dmpcount/totalcount)*100;
+                var jcbcountpercent = (jcbcount/totalcount)*100;
+
+                //change
+                var compactorcountpercent = (compactorcount/totalcount)*100;
+                var beach_cleaning_countpercent = (beach_cleaning_count/totalcount)*100;
+                var tractor_trailer_countpercent = (tractor_trailer_count/totalcount)*100;
+                var skid_loader_countpercent = (skid_loader_count/totalcount)*100;
+
+
                 var othercountpercent = (othercount/totalcount)*100;
 
+
+                var refuse_mini_off_percent = (refuse_mini_off/totalcount)*100;
+                var refuse_mini_on_percent = (refuse_mini_on/totalcount)*100;
+
+                var refuse_com_off_percent = (refuse_com_off/totalcount)*100;
+                var refuse_com_on_percent = (refuse_com_on/totalcount)*100;
+
+                var small_closed_veh_off_percent = (small_closed_veh_off/totalcount)*100;
+                var small_closed_veh_on_percent = (small_closed_veh_on/totalcount)*100;
+
+                var watch_and_ward_off_percent = (watch_and_ward_off/totalcount)*100;
+                var watch_and_ward_on_percent = (watch_and_ward_on/totalcount)*100;
+
+                var tempo_off_percent = (tempo_off/totalcount)*100;
+                var tempo_on_percent = (tempo_on/totalcount)*100;
+
+                
+                var side_loader_off_percent = (side_loader_off/totalcount)*100;
+                var side_loader_on_percent = (side_loader_on/totalcount)*100;
+
+                var mech_power_sw_off_percent = (mech_power_sw_off/totalcount)*100;
+                var mech_power_sw_on_percent = (mech_power_sw_on/totalcount)*100;
+
+                var dumper_off_percent = (dumper_off/totalcount)*100;
+                var dumper_on_percent = (dumper_on/totalcount)*100;
+
+               
+
+                var bakayantra_jcb_off_percent = (bakayantra_jcb_off/totalcount)*100;
+                var bakayantra_jcb_on_percent = (bakayantra_jcb_on/totalcount)*100;
+
+
+                //
+                var only_comp_off_percent = (only_comp_off/totalcount)*100;
+                var only_comp_on_percent = (only_comp_on/totalcount)*100;
+
+
+                var beach_clean_off_percent = (beach_clean_off/totalcount)*100;
+                var beach_clean_on_percent = (beach_clean_on/totalcount)*100;
+
+                var trac_trail_off_percent = (trac_trail_off/totalcount)*100;
+                var trac_trail_on_percent = (trac_trail_on/totalcount)*100;
+
+                var str_sk_loader_off_percent = (str_sk_loader_off/totalcount)*100;
+                var str_sk_loader_on_percent = (str_sk_loader_on/totalcount)*100;
+
+                /////////////////////////////////
 
 
                 document.getElementById("mccountpercent").style.width = String(mccountpercent)+"%";
@@ -1336,11 +1752,67 @@ crossorigin=""></script>
                 document.getElementById("scvcountpercent").style.width = String(scvcountpercent)+"%";
                 document.getElementById("wwcountpercent").style.width = String(wwcountpercent)+"%";
                 document.getElementById("dwcountpercent").style.width = String(dwcountpercent)+"%";
-                document.getElementById("swcountpercent").style.width = String(swcountpercent)+"%";
+                document.getElementById("slcountpercent").style.width = String(slcountpercent)+"%";
+                document.getElementById("mpscountpercent").style.width = String(mpscountpercent)+"%";
+                document.getElementById("dmpcountpercent").style.width = String(dmpcountpercent)+"%";
+                document.getElementById("jcbcountpercent").style.width = String(jcbcountpercent)+"%";
+
+                //CHANGE
+                document.getElementById("compactorcountpercent").style.width = String(compactorcountpercent)+"%";
+                document.getElementById("beach_cleaning_countpercent").style.width = String(beach_cleaning_countpercent)+"%";
+                document.getElementById("tractor_trailer_countpercent").style.width = String(tractor_trailer_countpercent)+"%";
+                document.getElementById("skid_loader_countpercent").style.width = String(skid_loader_countpercent)+"%";
+
                 document.getElementById("othercountpercent").style.width = String(othercountpercent)+"%";
 
                 /* var element = document.getElementById("maploc");
                 element.className = "area"; */
+                document.getElementById("refuse_mini_off_percent").style.width = String(refuse_mini_off_percent)+"%";
+                document.getElementById("refuse_mini_on_percent").style.width = String(refuse_mini_on_percent)+"%";
+
+                document.getElementById("refuse_com_off_percent").style.width = String(refuse_com_off_percent)+"%";
+                document.getElementById("refuse_com_on_percent").style.width = String(refuse_com_on_percent)+"%";
+ 
+
+                document.getElementById("small_closed_veh_off_percent").style.width = String(small_closed_veh_off_percent)+"%";
+                document.getElementById("small_closed_veh_on_percent").style.width = String(small_closed_veh_on_percent)+"%";
+
+                document.getElementById("watch_and_ward_off_percent").style.width = String(watch_and_ward_off_percent)+"%";
+                document.getElementById("watch_and_ward_on_percent").style.width = String(watch_and_ward_on_percent)+"%";
+
+                document.getElementById("tempo_off_percent").style.width = String(tempo_off_percent)+"%";
+                document.getElementById("tempo_on_percent").style.width = String(tempo_on_percent)+"%";
+
+                document.getElementById("side_loader_off_percent").style.width = String(side_loader_off_percent)+"%";
+                document.getElementById("side_loader_on_percent").style.width = String(side_loader_on_percent)+"%";
+
+                document.getElementById("mech_power_sw_off_percent").style.width = String(mech_power_sw_off_percent)+"%";
+                document.getElementById("mech_power_sw_on_percent").style.width = String(mech_power_sw_on_percent)+"%";
+
+                document.getElementById("dumper_off_percent").style.width = String(dumper_off_percent)+"%";
+                document.getElementById("dumper_on_percent").style.width = String(dumper_on_percent)+"%";
+
+                document.getElementById("bakayantra_jcb_off_percent").style.width = String(bakayantra_jcb_off_percent)+"%";
+                document.getElementById("bakayantra_jcb_on_percent").style.width = String(bakayantra_jcb_on_percent)+"%";
+
+                
+                //
+                document.getElementById("only_comp_off_percent").style.width = String(only_comp_off_percent)+"%";
+                document.getElementById("only_comp_on_percent").style.width = String(only_comp_on_percent)+"%";
+
+                document.getElementById("beach_clean_off_percent").style.width = String(beach_clean_off_percent)+"%";
+                document.getElementById("beach_clean_on_percent").style.width = String(beach_clean_on_percent)+"%";
+
+
+                document.getElementById("trac_trail_off_percent").style.width = String(trac_trail_off_percent)+"%";
+                document.getElementById("trac_trail_on_percent").style.width = String(trac_trail_on_percent)+"%";
+
+ 
+                document.getElementById("str_sk_loader_off_percent").style.width = String(str_sk_loader_off_percent)+"%";
+                document.getElementById("str_sk_loader_on_percent").style.width = String(str_sk_loader_on_percent)+"%";
+
+
+                ///////////////////
                 document.getElementById("totalvehiclecount_heading").innerHTML = totalcount;
                 document.getElementById("allvehiclesummary_heading").innerHTML = totalcount;
 
@@ -1349,8 +1821,59 @@ crossorigin=""></script>
                 document.getElementById("scvcount").innerHTML = scvcount;
                 document.getElementById("wwcount").innerHTML = wwcount;
                 document.getElementById("dwcount").innerHTML = dwcount;
-                document.getElementById("swcount").innerHTML = swcount;
+                document.getElementById("slcount").innerHTML = slcount;
+                document.getElementById("mpscount").innerHTML = mpscount;
+                document.getElementById("dmpcount").innerHTML = dmpcount;
+                document.getElementById("jcbcount").innerHTML = jcbcount;
+
+                //CHANGE
+                document.getElementById("compactorcount").innerHTML = compactorcount;
+                document.getElementById("beach_cleaning_count").innerHTML = beach_cleaning_count;
+                document.getElementById("tractor_trailer_count").innerHTML = tractor_trailer_count;
+                document.getElementById("skid_loader_count").innerHTML = skid_loader_count;
+
                 document.getElementById("othercount").innerHTML = othercount;
+
+                document.getElementById("refuse_mini_off").innerHTML = refuse_mini_off;
+                document.getElementById("refuse_mini_on").innerHTML = refuse_mini_on;
+
+                document.getElementById("refuse_com_off").innerHTML = refuse_com_off;
+                document.getElementById("refuse_com_on").innerHTML = refuse_com_on;
+
+                document.getElementById("small_closed_veh_off").innerHTML = small_closed_veh_off;
+                document.getElementById("small_closed_veh_on").innerHTML = small_closed_veh_on;
+
+                document.getElementById("watch_and_ward_off").innerHTML = watch_and_ward_off;
+                document.getElementById("watch_and_ward_on").innerHTML = watch_and_ward_on;
+
+                document.getElementById("tempo_off").innerHTML = tempo_off;
+                document.getElementById("tempo_on").innerHTML = tempo_on;
+
+                document.getElementById("side_loader_off").innerHTML = side_loader_off;
+                document.getElementById("side_loader_on").innerHTML = side_loader_on;
+
+                document.getElementById("mech_power_sw_off").innerHTML = mech_power_sw_off;
+                document.getElementById("mech_power_sw_on").innerHTML = mech_power_sw_on;
+
+                document.getElementById("dumper_off").innerHTML = dumper_off;
+                document.getElementById("dumper_on").innerHTML = dumper_on;
+
+                document.getElementById("bakayantra_jcb_off").innerHTML = bakayantra_jcb_off;
+                document.getElementById("bakayantra_jcb_on").innerHTML = bakayantra_jcb_on;
+
+                //
+
+                document.getElementById("only_comp_off").innerHTML = only_comp_off;
+                document.getElementById("only_comp_on").innerHTML = only_comp_on;
+
+                document.getElementById("beach_clean_off").innerHTML = beach_clean_off;
+                document.getElementById("beach_clean_on").innerHTML = beach_clean_on;
+
+                document.getElementById("trac_trail_off").innerHTML = trac_trail_off;
+                document.getElementById("trac_trail_on").innerHTML = trac_trail_on;
+                
+                document.getElementById("str_sk_loader_off").innerHTML = str_sk_loader_off;
+                document.getElementById("str_sk_loader_on").innerHTML = str_sk_loader_on;
 
             }
 
@@ -1365,3 +1888,4 @@ crossorigin=""></script>
 </body>
 
 </html>
+

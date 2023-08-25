@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+	<h1>Bins</h1>
+{% endblock %}
+
+
+
+
+
+{% block content_title %}Route Information{% endblock %}
+{% block content %}
+
+
+
+  <div>
+    
+    
+      <a class="btn btn-info   px-3 ml-1" href="{% url 'upload_bins' %}"><b>Upload Route Info</b></a>   
+      <a class="btn btn-info   px-3 ml-1" href="https://swm.vtms.cleanupmumbai.com/static/pdfreports/template/Sample_Route_Info_Template.xlsx"><b>Sample Templates</b></a>
+     
+        
+     
+
+    </div>
+  
+  {% if view_bins %}
+ 
+  <button class="btn btn-danger  btn-sm px-3 ml-2" id="export_to_excel" style="float: right;">Export To Excel</button>
+ <!-- <button class="btn btn-danger  btn-sm px-3 ml-2" id="export_to_csv" style="float: right;">Export To CSV</button> -->
+  <button class="btn btn-danger  btn-sm px-3 ml-2" id="export_to_pdf" style="float: right;">Export To PDF</button>
+  <br>
+  <table class="table tablesorter" id="view_bins">
+    <thead class="thead-inverse">
+      <tr>
+        <th>Sr No</th>
+     <!--   <th>Location Code</th> -->
+        <th>Shift</th>
+        <th>Route Code</th>
+        <th>Route Name</th>
+        <th>Bins</th>
+        <th>Map View</th>
+        <th>Action</th>
+
+        
+
+      <!--  <th>Action</th> -->
+
+      </tr>
+    </thead>
+    <tbody>
+      {% for bin in view_bins %}
+        <tr>
+          <td>  {{ forloop.counter }} </td>
+          <td>{{ bin.shift }} </td>
+          <td>{{ bin.route_code }} </td>
+          <td>{{ bin.route_name }} </td>
+          <td> {{ bin.bin_count }} </td>
+          <td> <a href="{% url 'bin_mapview' param=bin.route_code %}"><img src="{% static 'img/location.png' %}"></a>  </td>
+
+       <!--   <td>{{ bin.bin_code }} </td> 
+          <td>{{ bin.bin_name }} </td>
+          <td>{{ bin.route_code}}</td>
+         <td>{{ bin.bin_location}}</td> -->
+
+
+         <!--
+
+            <td>  {{ forloop.counter }} </td>
+          <td>{{ allocated_route.shift }} </td>
+          <td>{{ allocated_route.route_code}}</td>
+          <td>{{ allocated_route.route_name}}</td>
+	        <td>{{ allocated_route.vehicle}}</td>
+         -->
+
+         <td>
+         <div class="btn-group btn-group-sm">
+          <a id="{{bin.route_code}}" href="#" class="btn btn-danger delete_route_info"><i class="fas fa-trash"></i></a>
+          </div>
+         </td>
+        
+
+        <!--  <td class="area mapview"><img src="{% static 'img/Bin.jpeg' %}"><span style="display:none;">19.057425,72.928246</span> </td> -->
+     <script>
+      var bin_count =  "{{bin.bin_count}}"
+       console.log("BIN COUNT IS: "+bin_count)
+     </script>
+       
+          <!--
+          <td>{{ vehicle.maker }} </td>
+          <td style="text-transform: uppercase;">{{ vehicle.vehicle_type }}</td>
+          <td>{{ vehicle.contractor }}</td>
+          <td> 
+            <td>-->
+
+          
+
+
+      
+        <div class="btn-group btn-group-sm">
+    
+        
+
+	    
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+	<h1>No Bins Added</h1>
+  {% endif %}
+
+
+
+
+
+
+
+
+
+
+
+{% endblock %}
+
+{% block js %}
+<script>
+  
+	$(document).ready(function(){
+	    $('table').tablesorter({theme:'metro-dark'});
+        $("a.delete_route_info").click(function () {
+            var id = $(this).attr('id');
+            console.log("ID is: "+id)
+            var $tr = $(this).closest('tr');
+
+            $.ajax({
+                type:'POST',
+                url:'{% url "delete_route_info" %}',
+                data: {
+                    'id': id
+                },
+                beforeSend: function(xhr) {
+                    xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+                },
+                success:function(res){
+                    $tr.find('td').fadeOut(1000,function(){
+                        $tr.remove();
+                    })	
+                },
+                error:function(a,b,c){
+                    alert(b);
+                    alert(c);
+                }
+            });
+        });
+
+		$("button#export_to_excel").click(function() {
+			var dNow = new Date();
+			var file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+			$("#view_bins").table2excel({
+				name: "view_bins",
+				filename: "view_bins_" + file_time_str + ".xlsx"//do not include extension
+			});
+		});
+	   
+     
+		$("button#export_to_pdf").click(function() {
+			$("#view_bins").tableHTMLExport({type:'pdf',filename:'view_bins.pdf'});
+		});
+	});
+
+  
+</script>
+{% endblock %}

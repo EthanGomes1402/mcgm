@@ -14,43 +14,46 @@ mycoord = SpatialReference(4326)
 trans = CoordTransform(gcoord, mycoord)
 
 VEHICLE_TYPE = (
-        ("DGV","Dog Van"),
-        ("BKV","Break Down"),
-        ("LC","Refuse Compactor"),
-        ("JCB","Bakayantra (JCB)"),
-        ("DMP","Dumper"),
-        ("MC","Refuse Mini Compactor"),
-        ("SUMO","Sumo"),
-        ("BUS","Bus"),
-        ("HERV","Hearse"),
-        ("AMB ","Ambulance"),
-        ("SCO","Scorpio"),
-        ("BOL","Bolero"),
-        ("CAR","Car"),
-        ("WAT","Water Tanker"),
-        ("MMO","Mobile Medical Opthalmic Van"),
-        ("RDV","Raid Van"),
-        ("BB","Blood Bank"),
-        ("DW","Dry Waste Tempo"),
-        ("TRUCK","Truck"),
-        ("CIMP","Cattle Impound Van"),
-        ("ENCR","Encrochment"),
-        ("MPS","Mechanical Power Sweeper"),
-        ("TEC","Mak Lifton (Tree Cutting)"),
-        ("WRE","Wrecker"),
-        ("HYVA","HYVA Prime Mover"),
-        ("CET","Cesspool Tanker"),
-        ("JEEP","Jeep"),
-        ("WW","Ward & Watch"),
-        ("MEV","Meatvan"),
-        ("SCV","Small Closed Vehicle"),
-        ("SL","Side Loading Compactor"),
-        ("FT","Tanker Fire Fighter"),
-        ("BCM","Beach Cleaning Machine"),
-        ("SSL","Steer Skid Loader"),
-        ("TT","Tractor Trailer"),
-        ("IV","Insecticide Vehicle"),
-    )
+        ("Dog_Van","Dog_Van"),
+        ("Break_Down","Break_Down"),
+        ("Refuse_Compactor","Refuse_Compactor"),
+        ("Bakayantra(JCB)","Bakayantra(JCB)"),
+        ("Dumper","Dumper"),
+        ("Refuse_Mini_Compactor","Refuse_Mini_Compactor"),
+        ("Sumo","Sumo"),
+        ("Bus","Bus"),
+        ("Hearse","Hearse"),
+        ("Ambulance","Ambulance"),
+        ("Scorpio","Scorpio"),
+        ("Bolero","Bolero"),
+        ("Car","Car"),
+        ("Water_Tanker","Water_Tanker"),
+        ("Mobile_Medical_Opthalmic_Van","Mobile_Medical_Opthalmic_Van"),
+        ("Raid_Van","Raid_Van"),
+        ("Blood_Bank","Blood_Bank"),
+        ("Dry_Waste_Tempo","Dry_Waste_Tempo"),
+        ("Truck","Truck"),
+        ("Cattle_Impound_Van","Cattle_Impound_Van"),
+        ("Encrochment","Encrochment"),
+        ("Mechanical_Power_Sweeper","Mechanical_Power_Sweeper"),
+        ("Mak_Lifton(Tree_Cutting)","Mak_Lifton(Tree_Cutting)"),
+        ("Wrecker","Wrecker"),
+        ("HYVA_Prime_Mover","HYVA_Prime_Mover"),
+        ("Cesspool_Tanker","Cesspool_Tanker"),
+        ("Jeep","Jeep"),
+        ("Ward_and_Watch","Ward_and_Watch"),
+        ("Meatvan","Meatvan"),
+        ("Small_Closed_Vehicle","Small_Closed_Vehicle"),
+        ("Side_Loading_Compactor","Side_Loading_Compactor"),
+        ("Tanker_Fire_Fighter","Tanker_Fire_Fighter"),
+        ("Beach_Cleaning_Machine","Beach_Cleaning_Machine"),
+        ("Steer_Skid_Loader","Steer_Skid_Loader"),
+        ("Tractor_Trailer","Tractor_Trailer"),
+        ("Insecticide_Vehicle","Insecticide_Vehicle"),
+        ("AQMRL","AQMRL"),
+        ("Compactor","Compactor"),
+        ("Litter_Picker","Litter_Picker"),
+       )
 
 SHIFT = (
         ('1', "Morning"),
@@ -63,7 +66,7 @@ class CustomManager(models.Manager):
             return super().get_queryset().filter(is_active=True)
 
 class Contractor(models.Model):
-    name         = models.CharField(max_length=20)
+    name         = models.CharField(max_length=100)
     user         = models.OneToOneField(User,on_delete=models.CASCADE,null=True)
     company_name = models.CharField(max_length=50)
     telephone    = models.CharField(max_length=20)
@@ -118,7 +121,7 @@ class Route(models.Model):
 
 class Vehicle(models.Model):
     plate_number      = models.CharField(max_length=20, unique=True)
-    vehicle_type      = models.CharField(max_length=10, choices=VEHICLE_TYPE,default='SCV')
+    vehicle_type      = models.CharField(max_length=100, choices=VEHICLE_TYPE,default='SCV')
     engine_number     = models.CharField(max_length=20, unique=True)
     chassis_number    = models.CharField(max_length=20, unique=True)
     contractor        = models.ForeignKey(Bmc_contractor,on_delete=models.CASCADE,null=True)

@@ -10,6 +10,11 @@ body:not(.layout-fixed) .main-sidebar .sidebar {
     height: 100vh;
 }
 
+.disabled {
+    pointer-events:none; //This makes it not clickable
+    opacity:0.6;         //This grays it out to look disabled
+}
+
 .dropdown-menu.show{
     background: #2a5faf;
 }

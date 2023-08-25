@@ -141,6 +141,8 @@ def get_quick_view_form_param(request):
     response_data['status'] = 'success'
     return HttpResponse(json.dumps(response_data),content_type="application/json")
 
+
+
 @login_required
 @user_passes_test(lambda user: user.is_superuser or (user.appuser.is_contractor or user.appuser.is_officer))
 def latest_vehicle_status_v2(request):
@@ -159,7 +161,7 @@ def latest_vehicle_status_v2(request):
     othercount                      = 0
     totalcount                      = 0
 
-
+    """
     #ajit's code block 1 starts - initializing the dictionary from txt file.
     mydict = {}
     filename = "../../../../../tmp/fulldata.txt"
@@ -168,7 +170,8 @@ def latest_vehicle_status_v2(request):
         key, value = line.split(":::")
         mydict[key] = value
     #ajit code block 1 ends here
-
+    """
+   
     iward = None
     if not request.user.is_superuser:
         if request.user.appuser.is_contractor:
@@ -288,7 +291,7 @@ def latest_vehicle_status_v3(request):
     
     
 
-    
+    """
     #ajit's code block 1 starts - initializing the dictionary from txt file.
     mydict = {}
     filename = "../../../../../tmp/fulldata.txt"
@@ -297,7 +300,7 @@ def latest_vehicle_status_v3(request):
         key, value = line.split(":::")
         mydict[key] = value
     #ajit code block 1 ends here
-    
+    """
 
     iward = None
     if not request.user.is_superuser:
@@ -310,8 +313,23 @@ def latest_vehicle_status_v3(request):
     iwardfilenamestr = ""
     #FOR WARD OWNER REQUESTS:
     if iward:
-
-        iwardfilenamestr = str(iward).replace("/","")
+        
+        
+        #ajit's code block 1 starts - initializing the dictionary from txt file.
+        mydict = {}
+        
+        iwardfilenamestr = str(iward).replace("/","") 
+        
+        #filename = "../../../../../tmp/"+ str(iwardfilenamestr)+ "_fulldata.txt"
+        filename = "/home/mcgm/Development/mcgm/mcgm/fulldata/fulldata.txt"
+        a_file = codecs.open(filename, encoding="utf-8")
+        for line in a_file:
+          key, value = line.split(":::")
+          mydict[key] = value
+        #ajit code block 1 ends here
+        
+        
+        
         timefilepath = "/home/mcgm/Development/mcgm/mcgm/dashboard/loaddatafast/ward_"+str(iwardfilenamestr)+"_updatetimestamp.txt"
 
         timenow = int(time.time())
@@ -420,6 +438,17 @@ def latest_vehicle_status_v3(request):
 
     #FOR SUPERUSER REQUESTS:
     else:
+        
+        #ajit's code block 1 starts - initializing the dictionary from txt file.
+        mydict = {}
+        filename = "/home/mcgm/Development/mcgm/mcgm/fulldata/fulldata.txt"
+        a_file = codecs.open(filename, encoding="utf-8")
+        for line in a_file:
+          key, value = line.split(":::")
+          mydict[key] = value
+        #ajit code block 1 ends here
+        
+        
         file_check_previousupdatetime = open("/home/mcgm/Development/mcgm/mcgm/dashboard/loaddatafast/superuserupdatetimestamp.txt", "r")
         timelastupdated = int(file_check_previousupdatetime.read())
         timenow = int(time.time())
@@ -629,8 +658,9 @@ def create_response_data_for_superuser():
 
     #start_time = time.time()
     #ajit's code block 1 starts - initializing the dictionary from txt file.
+    
     mydict = {}
-    filename = "../../../../../tmp/fulldata.txt"
+    filename = "/home/mcgm/Development/mcgm/mcgm/fulldata/fulldata.txt"
     a_file = codecs.open(filename, encoding="utf-8")
     for line in a_file:
         key, value = line.split(":::")
@@ -756,7 +786,12 @@ def create_response_data_for_warduser(iward):
 
 
     mydict = {}
-    filename = "../../../../../tmp/fulldata.txt"
+    
+    iwardfilenamestr = str(iward).replace("/","") 
+        
+    #filename = "../../../../../tmp/"+ str(iwardfilenamestr)+ "_fulldata.txt"
+    
+    filename = "/home/mcgm/Development/mcgm/mcgm/fulldata/fulldata.txt"
     a_file = codecs.open(filename, encoding="utf-8")
     for line in a_file:
         key, value = line.split(":::")

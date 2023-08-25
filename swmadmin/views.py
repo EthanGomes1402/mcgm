@@ -665,11 +665,11 @@ def upload_routes_and_bin_with_endpoints(request):
 def upload_stop_station_data(request):
     if request.method == 'POST':
         mykmlfile = request.FILES["excel_file"]
-        with open('/tmp/stop_stations.kml','wb+') as destination:
+        with open('/home/mcgm/Development/mcgm/mcgm/fulldata/stop_stations.kml','wb+') as destination:
             for chunk in mykmlfile.chunks():
                 destination.write(chunk)
 
-        ds = DataSource('/tmp/stop_stations.kml')
+        ds = DataSource('/home/mcgm/Development/mcgm/mcgm/fulldata/stop_stations.kml')
         for layer in ds:
             for feat in layer:
                 st_name = feat.get('name')
@@ -909,11 +909,11 @@ def upload_route_schedule_data(request):
 def upload_geos(request):
     if request.method == 'POST':
         mykmlfile = request.FILES["excel_file"]
-        with open('/tmp/geos.kml','wb+') as destination:
+        with open('/home/mcgm/Development/mcgm/mcgm/fulldata/geos.kml','wb+') as destination:
             for chunk in mykmlfile.chunks():
                 destination.write(chunk)
 
-        ds = DataSource('/tmp/geos.kml')
+        ds = DataSource('/home/mcgm/Development/mcgm/mcgm/fulldata/geos.kml')
         print ('--------'+ str(ds.layer_count) + '-------')
         print ('--------'+ str(ds[0].num_feat) + '--------')
         print ('--------'+ str(ds[0].geom_type.name) + '--------')
@@ -992,11 +992,11 @@ def upload_ward_contractor_mapping(request):
 def upload_ewd_data(request):
     if request.method == 'POST':
         mykmlfile = request.FILES["excel_file"]
-        with open('/tmp/ewds.kml','wb+') as destination:
+        with open('/home/mcgm/Development/mcgm/mcgm/fulldata/ewds.kml','wb+') as destination:
             for chunk in mykmlfile.chunks():
                 destination.write(chunk)
 
-        ds = DataSource('/tmp/ewds.kml')
+        ds = DataSource('/home/mcgm/Development/mcgm/mcgm/fulldata/ewds.kml')
         for layer in ds:
             for feat in layer:
                 #geom = feat.geom.clone()

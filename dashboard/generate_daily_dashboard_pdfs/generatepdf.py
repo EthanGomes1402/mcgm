@@ -20,7 +20,7 @@ for each_online in reversed(resultdict['data']['online']):
 
 onlinevehicle_count = count
 htmltemplatecontents = htmltemplatecontents.replace("totalonlinevehicles", str(onlinevehicle_count))
-if(count < 900):
+if(count < 1000):
     sendflag = 0
 else:
     sendflag = 1

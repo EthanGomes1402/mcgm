@@ -77,10 +77,67 @@ urlpatterns = [
     path('reports/get_bin_status_report', views.get_bin_status_report,name='get_bin_status_report'),
     path('reports/get_alert_report', views.get_alert_report,name='get_alert_report'),
     
+    #Weight Data Insertion
     path('reports/sendWeighEntryData',views.sendWeighEntryData,name='sendWeighEntryData'),
     path('reports/sendWeighExitData',views.sendWeighExitData,name='sendWeighExitData'),
   
-  
+    
+    #ROUTE ALLOCATION
+    path('route_allocation/',views.RouteAllocationListView.as_view(),name='route_allocation'),
+    path('route_allocation/add_route_allocation',views.RouteAllocationCreateView.as_view(),name='add_route_allocation'),
+    path('upload_allocation_data/',views.upload_allocation_data,name='upload_allocation_data'),
+    path('ajax/delete_allocation/',views.delete_allocation,name='delete_allocation'), 
+    path('route_allocation/edit/<int:pk>/',views.AllocationUpdateView.as_view(),name='edit_route_allocation'),
+    path('login_form',views.password_form,name='password_form'),
+    #************
+    
+    path('reports/distance_report/',views.distance_report,name='distance_report'),
+    
+    path('reports/weight_report/',views.weight_report,name='weight_report'),
+    path('reports/route_compliance/',views.route_compliance,name='route_compliance'),
+    
+    
+    
+    
+    #HELPDESK URLS
+    path('helpdesk/add',views.QueryCreateView.as_view(),name='helpdesk_add'),
+    path('helpdesk/',views.HelpdeskListView.as_view(),name='helpdesk'),
+    path('helpdesk/query_response/<int:pk>/',views.QueryResponseView.as_view(),name='query_response'),
+    
+    path('reports/get_vehicle_travel_history_2/<str:param>/',views.get_vehicle_travel_history_2,name='get_vehicle_travel_history_2'),
+    
+    path('reports/check_params/<str:param>/', views.check_params, name='check_params'),
+    
+    #BINS
+    path('view_bins/',views.BinListView.as_view(),name='view_bins'),
+    path('upload_bins/',views.upload_bins,name='upload_bins'),
+    path('ajax/delete_route_info/',views.delete_route_info,name='delete_route_info'), 
+    
+    path('reports/bin_mapview/<str:param>/',views.bin_mapview,name='bin_mapview'),
+    
+    #Wet Waste Report
+    path('reports/wet_waste_report',views.wet_waste_report,name='wet_waste_report'),
+    
+    #Test_Views
+    path('demo_route_info/',views.demo_route_info,name='demo_route_info'),
+    
+    path('reports/test_temp',views.my_view,name='my_view'),
+    
+    path('reports/test_temp2',views.my_test_view,name='my_test_view'),
+    
+    path('reports/map_test_temp',views.map_test_temp,name='map_test_temp'),
+    
+    path('info_report_test/',views.info_report_test,name='info_report_test'),
+    
+    path('new_routecomp_upload_bins/',views.new_routecomp_upload_bins,name='new_routecomp_upload_bins'),
+    
+    
+    #LOCATION REPORT
+    path('vehicle_location_report',views.vehicle_location_report,name='vehicle_location_report'),
+    
+    path('reports/vehicle_location_ps2pdf', views.vehicle_location_ps2pdf, name = 'vehicle_location_ps2pdf'),
+    
+    
     
 ##URL :- http://59.163.51.238:8081/VTMSRESTService/rest/sendWeighEntryData    
 

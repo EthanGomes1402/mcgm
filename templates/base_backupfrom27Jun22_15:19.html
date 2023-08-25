@@ -1,0 +1,571 @@
+{% load static %}
+{% load bootstrap4 %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>VTMS</title>
+	<link href="https://use.fontawesome.com/releases/v5.0.6/css/all.css" rel="stylesheet">
+	<link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+	<link rel="stylesheet" href="{% static 'css/style.css' %}">
+	<link rel="stylesheet" href="{% static 'css/jquery-ui.css' %}">
+	<link rel="stylesheet" href="{% static 'css/leaflet.css' %}"/>
+	<link rel="stylesheet" href="{% static 'css/style.css' %}"/> 
+	<!--<link rel="stylesheet" href="{% static 'css/bootstrap-datetimepicker.min.css' %}"/>-->
+	<link rel="stylesheet" href="{% static 'css/theme_default.css' %}"/>
+	<link rel="stylesheet" href="{% static 'css/MarkerCluster.css' %}"/>
+	<link rel="stylesheet" href="{% static 'css/MarkerCluster.Default.css' %}"/>
+
+    <link rel="stylesheet" href="{% static 'css2/calendar.css' %}">
+    <link rel="stylesheet" href="{% static 'css2/all.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css2/OverlayScrollbars.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css2/adminlte.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css2/style.css' %}"> 
+
+ <link rel="stylesheet" href="{% static 'css2/daterangepicker.css' %}"/>
+ <link rel="stylesheet" href="{% static 'css2/datepicker.css' %}"/>
+ <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+	{% block head %}
+	{% endblock %}
+	{% block extrastylesheet %}
+	{% endblock %}
+</head>
+
+
+<body class="hold-transition sidebar-mini layout-navbar-fixed">
+
+    {% block body %}	
+        <!-- Site wrapper -->
+    <div class="wrapper">
+        <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+                </li>
+            </ul>
+
+<!-- Right navbar links -->
+<ul class="navbar-nav ml-auto">
+    <!-- Navbar Search -->
+    <div class="contact-bg">
+        <li class="nav-item">
+            <h5 class="mb-0">Help Desk</h5>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-widget="" href="#" role="button">
+                <i class="fas fa-phone-alt"></i> +91 22 2925 0372 / +91 9769784764
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-widget="" href="mailto:vtms-support@qdnet.com" role="button">
+                <i class="fas fa-envelope"></i> vtms-support@qdnet.com
+            </a>
+        </li>
+    </div>
+
+
+    <li class="nav-item">
+        <a class="nav-link" data-widget="fullscreen" href="#" role="button">
+            <i class="fas fa-expand-arrows-alt"></i>
+        </a>
+    </li>
+    <li class="nav-item dropdown">
+        <a class="nav-link" data-toggle="" href="{% url 'logout' %}">
+          Welcome {{ user.username }}  | <b class="logout">Logout</b>
+          
+        </a>
+    </li>
+
+</ul>
+</nav>
+
+
+<aside class="main-sidebar sidebar-dark-primary elevation-4">
+    <!-- Brand Logo -->
+    <a href="#" class="brand-link elevation-4">
+        <img src="{% static 'images2/mcgm-logo.png' %}" alt="VTMS" class="brand-image img-circle elevation-3" width="150">
+        <span class="brand-text font-weight-light">VTMS</span>
+    </a>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+            <div class="image">
+                <img src="{% static 'images2/user.jpg' %}" class="img-circle elevation-2" alt="User Image">
+            </div>
+            <div class="info">
+                <a href="#" class="d-block">{{ user.username }}</a>
+            </div>
+        </div>
+
+        <!-- SidebarSearch Form -->
+    <!--    <div class="form-inline">
+            <div class="input-group" data-widget="sidebar-search">
+                <input class="form-control form-control-sidebar" type="search" placeholder="Search" aria-label="Search"> 
+                <div class="input-group-append">
+                    <button class="btn btn-sidebar">
+      <i class="fas fa-search fa-fw"></i>
+    </button>
+                </div>
+            </div>
+        </div> -->
+
+        <!-- Sidebar Menu -->
+        <nav class="mt-2">
+            <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon"><img src="{% static 'images2/dashboard.png' %}" alt="Dashboard" width="25"></i>
+                        <p>Dashboard
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="{% url 'latest_vehicle_status' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Vehicle Status</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{% url 'quick_view' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Map View Report</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon"><img src="{% static 'images2/report.png' %}" alt="Report" width="25"></i>
+                        <p>
+                            Report
+                            <i class="fas fa-angle-left right"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="{% url 'vehicle_route_report' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Vehicle Route Report</p>
+                            </a>
+                        </li>
+                        {% if user.is_authenticated and user.is_superuser %}
+                        <div class="ml-3 new-menu">
+                        <li class="sidebar-dropdown">
+                            <div class="dropdown">
+                              <a href="#" class="dropdown-toggle" data-toggle="dropdown">Alert</a>
+                              <div class="dropdown-menu">
+                                  <a href="{% url 'alert_geofence' %}" class="dropdown-item">Geofence</a>
+                                  <a href="{% url 'alert_power_disconnect' %}" class="dropdown-item">Power Disconnect</a>
+                                  <a href="{% url 'alert_route_deviation' %}" class="dropdown-item">Route Deviation</a>
+                                  <a href="{% url 'alert_speed' %}" class="dropdown-item">Speed</a>
+                              </div>
+                          </div>
+                          </li>
+        
+                          <li class="sidebar-dropdown">
+                            <div class="dropdown">
+                              <a href="#" class="dropdown-toggle" data-toggle="dropdown">Bin Status</a>
+                              <div class="dropdown-menu">
+                                  <a href="{% url 'bin_collection_status' %}" class="dropdown-item">Bin Collection Status</a>
+                                  <a href="{% url 'bin_rfid_tag_status' %}" class="dropdown-item">Bin RFID Tag Status</a>
+                              </div>
+                          </div>
+                          </li>
+                          <li class="sidebar-dropdown">
+                            <div class="dropdown">
+                              <a href="#" class="dropdown-toggle" data-toggle="dropdown">Garage Traction</a>
+                              <div class="dropdown-menu">
+                                  <a href="{% url 'garage_traction' %}" class="dropdown-item">Garage Traction</a>
+                              </div>
+                            </div>
+                          </li>
+                          <li class="sidebar-dropdown">
+                            <div class="dropdown">
+                              <a href="#" class="dropdown-toggle" data-toggle="dropdown">Landfill Site Usage</a>
+                              <div class="dropdown-menu">
+                                  <a href="{% url 'land_fill_site_usage_current' %}" class="dropdown-item">Dmpgnd by current date</a>
+                                  <a href="{% url 'land_fill_site_usage_dumping_groundwise' %}" class="dropdown-item">Garbage Traction by Dmpgnd</a>
+                                  <a href="{% url 'land_fill_site_usage_weightwise' %}" class="dropdown-item">Weight Brought In At DMPGND</a>
+                              </div>
+                          </div>
+                          </li>
+        
+                          <li class="sidebar-dropdown">
+                            <div class="dropdown">
+                              <a href="#" class="dropdown-toggle" data-toggle="dropdown">Location </a>
+                              <div class="dropdown-menu">
+                                  <a href="{% url 'location_check_post' %}" class="dropdown-item">Checkpost</a>
+                                  <a href="{% url 'location_dumping_ground' %}" class="dropdown-item">DMPGND</a>
+                                  <a href="{% url 'location_garage' %}" class="dropdown-item">Garage</a>
+                                  <a href="{% url 'location_mlc' %}" class="dropdown-item">MLC</a>
+                                  <a href="{% url 'location_transfer_station' %}" class="dropdown-item">TS</a>
+                              </div>
+                          </div>
+                          </li>
+        
+                          <li class="sidebar-dropdown">
+                            <div class="dropdown">
+                              <a href="#" class="dropdown-toggle" data-toggle="dropdown">POI</a>
+                              <div class="dropdown-menu">
+                                  <a href="{% url 'poi_departmental_offices' %}" class="dropdown-item">Departmental Offices</a>
+                                  <a href="{% url 'poi_departmental_workshops' %}" class="dropdown-item">Departmental Workshops</a>
+                                  <a href="{% url 'poi_dmpgnd' %}" class="dropdown-item">Dumping Grounds</a>
+                                  <a href="{% url 'poi_garbage_collection_points' %}" class="dropdown-item">Garbage Collection Points</a>
+                                  <a href="{% url 'poi_mlcs' %}" class="dropdown-item">MLC</a>
+                                  <a href="{% url 'poi_other_points' %}" class="dropdown-item">Other Points</a>
+                                  <a href="{% url 'poi_station_locations' %}" class="dropdown-item">Station Locations</a>
+                                  <a href="{% url 'poi_swm_garages' %}" class="dropdown-item">SWM Garages</a>
+                                  <a href="{% url 'poi_swm_offices' %}" class="dropdown-item">SWM Offices</a>
+                                  <a href="{% url 'poi_transfer_stations' %}" class="dropdown-item">Transfer Stations</a>
+                                  <a href="{% url 'poi_ward_offices' %}" class="dropdown-item">Wards Offices</a>
+                                  <a href="{% url 'poi_work_sites' %}" class="dropdown-item">Work Sites</a>
+                              </div>
+                          </div>
+                          </li>
+        
+                          <li class="sidebar-dropdown">
+                            <div class="dropdown">
+                              <a href="#" class="dropdown-toggle" data-toggle="dropdown">Register</a>
+                              <div class="dropdown-menu">
+                                  <a href="{% url 'register_transfer_station_vehiclewise' %}" class="dropdown-item">Transfer Station Vehiclewise</a>
+                                  <a href="{% url 'register_vehicle' %}" class="dropdown-item">Vehicle Register</a>
+                              </div>
+                          </div>
+                          </li>
+        
+                          <li class="sidebar-dropdown">
+                            <div class="dropdown">
+                              <a href="#" class="dropdown-toggle" data-toggle="dropdown">Stoppage</a>
+                              <div class="dropdown-menu">
+                                  <a href="{% url 'stoppage' %}" class="dropdown-item">Stoppage</a>
+                              </div>
+                          </div>
+                          </li>
+        
+                          <li class="sidebar-dropdown">
+                            <div class="dropdown">
+                              <a href="#" class="dropdown-toggle" data-toggle="dropdown">Vehicle History</a>
+                              <div class="dropdown-menu">
+                                  <a href="{% url 'vehicle_route_history' %}" class="dropdown-item">Route History</a>
+                                  <a href="{% url 'vehicle_summery' %}" class="dropdown-item">Vehicle Summery</a>
+                              </div>
+                          </div>
+                          </li>
+        
+                          <li class="sidebar-dropdown">
+                            <div class="dropdown">
+                              <a href="#" class="dropdown-toggle" data-toggle="dropdown">Vehicle Status</a>
+                              <div class="dropdown-menu">
+                                  <a href="{% url 'vehicle_status_bin_rfid_tag' %}" class="dropdown-item">Bin RFID Tag</a>
+                                  <a href="{% url 'vehicle_status_bin_rfid_tag_status' %}" class="dropdown-item">Bin RFID Tag Status</a>
+                                  <a href="{% url 'vehicle_status_bin_rfid_tag_unregistered' %}" class="dropdown-item">Bin RFID Tag unregistered</a>
+                                  <a href="{% url 'vehicle_wind_schield_tag' %}" class="dropdown-item">VWTR</a>
+                              </div>
+                          </div>
+                          </li>
+        
+                          <li class="sidebar-dropdown">
+                            <div class="dropdown">
+                              <a href="#" class="dropdown-toggle" data-toggle="dropdown">Vehicle Trace</a>
+                              <div class="dropdown-menu">
+                                  <a href="{% url 'vehicle_trace' %}" class="dropdown-item">Vehicle Trace</a>
+                              </div>
+                          </div>
+                          </li>
+        
+                          <li class="sidebar-dropdown">
+                            <div class="dropdown">
+                              <a href="#" class="dropdown-toggle" data-toggle="dropdown">Vehicle Tracking</a>
+                              <div class="dropdown-menu">
+                                  <a href="{% url 'vehicle_tracking' %}" class="dropdown-item">Vehicle Tracking</a>
+                              </div>
+                          </div>
+                          </li>
+        
+                          <li class="sidebar-dropdown">
+                            <div class="dropdown">
+                              <a href="#" class="dropdown-toggle" data-toggle="dropdown">Weight</a>
+                              <div class="dropdown-menu">
+                                  <a href="{% url 'weight_locationwise' %}" class="dropdown-item">LWR</a>
+                                  <a href="{% url 'weight_wardwise' %}" class="dropdown-item">Ward Traction</a>
+                                  <a href="{% url 'weight_history' %}" class="dropdown-item">Weight History</a>
+                                  <a href="{% url 'weight_zonewise' %}" class="dropdown-item">Zone Traction</a>
+                              </div>
+                          </div>
+                          </li>
+                          </div>
+                        {% endif %}
+			<br>
+                    </ul>
+                </li>
+
+
+                {% if user.is_authenticated and user.is_superuser %}
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon"><img src="{% static 'images2/report.png' %}" alt="Report" width="25"></i>
+                        <p>
+                            Admin
+                            <i class="fas fa-angle-left right"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="{% url 'vehicles' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Vehicle</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="{% url 'bins' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Bin</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="{% url 'routes' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Route</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="{% url 'route_schedules' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Route Schedule</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="{% url 'stop_stations' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Stop Station</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="{% url 'contractors' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Contractor</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="{% url 'vgms' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Garage Vehicle Mapping</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="{% url 'wcms' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Ward Contractor Mapping</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="{% url 'installations' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Installation</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="{% url 'wards' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Ward</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="{% url 'ewds' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>EWD</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="{% url 'divs' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Div</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="{% url 'zones' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Zone</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Staff Management</p>
+                            </a>
+                        </li>
+
+                    </ul>
+                </li>
+                {% endif %}
+
+
+
+            </ul>
+        </nav>
+    </div>
+</aside>
+
+
+
+
+
+
+
+
+
+<!--content starts here-->
+<div class="content-wrapper">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-12">
+                    <h1 class="m-0">{% block content_title %}{% endblock %}
+                    </h1>
+                </div>
+            </div>
+        </div>
+      </section>
+
+      <section class="content mb-5">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-12">
+    {% block content %}	
+    {% endblock content %}
+
+
+
+</div>
+
+
+</div>
+</div>
+</div>
+</section>
+<!--content ends here-->
+
+
+
+
+
+    <footer class="main-footer">
+        <strong>Copyright &copy; 2022 <a href="https://qdnet.com" target="blank">Qdnet Technologies Pvt. Ltd.</a>.</strong> All rights reserved.
+    </footer>
+
+
+</div>
+<!-- ./wrapper -->
+
+    {% endblock body %}
+
+
+    <script src="{% static 'js/jquery.min.js' %}"></script>
+  <!--<script src="{% static 'js/moment.js' %}"></script> -->
+  <script src="{% static 'js/popper.min.js' %}"></script>
+  <script src="{% static 'js/bootstrap.min.js' %}"></script>
+  <script src="{% static 'js/jquery-ui.min.js' %}"></script>
+  <script src="{% static 'js/jquery.tablesorter.min.js' %}"></script>
+  <script src="{% static 'js/jquery.table2excel.js' %}"></script>
+  <script src="{% static 'js/leaflet.js' %}"></script>
+  <!--<script src="{% static 'js/bootstrap-datetimepicker.min.js' %}"></script> -->
+  <script src="{% static 'js/tableHTMLExport.js' %}"></script>
+  <script src="{% static 'js/jspdf.js' %}"></script>
+  <script src="{% static 'js/jspdf.plugin.autotable.min.js' %}"></script>
+  <script src="{% static 'js/checkInCal.js' %}"></script>
+  <!--<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+  integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+  crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>-->
+  <script src="{% static 'js/leaflet_routing_machine.js' %}"></script>
+  <script src="{% static 'js/leaflet.markercluster.js' %}"></script>
+  <script src="{% static 'js/MovingMarker.js' %}"></script>
+
+  <script src="{% static 'js2/moment.min.js' %}"></script>
+    <script src="{% static 'js2/daterangepicker.js' %}"></script>
+    <script src="{% static 'js2/datepicker.js' %}"></script>
+    <script src="{% static 'js2/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'js2/checkInCal.js' %}"></script>
+
+
+    <script src="{% static 'js2/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'js2/dataTables.bootstrap4.min.js' %}"></script>
+    <script src="{% static 'js2/jquery.overlayScrollbars.min.js' %}"></script>
+
+    <script src="{% static 'js2/adminlte.min.js' %}"></script>
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="js/jquery.dataTables.min.js"></script>
+    <script src="js/dataTables.bootstrap4.min.js"></script>
+    <script src="js/jquery.overlayScrollbars.min.js"></script>
+    <script src="js/adminlte.min.js"></script>
+    <!-- ram -->
+    <script src="js/moment.min.js"></script>
+    <script src="js/daterangepicker.js"></script>
+    <script src="js/datepicker.js"></script>
+
+
+    <script>
+        //Date picker
+        $('#reservationdate, #reservationdate1').datetimepicker({
+            format: 'L'
+        });
+    </script>
+
+  <script>
+    /* $(document).ready(function(){
+      $(".sidebar-dropdown > a").click(function () {
+        $(".sidebar-submenu").slideUp(200);
+        if (
+          $(this)
+          .parent()
+          .hasClass("active")
+        ) {
+          $(".sidebar-dropdown").removeClass("active");
+          $(this)
+            .parent()
+            .removeClass("active");
+        } else {
+          $(".sidebar-dropdown").removeClass("active");
+          $(this)
+            .next(".sidebar-submenu")
+            .slideDown(200);
+          $(this)
+            .parent()
+            .addClass("active");
+        }
+      });
+
+      $("#close-sidebar").click(function () {
+        $(".page-wrapper").removeClass("toggled");
+      });
+      $("#show-sidebar").click(function () {
+        $(".page-wrapper").addClass("toggled");
+      });
+    }); */
+  </script>
+
+
+
+    {% block js %}
+    {% endblock %}
+  </body>
+  </html>
+

@@ -1,0 +1,186 @@
+{% load static %}
+{% load bootstrap4 %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>REPORT</title>
+	<link href="https://use.fontawesome.com/releases/v5.0.6/css/all.css" rel="stylesheet">
+	<link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+	<link rel="stylesheet" href="{% static 'css/style.css' %}">
+	<link rel="stylesheet" href="{% static 'css/jquery-ui.css' %}">
+	<link rel="stylesheet" href="{% static 'css/leaflet.css' %}"/>
+	<link rel="stylesheet" href="{% static 'css/style.css' %}"/> 
+	<!--<link rel="stylesheet" href="{% static 'css/bootstrap-datetimepicker.min.css' %}"/>-->
+	<link rel="stylesheet" href="{% static 'css/theme_default.css' %}"/>
+	<link rel="stylesheet" href="{% static 'css/MarkerCluster.css' %}"/>
+	<link rel="stylesheet" href="{% static 'css/MarkerCluster.Default.css' %}"/>
+
+    <link rel="stylesheet" href="{% static 'css2/calendar.css' %}">
+    <link rel="stylesheet" href="{% static 'css2/all.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css2/OverlayScrollbars.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css2/adminlte.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css2/style.css' %}"> 
+
+ <link rel="stylesheet" href="{% static 'css2/daterangepicker.css' %}"/>
+ <link rel="stylesheet" href="{% static 'css2/datepicker.css' %}"/>
+ <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+	{% block head %}
+	{% endblock %}
+	{% block extrastylesheet %}
+	{% endblock %}
+</head>
+
+
+<body class="hold-transition sidebar-mini layout-navbar-fixed">
+
+    {% block body %}	
+        <!-- Site wrapper -->
+        <div class="wrapper" style="margin-left: 0;">
+
+
+
+
+
+
+
+
+
+<!--content starts here-->
+<div class="content-wrapper">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-12">
+                    <h1 class="m-0">{% block content_title %}{% endblock %}
+                    </h1>
+                </div>
+            </div>
+        </div>
+      </section>
+
+      <section class="content mb-10">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-12">
+    {% block content %}	
+    {% endblock content %}
+
+
+
+</div>
+
+
+</div>
+</div>
+</div>
+</section>
+<!--content ends here-->
+
+
+
+
+
+   
+
+
+</div>
+<!-- ./wrapper -->
+
+    {% endblock body %}
+
+
+    <script src="{% static 'js/jquery.min.js' %}"></script>
+  <!--<script src="{% static 'js/moment.js' %}"></script> -->
+  <script src="{% static 'js/popper.min.js' %}"></script>
+  <script src="{% static 'js/bootstrap.min.js' %}"></script>
+  <script src="{% static 'js/jquery-ui.min.js' %}"></script>
+  <script src="{% static 'js/jquery.tablesorter.min.js' %}"></script>
+  <script src="{% static 'js/jquery.table2excel.js' %}"></script>
+  <script src="{% static 'js/leaflet.js' %}"></script>
+  <!--<script src="{% static 'js/bootstrap-datetimepicker.min.js' %}"></script> -->
+  <script src="{% static 'js/tableHTMLExport.js' %}"></script>
+  <script src="{% static 'js/jspdf.js' %}"></script>
+  <script src="{% static 'js/jspdf.plugin.autotable.min.js' %}"></script>
+  <script src="{% static 'js/checkInCal.js' %}"></script>
+  <!--<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+  integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+  crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>-->
+  <script src="{% static 'js/leaflet_routing_machine.js' %}"></script>
+  <script src="{% static 'js/leaflet.markercluster.js' %}"></script>
+  <script src="{% static 'js/MovingMarker.js' %}"></script>
+
+  <script src="{% static 'js2/moment.min.js' %}"></script>
+    <script src="{% static 'js2/daterangepicker.js' %}"></script>
+    <script src="{% static 'js2/datepicker.js' %}"></script>
+    <script src="{% static 'js2/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'js2/checkInCal.js' %}"></script>
+
+
+    <script src="{% static 'js2/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'js2/dataTables.bootstrap4.min.js' %}"></script>
+    <script src="{% static 'js2/jquery.overlayScrollbars.min.js' %}"></script>
+
+    <script src="{% static 'js2/adminlte.min.js' %}"></script>
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="js/jquery.dataTables.min.js"></script>
+    <script src="js/dataTables.bootstrap4.min.js"></script>
+    <script src="js/jquery.overlayScrollbars.min.js"></script>
+    <script src="js/adminlte.min.js"></script>
+    <!-- ram -->
+    <script src="js/moment.min.js"></script>
+    <script src="js/daterangepicker.js"></script>
+    <script src="js/datepicker.js"></script>
+
+
+    <script>
+        //Date picker
+        $('#reservationdate, #reservationdate1').datetimepicker({
+            format: 'L'
+        });
+    </script>
+
+  <script>
+    /* $(document).ready(function(){
+      $(".sidebar-dropdown > a").click(function () {
+        $(".sidebar-submenu").slideUp(200);
+        if (
+          $(this)
+          .parent()
+          .hasClass("active")
+        ) {
+          $(".sidebar-dropdown").removeClass("active");
+          $(this)
+            .parent()
+            .removeClass("active");
+        } else {
+          $(".sidebar-dropdown").removeClass("active");
+          $(this)
+            .next(".sidebar-submenu")
+            .slideDown(200);
+          $(this)
+            .parent()
+            .addClass("active");
+        }
+      });
+
+      $("#close-sidebar").click(function () {
+        $(".page-wrapper").removeClass("toggled");
+      });
+      $("#show-sidebar").click(function () {
+        $(".page-wrapper").addClass("toggled");
+      });
+    }); */
+  </script>
+
+
+
+    {% block js %}
+    {% endblock %}
+  </body>
+  </html>
+
+

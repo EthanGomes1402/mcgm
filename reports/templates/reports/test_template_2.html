@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+	<h1>Test </h1>
+{% endblock %}
+
+
+{% block content %}
+
+<form method="POST">
+    {% csrf_token %}
+    Question: <input type="username" name="username"><br/>
+    Name: <input type="password" name="password"><br/>
+    <input type="submit" value="Submit" />
+</form><br/><br/>
+
+
+{% endblock %}
+
+
+
+
+
+{% block js %}
+
+{% endblock %}

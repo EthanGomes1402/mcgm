@@ -1,0 +1,596 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %} Vehicle Route Report {% endblock %}
+
+{% block extrastylesheet %}
+ <style>
+  div.loader {
+    width: 100px;
+    height: 100px;
+    position: absolute;
+    top:0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+ }
+ </style>
+
+
+
+<style>
+
+/* 	.rftablenew .bmclogo {
+
+		margin: auto;
+
+		display: block;
+
+		width: 14%;
+
+		margin-bottom: 20px;
+
+	} */
+
+	
+
+	.newtable-bg {
+
+		background: #cae0f9;
+
+		padding: 20px;
+
+		border-radius: 10px;
+
+	}
+
+	
+
+	.start-table {
+
+		margin-top: 20px;
+
+		padding-top: 20px;
+
+		border-top: 1px solid #4f8bcf;
+
+	}
+
+	
+
+	.newtable-bg .form-control {
+
+		border: 1px solid #4f8bcf;
+
+		color: #000;
+
+	}
+
+	
+
+	.start-table .table>thead:first-child>tr:first-child>th {
+
+		border: 1px solid #4f8bcf;
+
+	}
+
+	
+
+	.start-table .table-new {
+
+		background: #fff;
+
+		padding: 15px;
+
+	}
+
+	
+
+	.table-new .table-bordered>tbody>tr>td {
+
+		border: 1px solid #4f8bcf;
+
+	}
+
+</style>
+
+
+
+
+
+
+{% endblock %}
+
+{% block content_title %}Route Compliance Report{% endblock %}
+{% block content %}
+
+
+<!-- <marquee>This page testing is going on - Developer</marquee> -->
+
+<section class="content">
+    <div class="container-fluid">
+
+        <div class="row">
+          <div class="col-md-12">
+
+            <form id="vehicle_summery_report" name="vehicle_summery_report" method="POST">
+				{% csrf_token %}
+                <div class = "row">
+                <div class="col-md-4" style="width:30%">
+                    <label for="">Date</label>
+                    <div class="input-group date" data-target-input="nearest">
+                    <!--<input type="date" class="form-control" data-toggle=" " data-target="#date1" name = "date1" id = "date1"  autocomplete="off" required/> -->
+                    <input type="date" id="date1" class="form-control" name="date1" required>
+                    
+                    </div>
+                </div>
+
+			    <div class="col-md-4" style="width:30%">
+                <label for="">Shift</label>
+				<!-- <small>(Eg: MH01DR1234)</small> -->
+          <!--      <input type="text" class="form-control" placeholder="Enter Shift No." name="shift" id="shift" required list="shiftList" autocomplete="off"> -->
+				<select id="shiftList" name="shift" id="shift" class="form-control">
+                    <option value="" disabled>Select</option>
+                    <option value="1"> 1 (6am-2pm) </option>
+                    <option value="2"> 2 (2pm-10pm) </option>
+                    <option value="3"> 3 (10pm-6am) </option>
+                </select>
+                </div>
+            </div>
+<!--
+            <div class="col-md-4" style="width:30%">
+                <label for="">Ward</label>
+				
+        
+				<select id="wardList" name="ward" id="ward" class="form-control">
+                    <option value="" disabled>Select</option>
+                    <option value="A"> A </option>
+                    <option value="B"> B </option>
+                    <option value="C"> C </option>
+                    <option value="D"> D </option>
+                    <option value="E"> E </option>
+                    <option value="F/N"> F/N </option>
+                    <option value="F/S"> F/S </option>
+                    <option value="G/N"> G/N </option>
+                    <option value="G/S"> G/S </option>
+
+                </select>
+                </div>
+            </div>
+
+            A
+            B
+            C
+            D
+            DemoWard
+            E
+
+            F/N
+            F/S
+  
+            G/N
+            G/S
+/////
+            H/E
+            H/W
+            K/E
+            K/W
+            L
+            M/E
+            M/W
+            N
+            P/N
+            P/S
+            R/C
+            R/N
+            R/S
+            S
+            T
+            TRY2
+            Z
+            xyz
+           
+-->
+
+
+                <div class="col-md-4">
+                <!-- <button type = "submit" class="btn btn-success submit-btn">Submit</button> -->
+				    <!--<button type = "submit" class="btn btn-success submit-btn" id = "id001" onclick="setTimeout(disableFunction, 1);">Generate Report</button>-->
+					<button type = "submit" class="btn btn-success submit-btn" onclick = "func()" id = "id001" >Generate Report</button>
+				</div>
+			
+			
+            </form>
+         </div>
+        </div>
+    </div>
+<!--	
+	{% for res in trial_res.plate_number %}
+	<p>VEHICLE IS :  {{res}}</p>
+	{% endfor %}
+
+	{% for res in trial_res.vehicle_type %}
+	<p>VEHICLE TYPE IS :  {{res}}</p>
+	{% endfor %}
+
+	
+
+	{% for res in trial_res.data %}
+    <p>DISTANCE IS :  {{res}}</p>
+    {% endfor %}
+
+
+    {% for res in trial_res.date %}
+    <p>DATE IS :  {{res}}</p>
+    {% endfor %}
+
+    {% for res in trial_res.shift %}
+    <p>SHIFT IS :  {{res}}</p>
+    {% endfor %}
+
+-->
+	<!--<p id = "linktoaccesspdf"></p> -->
+	<div width="100%" class = "mt-3 " style="display:none;" id="vehicle_summery_data">
+		<!--
+        <div class = "mb-2 d-block">
+
+		<button class = "btn btn-danger  btn-sm px-3 ml-2" id="export_to_excel" style="float: right;">Export To Excel</button>
+		<button class = "btn btn-danger  btn-sm px-3 ml-2" id="export_to_csv" style="float: right;">Export To CSV</button>
+		<button class = "btn btn-danger  btn-sm px-3 ml-2" id="export_to_pdf" style="float: right;">Export To PDF</button>
+		 <button class = "btn btn-danger  btn-sm px-3 ml-2" id="export_to_pdf2" style="float: right;">Export To PDF(Lite)</button> -->
+		<!-- <button class = "btn btn-danger  btn-sm px-3 ml-2" id="testbutton" style="float: right;">Export To PDF Test</button> -->
+
+		</div>
+    
+		<!-- loader -->
+<div id = "spinner" class="loader-wrapper" style="display: none;">
+	<div class="truck-wrapper">
+		<div class="truck">
+			<div class="truck-container"></div>
+			<div class="wheel-back"></div>
+			<div class="wheel-front"></div>
+			<div class="smoke"></div>
+		</div>
+	</div>
+</div>
+
+		<div id = "printablearea" class="canvas_div_pdf">
+
+			<!--<img id = "logo" src = "{% static 'images2/mcgm-logo.png' %}" width = "80px" height = "80px" style = "margin-left: 460px; display: block;"> -->
+			
+
+			<div class="container-fluid rftablenew">
+
+				<div class="row w-100">
+		
+					<div class="col-md-12">
+						<img src="{% static 'images2/mcgm-logo.png' %}" alt="BMC Logo" class="img-fluid mx-auto d-block " width = "150">
+
+			<h3 style = "text-align: center;">Route Compliance Report</h3>
+			<div class="newtable-bg">
+	
+				<div class="row">
+	
+					<div class="col-md-4">
+	
+						<div class="form-block">
+	
+							<div class="form-group">
+	
+								<label for="date1">Report For Date: </label>
+                                <span class="form-control datetimepicker-input" data-target="#reservationdate1" id="" title="Date">
+                     {% for res in trial_res.date %}
+                                {{res}}
+                                {% endfor %}
+                                </span>    
+                            </div>
+                                
+					 
+					
+						</div>
+	
+					</div>
+	
+
+                    <div class="col-md-4">
+	
+						<div class="form-block">
+	
+							<div class="form-group">
+	
+								<label for="date1">Shift: </label>
+                                <span class="form-control datetimepicker-input" data-target="#reservationdate1" id="" title="Date">
+                     {% for res in trial_res.shift %}
+                                {{res}}
+                                {% endfor %}
+                                </span>    
+                            </div>
+                                
+					 
+					
+						</div>
+	
+					</div>
+
+
+	
+					<div class="col-md-4">
+	
+						<div class="form-block">
+	
+							<div class="form-group">
+	
+								<label for="reportgendate">Report Generated On: </label>
+								<span class="form-control datetimepicker-input" data-target="#reservationdate1" id="demo"></span>
+                            </div>
+					    </div>
+					</div>
+	
+					</div>
+					
+				</div>
+
+
+
+
+				
+			<div class="row start-table">
+
+                <div class="col-md-12">
+
+                    <div class="table-new">
+				<table id = "vehicle_summery" class="table table-bordered tablesorter"> 
+			<thead>
+				<tr>
+					<!--<th>Sr No.</th> -->
+					<th>Vehicle Type</th>
+					<th>Vehicle Number</th>
+                    <th>Route Code</th>
+                    <th>Route Name</th>
+					<th>Complied Result</th>
+                    <th>Map View</th>
+					
+				</tr>
+				
+			</thead>
+			<tbody>
+            <!--
+            {% for res in trial_res %}
+            <tr>
+                
+                <td>{{ forloop.counter }}</td>
+                
+                {% for res in trial_res.vehicle_type %}
+                
+                <td>{{res}}</td>
+                {% endfor %}
+                
+
+                
+                {% for res in trial_res.plate_number %}
+                
+                <td>{{res}}</td>
+                {% endfor %}
+                
+
+
+                <td>PW001</td>
+	            <td>Andheri East</td>
+
+                
+               {% for res in trial_res.data %}
+                
+                <td>{{res}}</td>
+                {% endfor %}
+                
+            </tr>
+
+            {% endfor %}
+            -->
+            
+                {% for data in all_data %}
+            <tr>
+            <td>{{data.vehicle_type}}</td>
+            <td>{{data.plate_number}}</td>
+            <td>{{data.route_code}}</td>
+            <td>{{data.route_name}}</td>
+            <td>{{data.compliance_result_yes_no}}</td>
+            
+            <td>
+            <div class="btn-group btn-group-sm">
+            <a href="{% url 'get_vehicle_travel_history_2' param=data.Date_RouteCode %}"><img src="{% static 'img/location.png' %}"></a>  
+            </div>
+            {{data.Date_RouteCode}}
+            </td>
+             
+            <td>{{data.bin_code}}</td>
+            <td>{{data.bin_location}}</td>
+            <td>{{data.final_result}}</td>
+       
+            </tr>
+            {% endfor %}
+            
+
+            
+            </tbody>
+		</table>
+
+        
+
+        <br><br>
+		</div>
+	</div>
+	</div>
+	</div>
+		
+					</div>
+		
+				</div> 
+
+			<!-- <h5 id = "fromtime"></h5>
+			<h5 id = "totime"></h5>
+			<h5 id = "timenow"></h5> -->
+
+
+			
+	</div>
+	</div>
+	</div>
+
+
+
+
+
+</section>
+
+
+
+
+<!-- loader -->
+<div id = "spinner2" class="loader-wrapper" style="display: none;">
+	<div class="truck-wrapper">
+		<div class="truck">
+			<div class="truck-container"></div>
+			<div class="wheel-back"></div>
+			<div class="wheel-front"></div>
+			<div class="smoke"></div>
+		</div>
+	</div>
+</div>
+
+
+
+
+<!-- 
+<div id="spinner" style="display: none;" class="loader">
+    <img src="{% static 'img/loader.gif' %}" class="img-responsive">
+</div> -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{% endblock %}
+
+{% block js %}
+<script>
+var today = new Date().toISOString().split('T')[0];
+document.getElementById("date1").setAttribute("max", today);
+</script>
+<script>
+
+
+
+
+	var d = new Date();
+	document.getElementById("demo").innerHTML = d.toDateString();
+	"{% for data in bin_code %}"
+       var data1 = "{{data}}";
+        console.log(data1); 
+        "{% endfor %}"
+	</script>
+<script>
+	function disableFunction() {
+    document.getElementById("id001").disabled = 'true';
+
+    
+}
+
+
+</script>
+<!--
+<script type="text/javascript">
+    $(function() {
+        $( "#datepicker" ).datepicker({  maxDate: new Date() });
+    });
+</script>
+-->
+<!--Load scripts for pdf generation-->
+<!--<script src="https://code.jquery.com/jquery-1.12.4.js"></script> -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.min.js"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.js"></script>
+  <script>
+
+
+
+	
+    var form_data = JSON.parse('{{ response_data | escapejs }}');
+    form_data = form_data.areal_hierarchy_params;
+
+
+
+
+
+    $(document).ready(function(){
+    $("#vehicle_summery_report").submit(function(event) {
+
+//check if result have some data
+if($("table#vehicle_summery tbody").children().length > 0 ){
+	$('#vehicle_summery tbody tr').remove();
+}
+
+event.preventDefault();
+//document.getElementById("linktoaccesspdf").innerHTML = "We are generating thousands of rows of data for you. Please Wait..."
+$('#spinner').show();
+$('#spinner2').show();
+var submitted_form_data = $('#vehicle_summery_report').serialize();
+
+$.ajax({
+	type:'POST',
+	url:'{% url "distance_report" %}',
+	data: { 'form_data' : submitted_form_data},
+	beforeSend: function(xhr) {
+		xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+	},
+	success:function(res){
+
+
+		$('#spinner').hide();
+		$('#spinner2').hide();
+		document.getElementById("linktoaccesspdf").innerHTML = "<a target = \"_blank\" href =\""+res+"\">Your report is ready! Click here to access it.</a>";
+		window.open(res, "_blank");
+
+
+
+	},
+	error:function(a,b,c){
+		alert(b);
+		alert(c);
+$('#spinner').hide();	
+	}
+});
+});
+
+	});
+
+
+
+
+
+
+
+
+
+
+  </script>
+{% endblock %}  

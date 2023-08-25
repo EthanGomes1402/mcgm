@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %} Vehicle Route Report {% endblock %}
+
+{% block extrastylesheet %}
+ <style>
+  div.loader {
+    width: 100px;
+    height: 100px;
+    position: absolute;
+    top:0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+ }
+ </style>
+
+
+
+<style>
+
+/* 	.rftablenew .bmclogo {
+
+		margin: auto;
+
+		display: block;
+
+		width: 14%;
+
+		margin-bottom: 20px;
+
+	} */
+
+	
+
+	.newtable-bg {
+
+		background: #cae0f9;
+
+		padding: 20px;
+
+		border-radius: 10px;
+
+	}
+
+	
+
+	.start-table {
+
+		margin-top: 20px;
+
+		padding-top: 20px;
+
+		border-top: 1px solid #4f8bcf;
+
+	}
+
+	
+
+	.newtable-bg .form-control {
+
+		border: 1px solid #4f8bcf;
+
+		color: #000;
+
+	}
+
+	
+
+	.start-table .table>thead:first-child>tr:first-child>th {
+
+		border: 1px solid #4f8bcf;
+
+	}
+
+	
+
+	.start-table .table-new {
+
+		background: #fff;
+
+		padding: 15px;
+
+	}
+
+	
+
+	.table-new .table-bordered>tbody>tr>td {
+
+		border: 1px solid #4f8bcf;
+
+	}
+
+</style>
+
+
+
+
+
+
+{% endblock %}
+
+{% block content_title %}Distance Report DEMO{% endblock %}
+{% block content %}
+
+<h1>{{ Distance }}</h1>
+
+
+{% endblock %}

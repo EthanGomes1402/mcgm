@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+	<h1>Route Allocation</h1>
+{% endblock %}
+
+
+
+
+
+{% block content_title %}Route Allocation{% endblock %}
+{% block content %}
+
+
+
+  <div>
+    
+      <a class="btn btn-warning  px-3" href="{% url 'add_route_allocation' %}" ><b>Add Route Allocation</b></a>  
+      <a class="btn btn-info   px-3 ml-1" href="{% url 'upload_allocation_data' %}"><b>Upload Routes</b></a>  
+      <a class="btn btn-info   px-3 ml-1" href="https://swm.vtms.cleanupmumbai.com/static/pdfreports/template/SAMPLE_ROUTE_ALLOCATION.xlsx"><b>Sample Templates</b></a>
+      <a class="btn btn-info   px-3 ml-1" href="https://swm.vtms.cleanupmumbai.com/static/pdfreports/template/ROUTE_ALLOCATION_PROCEDURE.pdf"><b>User Guide</b></a>
+        
+     
+
+    </div>
+  
+  {% if route_allocation %}
+ 
+  <button class="btn btn-danger  btn-sm px-3 ml-2" id="export_to_excel" style="float: right;">Export To Excel</button>
+ <!-- <button class="btn btn-danger  btn-sm px-3 ml-2" id="export_to_csv" style="float: right;">Export To CSV</button> -->
+  <button class="btn btn-danger  btn-sm px-3 ml-2" id="export_to_pdf" style="float: right;">Export To PDF</button>
+  <br>
+  <table class="table tablesorter" id="route_allocation">
+    <thead class="thead-inverse">
+      <tr>
+        <th>Sr No</th>
+        <th>Shift</th>
+        <th>Route Code</th>
+        <th>Route Name</th>
+        <th>Vehicle</th>
+
+        {% if user.is_authenticated and user.is_superuser %}
+
+          <th>Ward</th>
+
+          {% endif %}
+
+
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for allocated_route in route_allocation %}
+        <tr>
+          <td>  {{ forloop.counter }} </td>
+          <td>{{ allocated_route.shift }} </td>
+          <td>{{ allocated_route.route_code}}</td>
+          <td>{{ allocated_route.route_name}}</td>
+	        <td>{{ allocated_route.vehicle}}</td>
+
+
+          {% if user.is_authenticated and user.is_superuser %}
+
+          <td>{{ allocated_route.ward }}</td>
+
+          {% endif %}
+        <!--
+          <td>{{ vehicle.maker }} </td>
+          <td style="text-transform: uppercase;">{{ vehicle.vehicle_type }}</td>
+          <td>{{ vehicle.contractor }}</td>
+          <td> -->
+            <td>
+            <div class="btn-group btn-group-sm">
+                <a href="{% url 'edit_route_allocation' allocated_route.pk %}" class="btn btn-info"><i class="fas fa-pen"></i></a>
+                <a id="{{allocated_route.pk}}" href="#" class="btn btn-danger delete_allocation"><i class="fas fa-trash"></i></a>
+                </div>
+		    </td>
+
+
+      
+        <div class="btn-group btn-group-sm">
+    
+        
+
+	      </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+	<h1>No Route Allocated</h1>
+  {% endif %}
+
+
+
+
+
+
+
+
+
+
+
+{% endblock %}
+
+{% block js %}
+<script>
+	$(document).ready(function(){
+	    $('table').tablesorter({theme:'metro-dark'});
+        $("a.delete_allocation").click(function () {
+            var id = $(this).attr('id');
+            console.log("ID is: "+id)
+            var $tr = $(this).closest('tr');
+
+            $.ajax({
+                type:'POST',
+                url:'{% url "delete_allocation" %}',
+                data: {
+                    'id': id
+                },
+                beforeSend: function(xhr) {
+                    xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+                },
+                success:function(res){
+                    $tr.find('td').fadeOut(1000,function(){
+                        $tr.remove();
+                    })	
+                },
+                error:function(a,b,c){
+                    alert(b);
+                    alert(c);
+                }
+            });
+        });
+
+		$("button#export_to_excel").click(function() {
+			var dNow = new Date();
+			var file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+			$("#route_allocation").table2excel({
+				name: "route_allocation",
+				filename: "route_allocation_" + file_time_str + ".xlsx"//do not include extension
+			});
+		});
+	   
+        /*
+		$("button#export_to_csv").click(function() {
+			$("#vehicles").tableHTMLExport({type:'csv',filename:'vehicles.csv'});
+		});
+        */
+		$("button#export_to_pdf").click(function() {
+			$("#route_allocation").tableHTMLExport({type:'pdf',filename:'route_allocation.pdf'});
+		});
+	});
+</script>
+{% endblock %}

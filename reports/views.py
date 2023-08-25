@@ -3,11 +3,11 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth.models import User
 from common.models import Ward,Zone,Div
 from swmadmin.models import Vehicle,Contractor,Ward_Contractor_Mapping,Bin,Route,Stop_station,Vehicle_Garage_Mapping,Ewd
-from reports.models import Alert,Tracklog_history
+from reports.models import Alert,Tracklog_history,Route_Allocation,Helpdesk,Route_Compliance,Route_Compliance_Demo
 from django.http import HttpResponse,JsonResponse
 from django.shortcuts import render,redirect,get_object_or_404
 from django.http import Http404
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required,user_passes_test
 from django.utils.decorators import method_decorator
 from django.views.generic import CreateView,UpdateView,ListView,View,DetailView,DeleteView
 from django.utils import timezone
@@ -30,11 +30,19 @@ from datetime import date,timedelta
 from itertools import chain
 import codecs
 import math
+import geopy.distance
 from datetime import datetime
 import os
 from rest_framework.decorators import api_view, renderer_classes      #***ETH
 import logging
 import psycopg2      #***ETH
+
+from .forms import RouteAllocationForm,AllocationEditForm,QueryForm,QueryResponseForm
+
+from openpyxl import load_workbook
+
+from django.contrib.auth.mixins import LoginRequiredMixin,UserPassesTestMixin
+
 
 gcoord = SpatialReference(3857)
 mycoord = SpatialReference(4326)
@@ -879,6 +887,7 @@ def by_datetime(ele):
 
 ##done
 def vehicle_route_report(request):
+    
     set_session_reporting_form_params(request)
     form_params = request.session['reports_form_params']
 
@@ -898,15 +907,41 @@ def vehicle_route_report(request):
 
         seen        = dict()
         speed_zero  = dict()
+        
+        
+        iward = None
+        if not request.user.is_superuser:
+          if request.user.appuser.is_contractor:
+            iward = request.user.appuser.bmc_contractor.ward
+          else:
+            iward = request.user.appuser.bmc_officer.ward
 
-        #ajit's code block 1 starts - initializing the dictionary from txt file.
-        mydict = {}
-        filename = "../../../../../tmp/fulldata.txt"
-        a_file = codecs.open(filename, encoding="utf-8")
-        for line in a_file:
+    
+        iwardfilenamestr = ""
+        #FOR WARD USERS
+        if iward:
+          #ajit's code block 1 starts - initializing the dictionary from txt file.
+          mydict = {}
+        
+          iwardfilenamestr = str(iward).replace("/","") 
+        
+          filename = "/home/mcgm/Development/mcgm/mcgm/fulldata/"+ str(iwardfilenamestr)+ "_fulldata.txt"
+          a_file = codecs.open(filename, encoding="utf-8")
+          for line in a_file:
             key, value = line.split(":::")
             mydict[key] = value
-        #ajit code block 1 ends here
+          #ajit code block 1 ends here
+          
+        #FOR SUPERUSER  
+        else:  
+          #ajit's code block 1 starts - initializing the dictionary from txt file.
+          mydict = {}
+          filename = "/home/mcgm/Development/mcgm/mcgm/fulldata/fulldata.txt"
+          a_file = codecs.open(filename, encoding="utf-8")
+          for line in a_file:
+            key, value = line.split(":::")
+            mydict[key] = value
+          #ajit code block 1 ends here
 
         for each_vehicle_record in sorted_vc:
             #logic to skip consecutive stationary entries 
@@ -973,6 +1008,11 @@ def vehicle_route_report(request):
         return HttpResponse(json.dumps(response_data),content_type="application/json")
     return render(request,'reports/vehicle_route_report.html',{ 'form_params' : form_params})
 
+
+
+
+
+
 ##done
 def vehicle_route_report_v2(request):
     set_session_reporting_form_params(request)
@@ -1013,6 +1053,585 @@ def vehicle_route_report_v2(request):
     return render(request,'reports/vehicle_route_report_v2.html',{ 'form_params' : form_params})
 
 ##done
+def distance_report(request):
+    set_session_reporting_form_params(request)
+    
+    form_params = request.session['reports_form_params']
+    #return HttpResponse("<h1> report "+ str(inspect.stack()[0][3]) +"</h1>")
+
+    connection = psycopg2.connect(user="mcgm",
+                                  password="mcgm",
+                                  host="localhost",
+                                  port="5432",
+                                  database="mcgm")
+    cursor = connection.cursor()
+
+    iward = None
+    if request.user.is_superuser:
+        iward = 'B'
+    
+    #if not request.user.is_superuser:
+    #      if request.user.appuser.is_contractor:
+    #        iward = request.user.appuser.bmc_contractor.ward
+    #      else:
+    #        iward = request.user.appuser.bmc_officer.ward
+    else:
+        if request.user.appuser.is_contractor:
+            iward = request.user.appuser.bmc_contractor.ward
+        else:
+            iward = request.user.appuser.bmc_officer.ward
+        
+        
+    #trial_res = "8.028236"
+    
+    trial_res = dict()
+    trial_res['plate_number'] = list()
+    trial_res['data'] = list()
+    trial_res['vehicle_type'] = list()
+    trial_res['date'] = list()
+    trial_res['shift'] = list()
+    trial_res['route_code'] = list()
+    trial_res['route_name'] = list()
+
+    if request.method == 'POST':
+        date = request.POST['date1']
+        shift = request.POST['shift']
+        
+        trial_res['date'].append(date)
+        trial_res['shift'].append(shift)
+        
+        #if 1 == 1:
+        response_data=dict()
+        response_data['status'] = 'success'
+        response_data['data'] = list()
+        #form_data = QueryDict(request.POST['form_data'].encode('ASCII'))
+        
+        
+        
+        #date  = form_data['date']
+        #shift  = form_data['shift']
+        #response_data['date'] = str(date)
+        #fromtime = " 00:00:00+05:30"
+        #totime = " 23:59:59+05:30"
+
+        #fromdate = date+fromtime
+        #todate = date+totime
+        #iward = 'B'       
+        
+        #date = "2023-01-01"
+        fromtime = " 00:00:00+05:30"
+        totime = " 23:59:59+05:30"
+
+        fromdate = date+fromtime
+        todate = date+totime
+
+        if shift == '3':
+            newdate = datetime.now() + timedelta(days=1)
+            #current_date_temp = datetime.datetime.strptime(date, "%Y-%m-%d")
+            #print(current_date_temp)
+            newdate = newdate.date()
+            #print(newdate)
+            newdate = str(newdate)
+            totime = " 05:59:59+05:30"
+            todate = newdate + totime
+            #print(todate)
+            Begindate = datetime.strptime(date, "%Y-%m-%d")
+            Begindate = Begindate.date()
+            #print(Begindate)
+            Enddate = Begindate + timedelta(days=1)
+            newdate = str(Enddate)
+            todate = newdate + totime
+            #print(todate)
+    #print("Fromdate ", fromdate)
+    #print("Todate ", todate)    
+        #shift  = form_data['shift']
+        #shift = "1"
+       
+    #print("Fromdate ", fromdate)
+    #print("Todate ", todate)    
+        #shift  = form_data['shift']
+        
+        iward = str(iward)
+        postgreSQL_select_Query0 = "select id from common_ward where name = '"+iward+"'"
+        #select0 = (iward)
+        cursor.execute(postgreSQL_select_Query0)
+        fetch0 = cursor.fetchone()
+    #print("WARD ID IS :",fetch0[0])
+        ward_id = str(fetch0[0])
+
+    
+        postgreSQL_select_Query1 = "select t1.id,t2.route_code,t2.route_name from swm.vehicles t1, swm.route_allocation t2 where t1.ward_id = '"+ward_id+"' and t1.vehicle_type IN ('Refuse_Compactor','Refuse_Mini_Compactor','Small_Closed_Vehicle') AND t1.id = t2.vehicle_id AND t2.is_active = 't' AND t1.ward_id= t2.ward_id AND t2.shift = '"+shift+"';"
+    #select1 = (ward_id)
+        cursor.execute(postgreSQL_select_Query1)
+        
+        fetch1 = cursor.fetchall()
+    #print("These are all vehicle IDs in ward",iward,": ",fetch1)
+    #print("This is fetch 1 ", fetch1)
+        vehicle_id_array = []
+        route_code_array = []
+        route_name_array = []
+        plate_number_store = []
+        distance_store = []
+        vehicle_type_store = []
+        for row in fetch1:
+            #print("Id = ", row[0])
+            vehicle_id = row[0]
+            route_code = row[1]
+            route_name = row[2]
+
+            route_code_array.append(route_code)
+            route_name_array.append(route_name)
+            vehicle_id_array.append(vehicle_id)
+            count_vehicle_ids = len(vehicle_id_array)
+
+        for all_vehicle_id in vehicle_id_array: 
+            vehicle_type_array = []
+            plate_number_array = []
+            location_array = []
+            distance_array = []
+            latitude_array = []
+            longitude_array = []
+            count = 0
+            #print("Count before loop", count)
+            all_vehicle_id = str(all_vehicle_id)
+            #print("Vehicle IDs are : ",vehicle_id_array)
+            postgreSQL_select_Query2 = "select vehicle_type,plate_number from swm.vehicles where id = '"+all_vehicle_id+"'"
+            #postgreSQL_select_Query2 = "select vehicle_type,plate_number from swm.vehicles where id = 1687"
+            #select2 = int(all_vehicle_id)
+            
+            cursor.execute(postgreSQL_select_Query2)
+        
+            fetch2 = cursor.fetchall()
+
+            for row2 in fetch2:
+            
+                vehicle_type = row2[0]
+                vehicle_type.strip()
+                #print("Vehicle Type is ",vehicle_type)
+                plate_number = row2[1]
+                plate_number.strip()
+                plate_number_store.append(plate_number)
+                #print("plate number is ",plate_number) 
+                vehicle_type_store.append(vehicle_type)
+                vehicle_type_array.append(vehicle_type)
+            
+                plate_number_array.append(plate_number)
+        
+            #print("Vehicle Ids Are ", all_vehicle_id)   
+            postgreSQL_select_Query3 = "select latitude,longitude from swm.vehicle_tracklog_historys where datetime between '"+fromdate+"' and '"+todate+"' and shift = '"+shift+"' and vehicle_id = '"+all_vehicle_id+"' order by datetime asc;"
+            #postgreSQL_select_Query3 = "select latitude,longitude from swm.vehicle_tracklog_historys where datetime between '"+fromdate+"' and '"+todate+"' and shift = '"+shift+"' and vehicle_id = '1687' order by datetime asc;"
+            #select3 = (fromdate,todate,shift,all_vehicle_id)
+            cursor.execute(postgreSQL_select_Query3)
+        
+            fetch3 = cursor.fetchall()
+            countlatlong = len(fetch3)
+
+            for row3 in fetch3:
+                
+
+                latitude = row3[0]
+                longitude = row3[1]
+                #print("longitude is ",longitude)
+                #print("latitude is ",latitude)
+
+                
+
+                location = latitude,longitude
+                
+                #print("Location is ", location)
+                #print("-------------------------------------------------------------")
+                
+                
+                
+                latitude_array.append(latitude)
+                longitude_array.append(longitude)
+                location_array.append(location)
+            
+                count_locations = len(location_array)
+                count_latitudes = len(latitude_array)
+                count_longitudes = len(longitude_array)
+            
+
+            for i in range(len(latitude_array) - 1):
+                #print(i,"th location is ", int(location_array[i]))
+                #print(i+1,"th location is ", int(location_array[i+1]))
+
+            
+                #print(i,"th latitude is ", latitude_array[i])
+                #print(i+1,"th latitude is ", latitude_array[i+1])
+
+
+                #print(i,"th longitude is ", longitude_array[i])
+                #print(i+1,"th longitude is ", longitude_array[i+1])
+
+
+                source_lat = latitude_array[i]
+                source_lat = float(source_lat)
+
+                destination_lat = latitude_array[i+1]
+                destination_lat = float(destination_lat)
+
+                source_long = longitude_array[i]
+                source_long = float(source_long)
+                
+                destination_long = longitude_array[i+1]
+                destination_long = float(destination_long)
+
+
+                if (18.8778 <= source_lat <= 19.2459 or 72.8472 <= source_long <= 72.9497):
+                    source_coords = (source_lat,source_long)
+                if (18.8778 <= destination_lat <= 19.2459 or 72.8472 <= destination_long <= 72.9497):
+                    destination_coords = (destination_lat,destination_long)
+                
+                distance_1 = geopy.distance.distance(source_coords, destination_coords).km
+                #postgreSQL_select_Query4 = "select (point(%s,%s) <@> point(%s,%s)) as distance;"
+                #select4 = (source_lat,source_long,destination_lat,destination_long)
+                #cursor.execute(postgreSQL_select_Query4,select4)
+
+                #fetch4 = cursor.fetchall()
+
+                #for row4 in fetch4:
+                #    distance = row4[0]
+                    #print(type(distance))
+                    #print("this is distance ", distance)
+
+                #if distance_1 < 0.21748:
+                distance_array.append(distance_1)
+                        #print(type(distance_array))
+            #print("this is distance array of 1687", distance_array)
+            total_distance_in_miles = math.fsum(distance_array)
+
+            #print(total_distance_in_miles)
+            total_distance_in_km = total_distance_in_miles * 1.60934
+            total_distance_in_km = format(total_distance_in_km, '.1f')
+            #total_distance_in_km = str(total_distance_in_km)
+            distance_store.append(total_distance_in_km)
+            count = count + 1
+            #print("Count after loop",count)
+            
+            
+
+    # closing database connection.
+        if connection:
+            cursor.close()
+            connection.close()
+            print("PostgreSQL connection is closed")
+        
+        
+        
+        
+        
+        
+        #plate_number = "MH01ER0928"
+        trial_res['plate_number'].append(plate_number_store)
+        #trial_res['data'] = 'TRIAL DATA111'
+        
+        total_distance_in_km = str(total_distance_in_km)
+        trial_res['data'].append(distance_store)
+
+        trial_res['vehicle_type'].append(vehicle_type_store)
+
+        trial_res['route_code'].append(route_code_array)
+        trial_res['route_name'].append(route_name_array)
+        #return HttpResponse(json.dumps(trial_res),content_type="application/json")
+    
+    #if request.method == 'POST':
+     #    pass
+    
+    return render(request,'reports/distance_report.html',{'trial_res' : trial_res})
+##done
+
+
+
+
+
+"""
+def my_view(request):
+    if request.method == 'GET':
+        
+      #form = PostForm(request.POST)  
+      search = request.GET['search']
+      name = request.GET['name']
+      
+      context = dict()
+      context['search'] =list()
+      context['name'] = list()
+      
+      context['search'].append(search)
+      context['name'].append(name)
+    
+    return render(request, 'reports/test_template.html', context)
+"""
+
+##done
+def test_function(user):
+    is_allowed = True
+    return is_allowed
+   
+   
+@user_passes_test(test_function)    
+def password_form(request):
+    
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+        
+        if username == 'bmc':
+          if password == 'bmc@2023':  
+            #return render(request, 'reports/route_allocation.html')
+            return redirect('/swm/route_allocation') 
+        
+    return render(request,'reports/password_form.html')
+
+
+
+
+
+
+
+
+
+"""
+def index(request):
+    questions=None
+    if request.GET.get('search'):
+        search = request.GET.get('search')
+        questions = Queries.objects.filter(query__icontains=search)
+
+        name = request.GET.get('name')
+        query = Queries.object.create(query=search, user_id=name)
+        query.save()
+
+    return render(request, 'basicapp/index.html',{
+        'questions': questions,
+    })
+"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def distance_report_demo(request):
+    set_session_reporting_form_params(request)
+    form_params = request.session['reports_form_params']
+    #return HttpResponse("<h1> report "+ str(inspect.stack()[0][3]) +"</h1>")
+
+    connection = psycopg2.connect(user="mcgm",
+                                  password="mcgm",
+                                  host="localhost",
+                                  port="5432",
+                                  database="mcgm")
+    cursor = connection.cursor()
+
+    iward = None
+    if not request.user.is_superuser:
+        if request.user.appuser.is_contractor:
+            iward = request.user.appuser.bmc_contractor.ward
+        else:
+            iward = request.user.appuser.bmc_officer.ward
+
+    iward = 'K/E'    
+        
+   
+
+
+    if request.method == 'POST':
+        response_data=dict()
+        response_data['status'] = 'success'
+        response_data['data'] = list()
+        form_data = QueryDict(request.POST['form_data'].encode('ASCII'))
+        #date  = form_data['date']
+        #shift  = form_data['shift']
+        #response_data['date'] = str(date)
+        #fromtime = " 00:00:00+05:30"
+        #totime = " 23:59:59+05:30"
+
+        #fromdate = date+fromtime
+        #todate = date+totime
+        iward = 'K/E'       
+        
+        date = "2023-01-01"
+        fromtime = " 00:00:00+05:30"
+        totime = " 23:59:59+05:30"
+
+        fromdate = date+fromtime
+        todate = date+totime
+       
+    #print("Fromdate ", fromdate)
+    #print("Todate ", todate)    
+        #shift  = form_data['shift']
+        shift = "1"
+       
+    #print("Fromdate ", fromdate)
+    #print("Todate ", todate)    
+        #shift  = form_data['shift']
+        
+
+        postgreSQL_select_Query0 = "select id from common_ward where name = '"+iward+"'"
+        #select0 = (iward)
+        cursor.execute(postgreSQL_select_Query0)
+        fetch0 = cursor.fetchone()
+    #print("WARD ID IS :",fetch0[0])
+        ward_id = str(fetch0[0])
+
+    
+        postgreSQL_select_Query1 = "select id from swm.vehicles where ward_id = '"+ward_id+"' and vehicle_type IN ('Refuse_Compactor','Refuse_Mini_Compactor','Small_Closed_Vehicle')"
+    #select1 = (ward_id)
+        cursor.execute(postgreSQL_select_Query1)
+        
+        fetch1 = cursor.fetchall()
+    #print("These are all vehicle IDs in ward",iward,": ",fetch1)
+    #print("This is fetch 1 ", fetch1)
+        vehicle_id_array = []
+
+        for row in fetch1:
+            #print("Id = ", row[0])
+            vehicle_id = row[0]
+            vehicle_id_array.append(vehicle_id)
+            count_vehicle_ids = len(vehicle_id_array)
+
+        for all_vehicle_id in vehicle_id_array: 
+            vehicle_type_array = []
+            plate_number_array = []
+            location_array = []
+            distance_array = []
+            latitude_array = []
+            longitude_array = []
+            distance_array_km = []
+            count = 0
+            #print("Count before loop", count)
+            all_vehicle_id = str(all_vehicle_id)
+            #print("Vehicle IDs are : ",vehicle_id_array)
+            postgreSQL_select_Query2 = "select vehicle_type,plate_number from swm.vehicles where id = '"+all_vehicle_id+"'"
+            #postgreSQL_select_Query2 = "select vehicle_type,plate_number from swm.vehicles where id = 1687"
+            #select2 = int(all_vehicle_id)
+            
+            cursor.execute(postgreSQL_select_Query2)
+        
+            fetch2 = cursor.fetchall()
+
+            for row2 in fetch2:
+            
+                vehicle_type = row2[0]
+                vehicle_type.strip()
+                #print("Vehicle Type is ",vehicle_type)
+                plate_number = row2[1]
+                plate_number.strip()
+                #print("plate number is ",plate_number) 
+
+                vehicle_type_array.append(vehicle_type)
+            
+                plate_number_array.append(plate_number)
+        
+            #print("Vehicle Ids Are ", all_vehicle_id)   
+            postgreSQL_select_Query3 = "select latitude,longitude from swm.vehicle_tracklog_historys where datetime between '"+fromdate+"' and '"+todate+"' and shift = '"+shift+"' and vehicle_id = '"+all_vehicle_id+"' order by datetime asc;"
+            #postgreSQL_select_Query3 = "select latitude,longitude from swm.vehicle_tracklog_historys where datetime between '"+fromdate+"' and '"+todate+"' and shift = '"+shift+"' and vehicle_id = '1687' order by datetime asc;"
+            #select3 = (fromdate,todate,shift,all_vehicle_id)
+            cursor.execute(postgreSQL_select_Query3)
+        
+            fetch3 = cursor.fetchall()
+            countlatlong = len(fetch3)
+
+            for row3 in fetch3:
+                
+
+                latitude = row3[0]
+                longitude = row3[1]
+                #print("longitude is ",longitude)
+                #print("latitude is ",latitude)
+
+                
+
+                location = latitude,longitude
+                
+                #print("Location is ", location)
+                #print("-------------------------------------------------------------")
+                
+                
+
+                latitude_array.append(latitude)
+                longitude_array.append(longitude)
+                location_array.append(location)
+            
+                count_locations = len(location_array)
+                count_latitudes = len(latitude_array)
+                count_longitudes = len(longitude_array)
+            
+
+            for i in range(len(latitude_array) - 2):
+                #print(i,"th location is ", int(location_array[i]))
+                #print(i+1,"th location is ", int(location_array[i+1]))
+
+            
+                #print(i,"th latitude is ", latitude_array[i])
+                #print(i+1,"th latitude is ", latitude_array[i+1])
+
+
+                #print(i,"th longitude is ", longitude_array[i])
+                #print(i+1,"th longitude is ", longitude_array[i+1])
+
+
+                source_lat = latitude_array[i]
+                destination_lat = latitude_array[i+1]
+
+                source_long = longitude_array[i]
+                destination_long = longitude_array[i+1]
+
+
+                source_location = location_array[i]
+                destination_location = location_array[i+1]
+
+                postgreSQL_select_Query4 = "select (point(%s,%s) <@> point(%s,%s)) as distance;"
+                select4 = (source_lat,source_long,destination_lat,destination_long)
+                cursor.execute(postgreSQL_select_Query4,select4)
+
+                fetch4 = cursor.fetchall()
+
+                for row4 in fetch4:
+                    distance = row4[0]
+                    #print(type(distance))
+                    #print("this is distance ", distance)
+
+                    if distance < 0.1553428:
+                        distance_array.append(distance)
+                        #print(type(distance_array))
+            #print("this is distance array of 1687", distance_array)
+                        total_distance_in_miles = math.fsum(distance_array)
+
+                        #print(total_distance_in_miles)
+                        total_distance_in_km = 1.61*total_distance_in_miles
+                        distance_array_km.append(total_distance_in_km)
+                        count = count + 1
+                        #print("Count after loop",count)
+
+            context ={'Distance':distance_array_km}
+
+    # closing database connection.
+        if connection:
+            cursor.close()
+            connection.close()
+            print("PostgreSQL connection is closed")
+        response_data['data'].append(distance_array_km)
+        
+    return render(request, "reports/distance_report_demo.html", context)
+
+
+
+
+
 def vehicle_status_bin_rfid_tag(request):
     set_session_reporting_form_params(request)
     form_params = request.session['reports_form_params']
@@ -1448,6 +2067,10 @@ def generateps2pdf(request):
     form_params = request.session['reports_form_params']
 
     if request.method == 'POST':
+
+        #banned_vehicle_list = ["MH47Y5832","MH47Y5831","MH47Y5842","MH47Y5843","MH47Y6348","MH47Y6345","MH47Y6423","MH47Y6352","MH47Y6424","MH47Y6349","MH47Y6351","MH47Y6420","MH47Y6356","MH47Y6353","MH47Y6359","MH47Y6367","MH47Y6368","MH47Y6347","MH47Y6350","MH47Y6344","MH47Y6355","MH47Y6357","MH47Y6419","MH47Y6365","MH47Y6418","MH47Y6421","MH47Y6435","MH47Y6434","MH47Y6436","MH47Y6437","MH47Y6362","MH47Y6369","MH47Y6360","MH47Y6346","MH47Y6361","MH47Y6366","MH47Y5849","MH47Y6410","MH47Y6409","MH47Y6416","MH47Y6339","MH47Y6341","MH47Y6340","MH47Y6343","MH47Y6334","MH47Y6335","MH47Y6408","MH47Y6342","MH47Y6445","MH47Y6405","MH47Y6413","MH47Y6415","MH47Y6441","MH47Y6414","MH47Y6404","MH47Y6407","MH47Y6411","MH47Y6406","MH47Y6412","MH47Y6338","MH47Y6439","MH47Y6440","MH47Y6443","MH47Y6329","MH47Y6330","MH47Y6332","MH47Y6328","MH47Y6331","MH47Y6337","MH47Y6442","MH47Y6438","MH47Y6333","MH47Y5850","MH47Y6495","MH47Y6484","MH47Y6482","MH47Y6483","MH47Y6481","MH47Y6485","MH47AS1364","MH47AS1366","MH47AS1365","MH47Y7471","MH47Y7481","MH47Y7484","MH47Y7482","MH47Y7479","MH47Y7478","MH47Y7472","MH47Y7476","MH47Y7473","MH47Y7464","MH47Y7483","MH47Y7469","MH47Y7462","MH47Y7467","MH47Y7461","MH47Y7486","MH47Y7457","MH47Y7459","MH47Y7460","MH47Y7485","MH47Y7466","MH47Y7488","MH47Y7468","MH47Y7458","MH47Y7456","MH47Y7463","MH47Y7743","MH47Y7746","MH47Y7748","MH47Y8025","MH47Y8016","MH47Y7750","MH47Y7751","MH47Y7747","MH47Y8024","MH47Y8013","MH47Y8011","MH47Y8014","MH47Y8009","MH47Y8017","MH47Y8012","MH47Y8015","MH47Y7465","MH47Y8003","MH47Y7993","MH47Y7995","MH47Y7998","MH47Y7994","MH47Y7996","MH47Y8006","MH47Y8004","MH47Y8099","MH47Y8098","MH47Y8101","MH47Y8097","MH47Y8088","MH47Y8092","MH47Y8094","MH47Y8087","MH47Y8089","MH47Y8086","MH47Y8085","MH47Y8093","MH47Y8095","MH47Y8096","MH47Y8005","MH47Y8018","MH47Y7489","MH47Y7744","MH47Y7480","MH47Y8007","MH47Y8465","MH47Y8746","MH47Y8747"]
+        banned_vehicle_list = []
+        noPDF = "https://swm.vtms.cleanupmumbai.com/static/pdfreports/no_vehicle_route_report.pdf"
         #response_data=dict()
         #response_data['status'] = 'success'
         #response_data['data'] = list()
@@ -1457,6 +2080,8 @@ def generateps2pdf(request):
         to_time   = dateutil.parser.parse(form_data['to_time'])
         #response_data['totime'] = str(to_time)
         plate_no  = form_data['vehicle']
+        if plate_no in banned_vehicle_list:
+            return HttpResponse(noPDF)
         timedelay = form_data['timedelay']
         vehicle   = Vehicle.objects.get(plate_number=plate_no)
         vc = chain(vehicle.vehicle_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime').distinct('datetime'), vehicle.current_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime').distinct('datetime'))
@@ -1465,14 +2090,39 @@ def generateps2pdf(request):
         seen        = dict()
         speed_zero  = dict()
 
-        #ajit's code block 1 starts - initializing the dictionary from txt file.
-        mydict = {}
-        filename = "../../../../../tmp/fulldata.txt"
-        a_file = codecs.open(filename, encoding="utf-8")
-        for line in a_file:
+        iward = None
+        if not request.user.is_superuser:
+          if request.user.appuser.is_contractor:
+            iward = request.user.appuser.bmc_contractor.ward
+          else:
+            iward = request.user.appuser.bmc_officer.ward
+
+    
+        iwardfilenamestr = ""
+        #FOR WARD USERS
+        if iward:
+          #ajit's code block 1 starts - initializing the dictionary from txt file.
+          mydict = {}
+        
+          iwardfilenamestr = str(iward).replace("/","") 
+        
+          filename = "/home/mcgm/Development/mcgm/mcgm/fulldata/"+ str(iwardfilenamestr)+ "_fulldata.txt"
+          a_file = codecs.open(filename, encoding="utf-8")
+          for line in a_file:
             key, value = line.split(":::")
             mydict[key] = value
-        #ajit code block 1 ends here
+          #ajit code block 1 ends here
+          
+        #FOR SUPERUSER  
+        else:  
+          #ajit's code block 1 starts - initializing the dictionary from txt file.
+          mydict = {}
+          filename = "/home/mcgm/Development/mcgm/mcgm/fulldata/fulldata.txt"
+          a_file = codecs.open(filename, encoding="utf-8")
+          for line in a_file:
+            key, value = line.split(":::")
+            mydict[key] = value
+          #ajit code block 1 ends here
 
 
         psfilename = "/home/mcgm/Development/mcgm/mcgm/static/pdfreports/"+str(plate_no)+"_"+str(from_time)+"_to_"+str(to_time)+".ps"
@@ -1640,7 +2290,7 @@ showpage
 
 
 
-        loopcounter = 0
+        loopcounter = 1
         pagerowcounter = 0
         for each_vehicle_record in sorted_vc:
             #logic to skip consecutive stationary entries 
@@ -1773,11 +2423,17 @@ showpage
             latmain = int(math.floor(float(newlat)))
             longmain = int(math.floor(float(newlong)))
             finallatlong = str(latmain)+"."+str(finallatfract)+","+str(longmain)+"."+str(finallongfract)
-            try:
+            """ try:
                 resultaddress = mydict[finallatlong]
                 resultaddress = (resultaddress.split(","))[:2]
             except:
-                resultaddress = "Out of Mumbai."
+                resultaddress = "Out of Mumbai." """
+            
+            if finallatlong not in mydict:
+                resultaddress = "Out of Mumbai"
+            else:
+                resultaddress =  mydict[finallatlong]
+                resultaddress = (resultaddress.split(","))[:2]
             #ajit code block 2 ends here
 
 
@@ -2039,15 +2695,8 @@ HEADER_FONT setfont
 0 setgray 505 720 moveto   %CHANGE THIS TO MOVE HEADERS
 HEADER_FONT setfont
 (Speed) show
-%----------------------------"""
-                
-                psfile.write(staticdata)
-                pagerowcounter+=1
-                loopcounter+=1
-
-
-            elif(pagerowcounter == 1):
-                appenddata = """%-----------------------
+%----------------------------
+%-----------------------
 %HORIZONTAL_DATA
 %COLUMN_DATA_2st_PAGE
 0 setgray 58 700 moveto   %CHANGE THIS TO MOVE HEADERS
@@ -2078,11 +2727,15 @@ DATA_FONT setfont
 0 setgray 510 700 moveto   %CHANGE THIS TO MOVE HEADERS
 DATA_FONT setfont
 ("""+finalspeed+""") show
-%----------------------------"""
-
-                psfile.write(appenddata)
-                pagerowcounter+=1
+%----------------------------
+"""
+                
+                psfile.write(staticdata)
+                pagerowcounter+=2
                 loopcounter+=1
+
+
+
 
             elif(pagerowcounter == 2):
                 appenddata = """%-----------------------
@@ -3402,3 +4055,4825 @@ def sendWeighExitData(request):
         
       return JsonResponse({"response":"ACK","Transaction_ID": data["Unique_Transaction_ID"]},content_type="application/json")
     return JsonResponse({"response": "Error - Resend Packet"},content_type="application/json")
+
+
+
+
+##ADDED BY ETHAN ON 30TH DEC
+#----------------------------------##ROUTE__ALLOCATION##---------------------------
+ 
+class RouteAllocationListView(ListView):
+    model = Route_Allocation
+    context_object_name='route_allocation'
+    template_name = 'reports/route_allocation.html'
+
+    def test_func(self):
+        return self.request.user.is_authenticated 
+
+    def get_queryset(self):
+        try:
+         if self.request.user.appuser.is_superuser:
+          qs = super(RouteAllocationListView,self).get_queryset().filter(is_active=True).order_by('shift')
+         else:
+          if self.request.user.appuser.is_contractor:
+            ward = self.request.user.appuser.bmc_contractor.ward
+            qs = super(RouteAllocationListView,self).get_queryset().filter(ward=ward,is_active=True).order_by('route_code')  
+          else:
+            ward = self.request.user.appuser.bmc_officer.ward
+            qs = super(RouteAllocationListView,self).get_queryset().filter(ward=ward,is_active=True).order_by('route_code')  
+        except:
+            qs = super(RouteAllocationListView,self).get_queryset().filter(is_active=True).order_by('shift')
+            
+        return qs      
+  
+ 
+
+class RouteAllocationCreateView(CreateView):
+    model = Route_Allocation
+    form_class=RouteAllocationForm
+    template_name = 'reports/add_route_allocation.html'
+    success_url= '/route_allocation/'
+
+    def test_func(self):
+        return self.request.user.is_authenticated 
+
+    def form_valid(self,form):
+        Route_Allocation = form.save(commit=False)
+        Route_Allocation.created_by = self.request.user
+        try:
+         if self.request.user.appuser.is_superuser:
+            Route_Allocation.ward = None
+         else:    
+           if self.request.user.appuser.is_contractor:
+            #Route_Allocation_2.ward_name = self.request.user.appuser.bmc_contractor.ward
+            Route_Allocation.ward = self.request.user.appuser.bmc_contractor.ward
+           else:
+            #Route_Codes.ward_name = self.request.user.appuser.bmc_officer.ward 
+            Route_Allocation.ward = self.request.user.appuser.bmc_officer.ward
+        except:
+            Route_Allocation.ward = None
+        #print(self.request.user.appuser.bmc_contractor.ward)
+        
+        Route_Allocation.created_at = timezone.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+        Route_Allocation.save()
+        return redirect('route_allocation')
+    
+    
+
+@login_required
+#@user_passes_test(lambda user: user.is_superuser)
+def upload_allocation_data(request):
+    if request.method == 'POST':
+        excel_file = request.FILES["allocation_excel_file"]
+        wb = load_workbook(filename = excel_file)
+        #ws = wb['route_allocation']
+        
+        ws = wb.active
+        excel_data = list()
+        header= ['shift','route_code','route_name','vehicle']
+
+        for row in ws.iter_rows(min_row=1,max_col=4):
+            row_content = list()
+            for cell in row:
+                row_content.append(cell.value)
+
+            if not row_content[0]:
+                continue
+
+        
+            row_content[0] = str(row_content[0]).strip()
+            row_content[1] =  str(row_content[1]).strip()
+            row_content[2] =  row_content[2].strip()
+            row_content[3] =  row_content[3].strip()
+            
+            if row_content[3] and row_content[0] and row_content[1]:
+                try:
+                  vehicle = Vehicle.objects.get(plate_number=row_content[3])
+                except Vehicle.DoesNotExist:
+                  vehicle = None
+
+                if not vehicle:
+                    print(f"vehice {row_content[3]} does not exists")
+                    continue
+                row_content[3] = vehicle
+                excel_data.append(dict(zip(header,row_content)))
+
+        for each_record in excel_data:
+            try:
+                each_record['created_by'] = request.user
+                try:
+                 if request.user.appuser.is_superuser:
+                     each_record['ward'] = None
+                 else:      
+                  if request.user.appuser.is_contractor:
+                     each_record['ward'] = request.user.appuser.bmc_contractor.ward
+                  else:
+                     each_record['ward'] = request.user.appuser.bmc_officer.ward
+                except:
+                    each_record['ward'] = None
+                    
+                #each_record['vehicle_type'] = each_record['vehicle_type'].upper()
+                Route_Allocation.objects.create(**each_record);
+            except:
+                print ("error occurred while creating routes")
+
+        return redirect('route_allocation')
+    return render(request,'reports/upload_allocation_data.html',{}) 
+
+
+@login_required
+#@user_passes_test(lambda user: user.is_superuser)
+def delete_allocation(request):
+    allocation = Route_Allocation.objects.get(pk=request.POST['id'])
+    allocation.is_active = 'f'
+    allocation.save()
+    response_data={}
+    response_data['status'] = 'success'
+    return HttpResponse(json.dumps(response_data),content_type="application/json")
+
+
+
+#class AllocationUpdateView(UserPassesTestMixin,UpdateView):
+class AllocationUpdateView(UpdateView):
+    model = Route_Allocation
+    form_class=AllocationEditForm
+    context_object_name= 'edit_route_allocation'
+    template_name = 'reports/edit_route_allocation.html'
+    success_url = '/route_allocation/'
+
+    def test_func(self):
+        return self.request.user.is_authenticated 
+
+    def form_valid(self,form):
+        Route_Allocation = form.save(commit=False)
+        #Route_Allocation_2.updated_at = timezone.now()
+        #Route_Allocation_2.updated_by = self.request.user
+        Route_Allocation.save()
+        return redirect('route_allocation')    
+
+#----------------------------##END__OF__ROUTE__ALLOCATION##---------------------------
+
+
+#HELPDESK SECTION ++++++++++++++++++++++++++++++++++++++++++++++++  
+class QueryCreateView(CreateView):
+    model = Helpdesk
+    form_class=QueryForm
+    template_name = 'reports/query_form.html'
+    success_url= '/helpdesk/'
+
+    def test_func(self):
+        return self.request.user.is_authenticated
+
+    def form_valid(self,form):
+        Helpdesk = form.save(commit=False)
+        
+        try:
+          if self.request.user.appuser.is_superuser:
+            Helpdesk.ward = None
+          else:   
+            if self.request.user.appuser.is_contractor:
+              #Helpdesk.ward_name = self.request.user.appuser.bmc_contractor.ward
+              Helpdesk.ward = self.request.user.appuser.bmc_contractor.ward
+            else:
+              #Helpdesk.ward_name = self.request.user.appuser.bmc_officer.ward 
+              Helpdesk.ward = self.request.user.appuser.bmc_officer.ward
+        except:
+            Helpdesk.ward = None     
+          
+        datetime_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        datetime_dtformat = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
+        Helpdesk.created_at = datetime_dtformat
+        Helpdesk.created_by = self.request.user
+        Helpdesk.save()
+        return redirect('../helpdesk')   
+
+
+class HelpdeskListView(ListView):
+    model = Helpdesk
+    context_object_name='helpdesk'
+    template_name = 'reports/helpdesk.html'
+
+    def test_func(self):
+        return self.request.user.is_authenticated 
+
+    def get_queryset(self):
+        
+        try:
+         if self.request.user.appuser.is_superuser:
+          qs = super(HelpdeskListView,self).get_queryset().filter(is_active=True).order_by('id')
+         else:
+          if self.request.user.appuser.is_contractor:
+            ward = self.request.user.appuser.bmc_contractor.ward
+            qs = super(HelpdeskListView,self).get_queryset().filter(ward=ward).order_by('id')  
+          else:
+            ward = self.request.user.appuser.bmc_officer.ward
+            qs = super(HelpdeskListView,self).get_queryset().filter(ward=ward).order_by('id')  
+        except:
+            qs = super(HelpdeskListView,self).get_queryset().filter(is_active=True).order_by('id')
+            
+        return qs      
+
+
+
+class QueryResponseView(UserPassesTestMixin,UpdateView):
+    model = Helpdesk
+    form_class=QueryResponseForm
+    context_object_name= 'query_response'
+    template_name = 'reports/query_response.html'
+    success_url = '/helpdesk/'
+
+
+    def test_func(self):
+        return self.request.user.is_authenticated 
+
+    def form_valid(self,form):
+        Helpdesk = form.save(commit=False)
+        #Route_Allocation_2.updated_at = timezone.now()
+        #Route_Allocation_2.updated_by = self.request.user
+        Helpdesk.save()
+        return redirect('helpdesk')
+
+
+
+#HELPDESK SECTION END +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+def get_vehicle_travel_history_2(request,param):
+    response_data=dict()
+    response_data['status'] = 'success'
+    response_data['data'] = list()
+    response_data['bins'] = list()
+    
+    
+    #form_data = QueryDict(request.POST['form_data'].encode('ASCII'))
+    #from_time = dateutil.parser.parse(form_data['from_time'])
+    values = param
+    values = values.split("_")
+    connection = psycopg2.connect(user="mcgm",
+                                  password="mcgm",
+                                  host="localhost",
+                                  port="5432",
+                                  database="mcgm")
+    cursor = connection.cursor()
+    
+    date = str(values[0])
+    route_code = str(values[1])
+    all_compliance = values[2]
+    #all_compliance = "YYNYYYYYYYY"
+    
+    q1 = "select vehicle_id,shift,id from swm.route_allocation where is_active='t' and route_code='"+route_code+"'"
+    cursor.execute(q1)
+    fetch_data = cursor.fetchone()
+    
+    plate_number = str(fetch_data[0])
+    shift = str(fetch_data[1])
+    route_code_id = str(fetch_data[2])
+    
+    
+    
+    if shift == '1':
+        from_time = date + ' 06:00:00'
+        to_time = date + ' 14:00:00'
+        
+    elif shift == '2':
+        from_time = date + ' 14:00:00'
+        to_time = date + ' 22:00:00'    
+    
+    elif shift == '3':
+        from_time = date + ' 22:00:00'
+        day = int(date[-2:])+1
+        to_time = date[0:8] + str(day) + ' 06:00:00' 
+    
+    """
+    from_time = '2023-02-17 10:00:00'
+    #to_time = dateutil.parser.parse(form_data['to_time'])
+    to_time = '2023-02-17 14:00:00'
+    """
+    
+    
+    vehicle = Vehicle.objects.get(pk=plate_number)
+   
+    
+    
+    vc = chain(vehicle.vehicle_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime') , vehicle.current_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime'))
+
+    for each_vehicle_record in set(vc):
+        each_vehicle_record_data = dict()
+        each_vehicle_record_data['lat'] = str(each_vehicle_record.latitude)
+        each_vehicle_record_data['lon'] = str(each_vehicle_record.longitude)
+        each_vehicle_record_data['time'] = str(each_vehicle_record.datetime)
+        each_vehicle_record_data['id'] = str(each_vehicle_record.id)
+        each_vehicle_record_data['heading'] = str(each_vehicle_record.heading)   #Change made on 9th June
+        each_vehicle_record_data['speed'] = str(each_vehicle_record.speed)
+        each_vehicle_record_data['shift'] = str(each_vehicle_record.shift)
+        each_vehicle_record_data['v_id'] = str(each_vehicle_record.vehicle_id)
+        each_vehicle_record_data['plate_no'] = str(vehicle)
+        response_data['data'].append(each_vehicle_record_data)
+    #vehicles  = list(map(lambda vehicle : Vehicle.objects.get(pk=vehicle) , form_data['selectVehicle'].split("_")))
+    
+    
+    
+    fname = "/home/mcgm/Development/mcgm/mcgm/reports/bin_time_files/" + date + "_" + route_code + ".txt"
+    
+    open_bt_file = open(fname,"r")
+    all_bin_time = open_bt_file.read()
+    bin_time = all_bin_time.split("_")
+    
+    open_bt_file.close()
+    
+    
+    
+    
+    #NEW RC CHANGE
+    q2 = "select bin_code,bin_location,bin_name from swm.route_compliance_demo where is_active='t' and route_code='"+route_code+"' order by id asc"
+    cursor.execute(q2)
+    fetch_bin_data = cursor.fetchall()
+    
+    array_length =  len(fetch_bin_data)
+    count = 1
+    bt_count = 0
+    for bin_vals in fetch_bin_data:
+        bin_dict = dict()
+        #bin_dict['bin_code'] = bin_vals[0]
+        bin_dict['bin_code'] = str(bt_count)
+        
+        lat_lon_split = bin_vals[1].split(",")
+        bin_dict['bin_lat'] = lat_lon_split[0]
+        bin_dict['bin_lon'] = lat_lon_split[1].lstrip()
+        bin_dict['route_code'] = route_code
+        bin_dict['bin_compliance'] = ''
+        bin_dict['bin_name'] = bin_vals[2]
+        
+        if count == 1:
+          bin_dict['is_ML_CP'] = 'ML'
+        elif count == array_length:
+          bin_dict['is_ML_CP'] = 'CP'  
+        else:
+          bin_dict['is_ML_CP'] = 'Bin'  
+        
+        bin_dict['bin_time'] = bin_time[bt_count]
+        
+        count = count + 1
+        bt_count = bt_count + 1
+        response_data['bins'].append(bin_dict)
+    
+    #response_data['bins'][0]['route_code'] = "hello"
+    total_compliance_count = len(all_compliance)
+    
+    n = 0
+    for n in range(total_compliance_count):
+        response_data['bins'][n]['bin_compliance'] = all_compliance[n]
+  
+    
+  
+    return render(request,'reports/leaflet.html',{'response_data' : response_data['data'],'bin_data' : response_data['bins']})
+    #return HttpResponse('Your parameter is  '+ str(len(values[2])))         #demo
+    #return JsonResponse({"results":response_data['bins']})                          #demo
+
+
+
+
+def route_compliance(request):
+    
+    set_session_reporting_form_params(request)
+    #form_params = request.session['reports_form_params']
+    
+    response_data=dict()
+    response_data['status'] = 'success'
+    response_data['data'] = list()
+    response_data['bins'] = list()
+    
+    
+    connection = psycopg2.connect(user="mcgm",
+                                  password="mcgm",
+                                  host="localhost",
+                                  port="5432",
+                                  database="mcgm")
+    cursor = connection.cursor()
+    count = "0"
+    iward = None
+    if request.user.is_superuser:
+        iward = 'A'
+    
+    #if not request.user.is_superuser:
+    #      if request.user.appuser.is_contractor:
+    #        iward = request.user.appuser.bmc_contractor.ward
+    #      else:
+    #        iward = request.user.appuser.bmc_officer.ward
+    else:
+        if request.user.appuser.is_contractor:
+            iward = request.user.appuser.bmc_contractor.ward
+        else:
+            iward = request.user.appuser.bmc_officer.ward       
+
+    trial_res = dict()
+    trial_res['plate_number'] = list()
+    trial_res['compliance_result_yes_no'] = list()
+    trial_res['vehicle_type'] = list()
+    trial_res['date'] = list()
+    trial_res['shift'] = list()
+    trial_res['route_code'] = list()
+    trial_res['route_name'] = list()
+    trial_res['Date_RouteCode'] = list()
+    trial_res['bin_location'] = list()
+    trial_res['bin_code'] = list()
+    trial_res['final_result'] = list()
+    
+
+    if request.method == 'POST':
+     try:
+        date = request.POST['date1']
+        shift = request.POST['shift']
+        
+        trial_res['date'].append(date)
+        trial_res['shift'].append(shift)
+        
+        #if 1 == 1:
+        response_data=dict()
+        response_data['status'] = 'success'
+        response_data['data'] = list()
+        response_data['bins'] = list()
+
+    
+        fromtime = " 00:00:00+05:30"
+        totime = " 23:59:59+05:30"
+
+        fromdate = date+fromtime
+        todate = date+totime
+
+        if shift == '3':
+            
+            
+            
+            newdate = datetime.now() + timedelta(days=1)
+            #current_date_temp = datetime.datetime.strptime(date, "%Y-%m-%d")
+            #print(current_date_temp)
+            newdate = newdate.date()
+            #print(newdate)
+            newdate = str(newdate)
+            totime = " 05:59:59+05:30"
+            todate = newdate + totime
+            #print(todate)
+            Begindate = datetime.strptime(date, "%Y-%m-%d")
+            Begindate = Begindate.date()
+            #print(Begindate)
+            Enddate = Begindate + timedelta(days=1)
+            
+            newdate = str(Enddate)
+            
+            todate = newdate + totime
+            
+    #print("Fromdate ", fromdate)
+    #print("Todate ", todate)    
+        #shift  = form_data['shift']
+    
+        iward = str(iward)
+        postgreSQL_select_Query0 = f"select id from common_ward where name = '{iward}'"
+            
+        cursor.execute(postgreSQL_select_Query0)
+        fetch0 = cursor.fetchone()
+        
+        ward_id = str(fetch0[0])
+        postgreSQL_select_Query1 = f"select distinct t1.id,t1.plate_number,t1.vehicle_type,t2.id,t2.route_code,t2.route_name from swm.vehicles t1, swm.route_allocation t2, swm.route_compliance_demo t3 where t1.ward_id = '{ward_id}' and t2.ward_id = '{ward_id}' and vehicle_type IN ('Refuse_Compactor','Refuse_Mini_Compactor') and t1.is_active = 't' and t2.is_active = 't' and t1.id = t2.vehicle_id and t2.shift = '{shift}' and t2.route_code = t3.route_code and t3.is_active = 't';"      #NEW RC Change
+        
+        cursor.execute(postgreSQL_select_Query1)
+            
+        fetch1 = cursor.fetchall()
+        
+        vehicle_id_array = []
+        plate_number_array = []
+        plate_number_website_array = []
+        vehicle_type_array = []
+        vehicle_type_website_array = []
+        vehicle_latitude_array = []
+        vehicle_longitude_array = []
+        route_name_array = []
+        route_name_website_array = []
+        route_code_array = []
+        route_code_website_array = []
+        bin_code_website_array = []
+        bin_location_website_array = []
+        lat_array = []
+        lon_array = []
+        compliance_result_array = []
+        compliance_result_yes_no_array = []
+        compliance_result_yes_no_website_array = []
+        count_yes_array = []
+        count_final_result_array = []
+        final_result = []
+        Date_RouteCode = []
+        datetime_array = []
+        
+        vehicle_type_array2 = []
+        vehicle_type_website_array2 = []
+        route_code_id_array = []
+
+        all_bin_info = dict()                       #ETH
+        display_bin_code = []                       #ETH
+        display_bin_location = []                       #ETH
+        display_final_result = []                       #ETH
+        bin_time_array = []
+        Date_and_Result_Array = []
+        collected_result_array = []
+        done = []
+        
+        bin_time = []                                        #ETH 23RD Mar
+        bt_txt_name = []
+        
+        for row1 in fetch1:
+
+            bin_code_vals = []
+            bin_location_vals = []
+            bin_final_result_vals = []
+            
+
+            compliance_result_yes_no_website_array_2 = []
+
+            vehicle_id = str(row1[0])
+            plate_number = str(row1[1])
+            vehicle_type = str(row1[2])
+            route_code_id = int(row1[3])
+            route_code = str(row1[4])
+            route_name = str(row1[5])
+            
+            
+            vehicle_id_array.append(vehicle_id)
+
+
+            plate_number_array.append(plate_number)
+            plate_number_website_array.append(plate_number)
+
+
+            vehicle_type_array.append(vehicle_type)
+            vehicle_type_website_array.append(vehicle_type)
+
+            
+            route_code_id_array.append(route_code_id)
+            route_code_array.append(route_code)
+            route_name_array.append(route_name)
+
+
+            route_code_array.append(route_code)
+            route_code_website_array.append(route_code)
+                
+
+            route_name_array.append(route_name)
+            route_name_website_array.append(route_name)
+            
+
+            date_route_code = date + "_" + route_code       #for map purpose
+            Date_RouteCode.append(date_route_code)
+            
+            
+            
+            
+
+            postgreSQL_select_Query2 = f"select distinct on (longitude,latitude) longitude,latitude,datetime from swm.vehicle_tracklog_historys where vehicle_id = '{vehicle_id}' and datetime between '{fromdate}' and '{todate}' and shift = '{shift}' order by longitude,latitude,datetime asc;"
+            
+            cursor.execute(postgreSQL_select_Query2)
+            
+            fetch2 = cursor.fetchall()
+
+            for row2 in fetch2:
+                longitude = str(row2[0])
+                longitude = float(longitude)
+                latitude = str(row2[1])
+                latitude = float(latitude)
+                datetime1 = str(row2[2])
+                datetime_array.append(datetime1)
+                vehicle_longitude_array.append(longitude)
+                vehicle_latitude_array.append(latitude)
+            countLen = len(vehicle_latitude_array)
+
+
+            postgreSQL_select_Query3 = f"select bin_location,bin_name from swm.route_compliance_demo where route_code = '{route_code}' and is_active = 't' order by id asc;"    #NEW RC CHANGE
+            
+            cursor.execute(postgreSQL_select_Query3)
+            
+            fetch3 = cursor.fetchall()
+            
+            
+            
+            for row3 in fetch3:
+
+                bin_location = str(row3[0])
+                bin_location_website_array.append(bin_location)
+                
+                
+                bin_code = str(row3[1])                                
+                bin_code_website_array.append(bin_code)
+                
+                bin_code_vals.append(bin_code)
+                bin_location_vals.append(bin_location)
+                """
+                bin_array = []                                         #ETH
+                bin_array.append(bin_code)                             #ETH
+                """
+                
+                bin_location_split = bin_location.split(',')
+                
+                lat = bin_location_split[0]
+                lat = float(lat)
+                lat = round(lat,6)               
+        
+
+                lon = bin_location_split[1]
+                lon = float(lon)
+                lon = round(lon,6)
+                
+                grid = float(0.0005)
+                #grid = float(0.00005)
+                grid = round(grid,6)
+
+                maxlon = lon + grid
+                maxlon = round(maxlon,6)
+            
+                maxlat = lat + grid
+                maxlat = round(maxlat,6)
+
+                minlon = lon - grid
+                minlon = round(minlon,6)
+
+                minlat = lat - grid
+                minlat = round(minlat,6)
+
+
+                geofence = f"{minlon} {maxlat},{maxlon} {maxlat},{maxlon} {minlat},{minlon} {minlat},{minlon} {maxlat}"
+
+                for x in range(countLen):
+
+                    postgreSQL_select_Query5 = f"SELECT ST_Contains(polygon::geometry, point::geometry) FROM (SELECT ST_GeographyFromText('POLYGON(({geofence}))') AS polygon,ST_GeographyFromText('POINT({vehicle_longitude_array[x]} {vehicle_latitude_array[x]})') AS point) AS data;"
+           
+                    cursor.execute(postgreSQL_select_Query5)
+        
+                    fetch5 = cursor.fetchall()
+
+                    for row5 in fetch5:
+                        compliance_result = str(row5[0])
+                        compliance_result_array.append(compliance_result)
+                        collected_result_array.append(compliance_result)
+
+                collected_result_array_len = len(collected_result_array)
+                for w in range(collected_result_array_len):
+                    Date_and_Result = datetime_array[w] + "_" + collected_result_array[w]
+                    Date_and_Result_Array.append(Date_and_Result)
+                
+                matches = [match for match in Date_and_Result_Array if "True" in match]
+                matches_length = len(matches)
+
+                if matches_length == 0:
+                    #print("None")
+                    done.append("None")
+            
+                else:
+                    #print("-->",collected_result_array_len)
+            
+                    bintime = matches[0]
+                    bintime_actual = bintime.replace("+05:30_True", "")
+                    #print(bintime_actual)
+                    done.append(bintime_actual)        
+                
+                
+                
+                
+                matches = []
+                Date_and_Result_Array = []
+                collected_result_array = []
+                k = "True"
+
+                if k in compliance_result_array:
+                    final_result.append("YES")
+                else:
+                    final_result.append("NO")
+
+                compliance_result_array = []
+                
+                
+                
+            str1 = " "
+            str1 = str1.join(final_result)
+
+            count_final_result = len(final_result)
+                
+            count_yes = final_result.count("YES")
+            count_no = final_result.count("NO")
+                
+            percentage_of_yes = (count_yes/count_final_result) * 100 
+                #print(percentage_of_yes)
+                
+            bin_final_result_vals.append(final_result)
+                
+            if percentage_of_yes >= 50:
+                compliance_result_yes_no = "ROUTE COMPLIED"
+
+            if percentage_of_yes < 50:
+                compliance_result_yes_no = "ROUTE NOT COMPLIED"
+
+            compliance_result_yes_no_website_array_2.append(compliance_result_yes_no)
+            compliance_result_yes_no_array.append(compliance_result_yes_no)
+            
+            
+            bin_time.append(done)             #ETH 23Mar **&&&&&&&&&&&&&&&&&&&&&&&&&&&
+            
+            #random_name = str(''.join(random.choices(string.ascii_uppercase + string.digits, k=7)))
+            
+            random_name = date + "_" + route_code
+            
+            bt_txt_name.append(random_name)
+            #try:
+            file_name = "/home/mcgm/Development/mcgm/mcgm/reports/bin_time_files/" + random_name + ".txt"
+            bin_time_txt = open(file_name,"w")
+            for ind_bin_time in done:  
+             bin_time_txt.write(ind_bin_time)
+             bin_time_txt.write("_")
+             
+            bin_time_txt.close()
+            #except:
+            
+            #"https://swm.vtms.cleanupmumbai.com/static/pdfreports/template/Sample_Route_Info_Template.xlsx"
+            
+            
+            
+                #compliance_result_yes_no_website_array.append(compliance_result_yes_no)
+                
+                #print("Vehicle: " + plate_number + ", Route Code: " + route_code + ", Result: " + compliance_result_yes_no)
+                #final_value = "Vehicle: " + plate_number + ", Route Code: " + route_code + ", Result: " + compliance_result_yes_no
+            
+            
+            compliance_result_yes_no_website_array.append(compliance_result_yes_no)
+            count_yes_array.append(count_yes)
+            count_final_result_array.append(count_final_result)
+            display_bin_code.append(bin_code_vals)
+            display_bin_location.append(bin_location_vals)
+            display_final_result.append(final_result)
+            
+            #bin_code_website_array = []
+            
+            #dummy_array_code.append("ABCDEFG")
+            
+            all_bin_info['bin_code'] = display_bin_code
+            all_bin_info['bin_location'] = display_bin_location
+            all_bin_info['final_result'] = display_final_result
+            
+            
+            final_result = []
+            vehicle_latitude_array = []
+            vehicle_longitude_array = []
+            done = []
+            
+            
+        if connection:
+            cursor.close()
+            connection.close()
+            print("PostgreSQL connection is closed")
+        
+        
+        
+        
+        
+        
+        #plate_number = "MH01ER0928"
+        trial_res['plate_number'].append(plate_number_website_array)
+        #trial_res['data'] = 'TRIAL DATA111'
+        
+        
+        trial_res['compliance_result_yes_no'].append(compliance_result_yes_no_website_array)
+
+        trial_res['vehicle_type'].append(vehicle_type_website_array)
+
+        trial_res['route_code'].append(route_code_website_array)
+        trial_res['route_name'].append(route_name_website_array)
+        trial_res['Date_RouteCode'].append(Date_RouteCode)
+        #trial_res['bin_code'].append(bin_code_website_array)
+        #trial_res['bin_location'].append(bin_location_website_array)
+        #trial_res['final_result'].append(all_bin_info)
+        
+        count = len(plate_number_website_array)
+        response_data['bins'].append(all_bin_info['bin_code']) 
+        n = 0
+        for n in range(count):
+          all_data = dict()
+          all_data['plate_number'] = plate_number_website_array[n]
+          all_data['compliance_result_yes_no'] = compliance_result_yes_no_website_array[n]
+          all_data['vehicle_type'] = vehicle_type_website_array[n]
+          all_data['count_yes'] = count_yes_array[n]
+          all_data['count_final_result'] = count_final_result_array[n]
+          all_data['route_code'] = route_code_website_array[n]
+          all_data['route_name'] = route_name_website_array[n]
+          all_data['bin_code'] = all_bin_info['bin_code'][n]
+          
+          #9 May Change for Bin Dropdown
+          all_data['bin_dropdown'] = list()
+          
+          bin_name = all_bin_info['bin_code'][n]
+          yes_and_no = all_bin_info['final_result'][n]
+          
+          for m in range(len(all_bin_info['bin_code'][n])):
+            dropdown_dict = dict()   
+            dropdown_dict['bins'] = bin_name[m]
+            dropdown_dict['result'] = yes_and_no[m]
+            all_data['bin_dropdown'].append(dropdown_dict)
+          #9 May change ends          
+          
+          
+          all_data['bin_location'] = all_bin_info['bin_location'][n]
+          all_data['final_result'] = all_bin_info['final_result'][n]
+          all_data['bin_time'] = bin_time[n]
+
+          concat_result = ''
+          for single_result in all_bin_info['final_result'][n]:
+            concat_result += single_result[0]
+            
+             
+          all_data['Date_RouteCode'] = Date_RouteCode[n]+ "_" + concat_result 
+          response_data['data'].append(all_data)
+     except:
+        #return redirect('helpdesk')
+        return render(request,'reports/no_data.html',{})
+
+       
+        
+    #return HttpResponse('Route Result is: ' + count)
+    return render(request,'reports/route_compliance.html',{'trial_res' : trial_res,'all_data' : response_data['data'],'bin_code' : response_data['bins']})
+
+
+
+def check_params(request, param):                #TEST FUNCTION
+    response_data=dict()
+    response_data['status'] = 'success'
+    response_data['data'] = list()
+    # Do something with the parameter value
+    values = param
+    values = values.split("_")
+   
+    connection = psycopg2.connect(user="mcgm",
+                                  password="mcgm",
+                                  host="localhost",
+                                  port="5432",
+                                  database="mcgm")
+    cursor = connection.cursor()
+    route_code = (values[1])
+    q1 = "select vehicle_id,shift,id from swm.route_allocation where route_code='"+route_code+"'"
+    
+    cursor.execute(q1)
+    fetch_data = cursor.fetchone()
+    #route_code_id = str(fetch_data[2])
+    route_code_id = '144'
+    q2 = "select bin_code,bin_location from swm.route_compliance where is_active='t' and route_code_id='"+route_code_id+"'"   #OLD RC
+    cursor.execute(q2)
+    fetch_bin_data = cursor.fetchall()
+    #response_data['data'].append(fetch_bin_data)
+    
+    for val in fetch_bin_data:
+        response_data['data'].append(val)
+    
+    shift = str(fetch_data[1])
+    date = str(values[0])
+    
+    day = int(date[-2:])+1
+    to_time = date[0:8] + str(day) +' 06:00:00' 
+    
+    return HttpResponse('Your parameter is  '+ str(day) + ' '+ to_time)
+    #return JsonResponse({"results":response_data['data']})
+
+
+####____________ADD___BINS_________________######################
+
+class BinListView(ListView):
+    """
+    response_data=dict()
+    response_data['status'] = 'success'
+    response_data['data'] = list()
+    response_data['bins'] = list()
+        
+    model = Route_Compliance
+    context_object_name='view_bins'
+    template_name = 'reports/view_bins.html'
+
+    def test_func(self):
+        return self.request.user.is_authenticated 
+
+    def get_queryset(self):
+       qs = super(BinListView,self).get_queryset().filter(is_active=True).order_by('id')   
+       return qs 
+    """
+    model = Route_Allocation
+    context_object_name='view_bins'
+    template_name = 'reports/view_bins.html'
+
+    def test_func(self):
+        return self.request.user.is_authenticated 
+
+    def get_queryset(self):
+        try:
+         if self.request.user.appuser.is_superuser:
+          qs = super(BinListView,self).get_queryset().filter(is_active=True).order_by('shift')
+          qs['bin_count'] = '20'
+         else:
+          if self.request.user.appuser.is_contractor:
+            ward = self.request.user.appuser.bmc_contractor.ward
+            qs = super(BinListView,self).get_queryset().filter(ward=ward,is_active=True).order_by('route_code')  
+          else:
+            ward = self.request.user.appuser.bmc_officer.ward
+            qs = super(BinListView,self).get_queryset().filter(ward=ward,is_active=True).order_by('route_code')  
+        except:
+            qs = super(BinListView,self).get_queryset().filter(is_active=True).order_by('shift')
+            
+            
+            
+        return qs      
+
+
+
+def upload_bins(request):
+    
+    if request.method == 'POST':
+     #try:  
+        excel_file = request.FILES["allocation_excel_file"]
+        wb = load_workbook(filename = excel_file)
+        #ws = wb['route_allocation']
+        
+        ws = wb.active
+        excel_data = list()
+        #header= ['bin_code','bin_name','route_code','bin_location']
+        header= ['bin_name','route_code','bin_location']
+        
+        for row in ws.iter_rows(min_row=1,max_col=4):
+            row_content = list()
+            for cell in row:
+                row_content.append(cell.value)
+
+            if not row_content[0]:
+                continue
+            
+            #row_content[0] = str(row_content[0]).strip()       #bin_code
+            row_content[0] =  str(row_content[0])              #bin_name
+            row_content[1] =  row_content[1].strip()           #route_code
+            row_content[2] =  str(row_content[2]).strip() + "," +  str(row_content[3]).strip()    #bin_location
+            
+            
+            
+            if row_content[2] and row_content[0] and row_content[1]:
+                try:
+                  route_code = Route_Allocation.objects.get(route_code=row_content[1])
+                except Route_Allocation.DoesNotExist:
+                  route_code = None
+
+                if not route_code:
+                    print(f"route_code {row_content[1]} does not exists")
+                    continue
+                row_content[1] = route_code
+                excel_data.append(dict(zip(header,row_content)))
+            
+                
+        for each_record in excel_data:
+            try:
+                each_record['created_by'] = request.user
+                 
+                #each_record['vehicle_type'] = each_record['vehicle_type'].upper()
+                Route_Compliance.objects.create(**each_record);
+                
+                #CODE TO GET BIN COUNT
+                
+                
+            except:
+                print ("error occurred while creating routes")        
+        
+        return redirect('view_bins')
+     #except:
+        #return redirect('helpdesk')
+        #return render(request,'reports/errorpage.html',{}) 
+    return render(request,'reports/upload_bins.html',{}) 
+
+
+"""
+def upload_bins(request):
+    excel_data = list()
+    if request.method == 'POST':
+        excel_file = request.FILES["allocation_excel_file"]
+        wb = load_workbook(filename = excel_file)
+        #ws = wb['route_allocation']
+        
+        ws = wb.active
+        excel_data = list()
+        #header= ['location_code','latitude','longitude','route_code','location_name']
+        header= ['bin_code','bin_location','route_code','bin_name']
+        for row in ws.iter_rows(min_row=1,max_col=5):
+            row_content = list()
+            for cell in row:
+                row_content.append(cell.value)
+
+            if not row_content[0]:
+                continue
+            
+            row_content[0] = str(row_content[0]).strip()                                          #bin_code
+            row_content[1] =  str(row_content[1]).strip()   #bin_location
+            row_content[2] =  str(row_content[2]).strip()                                             #route_code
+            row_content[3] =  str(row_content[3]).strip()                                         #bin_name
+            
+            
+            if row_content[1] and row_content[0] and row_content[3] and row_content[2]:
+                try:
+                  route_code = Route_Allocation.objects.get(route_code=row_content[2])
+                except Route_Allocation.DoesNotExist:
+                  route_code = None
+
+                if not route_code:
+                    print(f"route_code {row_content[3]} does not exists")
+                    continue
+                row_content[1] = route_code
+                excel_data.append(dict(zip(header,row_content)))
+            
+                
+        for each_record in excel_data:
+            #try:
+                each_record['created_by'] = request.user
+                 
+                #each_record['vehicle_type'] = each_record['vehicle_type'].upper()
+                Route_Compliance.objects.create(**each_record);
+            #except:
+            #    print ("error occurred while creating routes")   
+                
+                     
+        return redirect('view_bins')
+        #return JsonResponse({"results":excel_data})
+    
+    return render(request,'reports/upload_bins.html',{}) 
+"""    
+
+
+@login_required
+def delete_route_info(request):
+    
+    connection = psycopg2.connect(user="mcgm",
+                                  password="mcgm",
+                                  host="localhost",
+                                  port="5432",
+                                  database="mcgm")
+    cursor = connection.cursor()
+    
+    delete_val = request.POST['id']
+    q3 = "select id from swm.route_allocation where is_active='t' and route_code='"+delete_val+"'"
+    cursor.execute(q3)
+    fetch_route_code_id = cursor.fetchone()
+    fetch_route_code_id = int(fetch_route_code_id[0])
+    
+    #vehicle = Vehicle.objects.get(pk=plate_number)
+    #allocation = Route_Compliance.objects.get(pk=request.POST['id'])
+    
+    allocation_all = Route_Compliance.objects.filter(route_code_id=fetch_route_code_id)
+    for allocation in allocation_all:
+      #if 1==1:    
+      allocation.is_active = 'f'
+      allocation.save()
+      response_data={}
+      response_data['status'] = 'success'
+    return HttpResponse(json.dumps(response_data),content_type="application/json")
+
+
+
+
+
+def bin_mapview(request,param): 
+    
+    response_data=dict()
+    response_data['status'] = 'success'
+    response_data['data'] = list()
+    response_data['bins'] = list()
+    
+    connection = psycopg2.connect(user="mcgm",
+                                  password="mcgm",
+                                  host="localhost",
+                                  port="5432",
+                                  database="mcgm")
+    cursor = connection.cursor()
+    
+    route_code = param
+    """
+    q4 = "select id from swm.route_allocation where is_active='t' and route_code='"+route_code+"'"
+    
+    
+    cursor.execute(q4)
+    fetch_route_code_id = cursor.fetchone()
+    route_code_id = str(fetch_route_code_id[0])
+    """
+    #q2 = "select bin_code,bin_location,bin_name from swm.route_compliance where is_active='t' and route_code_id='"+route_code_id+"'"
+    #CHANGE FOR NEW ROUTE COMP
+    q2 = "select bin_code,bin_location,bin_name from swm.route_compliance_demo where is_active='t' and route_code ='"+route_code+"'"
+    cursor.execute(q2)
+    fetch_bin_data = cursor.fetchall()
+    
+    array_length =  len(fetch_bin_data)
+    count = 1
+    for bin_vals in fetch_bin_data:
+        bin_dict = dict()
+        #bin_dict['bin_code'] = bin_vals[0]
+        bin_dict['bin_code'] = str(count)
+        
+        lat_lon_split = bin_vals[1].split(",")
+        bin_dict['bin_lat'] = lat_lon_split[0]
+        bin_dict['bin_lon'] = lat_lon_split[1].lstrip()
+        bin_dict['route_code'] = route_code
+        #bin_dict['bin_compliance'] = ''
+        bin_dict['bin_name'] = bin_vals[2]
+        
+        if count == 1:
+          bin_dict['is_ML_CP'] = 'ML'
+        elif count == array_length:
+          bin_dict['is_ML_CP'] = 'CP'  
+        else:
+          bin_dict['is_ML_CP'] = 'Bin'
+        
+        count = count + 1
+        response_data['bins'].append(bin_dict)
+    """
+    #response_data['bins'][0]['route_code'] = "hello"
+    total_compliance_count = len(all_compliance)
+    
+    n = 0
+    for n in range(total_compliance_count):
+        response_data['bins'][n]['bin_compliance'] = all_compliance[n]
+    """
+    
+  
+    return render(request,'reports/bin_mapview.html',{'bin_data' : response_data['bins']})
+    
+
+def demo_route_info(request):
+    
+    response_data=dict()
+    response_data['status'] = 'success'
+    response_data['data'] = list()
+    response_data['bins'] = list()
+    
+    connection = psycopg2.connect(user="mcgm",
+                                  password="mcgm",
+                                  host="localhost",
+                                  port="5432",
+                                  database="mcgm")
+    cursor = connection.cursor()
+    
+    #try:
+    """
+    if self.request.user.appuser.is_superuser:
+     
+    else:    
+        if request.user.appuser.is_contractor:
+            iward = request.user.appuser.bmc_contractor.ward
+        else:
+            iward = request.user.appuser.bmc_officer.ward        
+    """
+    plate_number = 1018
+    from_time = '2023-03-06 10:00:00'
+    
+    to_time = '2023-03-06 10:10:00'
+    vehicle = Vehicle.objects.get(pk=plate_number)
+   
+    vc = vehicle.vehicle_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime') 
+    
+    for each_vehicle_record in set(vc):
+        each_vehicle_record_data = dict()
+        each_vehicle_record_data['lat'] = str(each_vehicle_record.latitude)
+        each_vehicle_record_data['lon'] = str(each_vehicle_record.longitude)
+        each_vehicle_record_data['time'] = str(each_vehicle_record.datetime)
+        each_vehicle_record_data['id'] = str(each_vehicle_record.id)
+        each_vehicle_record_data['heading'] = str(each_vehicle_record.heading)   #Change made on 9th June
+        each_vehicle_record_data['speed'] = str(each_vehicle_record.speed)
+        each_vehicle_record_data['shift'] = str(each_vehicle_record.shift)
+        each_vehicle_record_data['v_id'] = str(each_vehicle_record.vehicle_id)
+        each_vehicle_record_data['plate_no'] = str(vehicle)
+        response_data['data'].append(each_vehicle_record_data)
+    
+    
+    #return render(request,'reports/leaflet.html',{'response_data' : response_data['data'],'bin_data' : response_data['bins']})
+    #return HttpResponse('Your parameter is  '+ str(len(values[2])))         #demo
+    return JsonResponse({"results":response_data['data']})                          #demo
+
+
+
+def weight_report(request):
+    
+    set_session_reporting_form_params(request)
+    #form_params = request.session['reports_form_params']
+    
+    response_data=dict()
+    response_data['status'] = 'success'
+    response_data['data'] = list()
+    response_data['info'] = list()
+    
+    
+    connection = psycopg2.connect(user="mcgm",
+                                  password="mcgm",
+                                  host="localhost",
+                                  port="5432",
+                                  database="mcgm")
+    cursor = connection.cursor()
+    count = "0"
+    iward = None
+    if request.user.is_superuser:
+        iward = 'A'
+    
+    #if not request.user.is_superuser:
+    #      if request.user.appuser.is_contractor:
+    #        iward = request.user.appuser.bmc_contractor.ward
+    #      else:
+    #        iward = request.user.appuser.bmc_officer.ward
+    else:
+        if request.user.appuser.is_contractor:
+            iward = request.user.appuser.bmc_contractor.ward
+        else:
+            iward = request.user.appuser.bmc_officer.ward       
+    
+    iward = str(iward)
+    if request.method == 'POST':
+     
+        date = request.POST['date1']
+        shift = request.POST['shift']
+        
+        if request.user.is_superuser:        #1
+          iward = request.POST['ward']
+        
+        if shift == '1':
+          shift_str = 'I'
+        elif shift == '2':
+          shift_str = 'II'
+        elif shift == '3':
+          shift_str = 'III'          
+            
+        all_data = dict()
+        all_data['date'] = date
+        all_data['shift'] = shift
+        all_data['ward'] = iward
+        
+        response_data['info'].append(all_data)
+        
+        #weight_query = "select vehicle_no,weighbridge_ul,trans_date_ul,trans_time_ul,act_shift_ul,act_net_weight,invehicle_image from swm.sendweighexitdata where vehicle_no in (select swm.vehicles.plate_number from common_ward Join swm.vehicles ON common_ward.id = swm.vehicles.ward_id where common_ward.name = '"+iward+"') and trans_date_ul ='"+date+"' and act_shift_ul = '"+shift_str+"'"     #OG
+        #weight_query = "select vehicle_no,weighbridge_ul,trans_date_ul,trans_time_ul,act_shift_ul,act_net_weight,invehicle_image from swm.sendweighexitdata where vehicle_no in (select swm.vehicles.plate_number from common_ward Join swm.vehicles ON common_ward.id = swm.vehicles.ward_id) and trans_date_ul ='"+date+"' and act_shift_ul = '"+shift_str+"'"
+       
+       
+        
+        weight_query = "SELECT sendweighexitdata.vehicle_no, sendweighexitdata.weighbridge_ul, sendweighexitdata.trans_date_ul, sendweighexitdata.trans_time_ul, sendweighexitdata.act_shift_ul, sendweighexitdata.act_net_weight, sendweighexitdata.invehicle_image, sendweighexitdata.unladen_weight, sendweighentrydata.gross_weight, common_ward.name, sendweighentrydata.vehicletype FROM swm.sendweighexitdata JOIN swm.vehicles ON sendweighexitdata.vehicle_no = swm.vehicles.plate_number JOIN common_ward ON common_ward.id = swm.vehicles.ward_id JOIN swm.sendweighentrydata ON sendweighexitdata.unique_transaction_id = sendweighentrydata.unique_transaction_id AND sendweighentrydata.trans_date = sendweighexitdata.trans_date_ul AND sendweighentrydata.act_shift = sendweighexitdata.act_shift_ul WHERE common_ward.name = '"+iward+"' AND sendweighexitdata.trans_date_ul = '"+date+"' AND sendweighexitdata.act_shift_ul = '"+shift_str+"'"
+
+        #2
+        weight_query_all_wards = "SELECT sendweighexitdata.vehicle_no, sendweighexitdata.weighbridge_ul, sendweighexitdata.trans_date_ul, sendweighexitdata.trans_time_ul, sendweighexitdata.act_shift_ul, sendweighexitdata.act_net_weight, sendweighexitdata.invehicle_image, sendweighexitdata.unladen_weight, sendweighentrydata.gross_weight, common_ward.name, sendweighentrydata.vehicletype FROM swm.sendweighexitdata JOIN swm.vehicles ON sendweighexitdata.vehicle_no = swm.vehicles.plate_number JOIN common_ward ON common_ward.id = swm.vehicles.ward_id JOIN swm.sendweighentrydata ON sendweighexitdata.unique_transaction_id = sendweighentrydata.unique_transaction_id AND sendweighentrydata.trans_date = sendweighexitdata.trans_date_ul AND sendweighentrydata.act_shift = sendweighexitdata.act_shift_ul WHERE sendweighexitdata.trans_date_ul = '"+date+"' AND sendweighexitdata.act_shift_ul = '"+shift_str+"'  order by common_ward.name"
+        
+        """
+          SELECT sendweighexitdata.vehicle_no, 
+          MAX(sendweighexitdata.weighbridge_ul) AS weighbridge_ul, 
+          MAX(sendweighexitdata.trans_date_ul) AS trans_date_ul, 
+          MAX(sendweighexitdata.trans_time_ul) AS trans_time_ul, 
+          MAX(sendweighexitdata.act_shift_ul) AS act_shift_ul, 
+          MAX(sendweighexitdata.act_net_weight) AS act_net_weight, 
+          MAX(sendweighexitdata.invehicle_image) AS invehicle_image, 
+          MAX(sendweighexitdata.unladen_weight) AS unladen_weight, 
+          MAX(sendweighentrydata.gross_weight) AS gross_weight, 
+          MAX(common_ward.name) AS ward_name
+          FROM swm.sendweighexitdata 
+          JOIN swm.vehicles ON sendweighexitdata.vehicle_no = swm.vehicles.plate_number 
+          JOIN common_ward ON common_ward.id = swm.vehicles.ward_id 
+          JOIN swm.sendweighentrydata ON sendweighexitdata.vehicle_no = sendweighentrydata.vehicle_no 
+          WHERE sendweighexitdata.trans_date_ul = '2023-05-11' 
+          AND sendweighexitdata.act_shift_ul = 'I' 
+          GROUP BY sendweighexitdata.vehicle_no;
+
+        """
+        
+        
+        
+        #3
+        if iward == 'ALL':
+          cursor.execute(weight_query_all_wards)
+        else:  
+          cursor.execute(weight_query)
+          
+        fetch_weight_data = cursor.fetchall()
+        
+        for weight_vals in fetch_weight_data:
+          weight_dict = dict()
+          weight_dict['vehicle_no'] = weight_vals[0]
+          weight_dict['weighbridge'] = weight_vals[1]
+          weight_dict['trans_date_ul'] = weight_vals[2]
+          weight_dict['trans_time_ul'] = weight_vals[3]
+          weight_dict['act_shift_ul'] = weight_vals[4]
+          weight_dict['act_net_weight'] = weight_vals[5]
+          weight_dict['invehicle_image'] = weight_vals[6]
+          weight_dict['unladen_weight'] = weight_vals[7]
+          weight_dict['gross_weight'] = weight_vals[8]
+          weight_dict['ward_name'] = weight_vals[9]       #4
+          weight_dict['veh_type'] = weight_vals[10] 
+          response_data['data'].append(weight_dict)
+        
+        
+    #form_params = request.session['reports_form_params']
+
+    return render(request,'reports/weight_report.html',{'info_data' : response_data['info'],'all_data' : response_data['data']})
+    #return HttpResponse('Your parameter is  '+ str(date) + ' '+ str(shift))
+    #return JsonResponse({"results":response_data['data']})  
+
+
+
+
+
+def my_view(request):
+
+    set_session_reporting_form_params(request)
+    #form_params = request.session['reports_form_params']
+    
+    response_data=dict()
+    response_data['status'] = 'success'
+    response_data['data'] = list()
+    response_data['info'] = list()
+    
+    
+    connection = psycopg2.connect(user="mcgm",
+                                  password="mcgm",
+                                  host="localhost",
+                                  port="5432",
+                                  database="mcgm")
+    cursor = connection.cursor()
+    count = "0"
+    
+    iward = None
+    
+    if request.user.is_superuser:
+        iward = 'A'
+    
+    #if not request.user.is_superuser:
+    #      if request.user.appuser.is_contractor:
+    #        iward = request.user.appuser.bmc_contractor.ward
+    #      else:
+    #        iward = request.user.appuser.bmc_officer.ward
+    else:
+        if request.user.appuser.is_contractor:
+            iward = request.user.appuser.bmc_contractor.ward
+        else:
+            iward = request.user.appuser.bmc_officer.ward       
+    
+    
+    iward = str(iward)
+    if request.method == 'POST':
+     
+        date = request.POST['date1']
+        shift = request.POST['shift']
+        
+        if request.user.is_superuser:        #1
+          iward = request.POST['ward']
+    
+          
+            
+    
+        if shift == '1':
+          shift_str = 'I'
+        elif shift == '2':
+          shift_str = 'II'
+        elif shift == '3':
+          shift_str = 'III'          
+            
+        all_data = dict()
+        all_data['date'] = date
+        all_data['shift'] = shift
+        all_data['ward'] = iward
+        
+        
+        response_data['info'].append(all_data)
+        
+        
+        
+        #weight_query = "select vehicle_no,weighbridge_ul,trans_date_ul,trans_time_ul,act_shift_ul,act_net_weight,invehicle_image from swm.sendweighexitdata where vehicle_no in (select swm.vehicles.plate_number from common_ward Join swm.vehicles ON common_ward.id = swm.vehicles.ward_id where common_ward.name = '"+iward+"') and trans_date_ul ='"+date+"' and act_shift_ul = '"+shift_str+"'"     #OG
+        #weight_query = "select vehicle_no,weighbridge_ul,trans_date_ul,trans_time_ul,act_shift_ul,act_net_weight,invehicle_image from swm.sendweighexitdata where vehicle_no in (select swm.vehicles.plate_number from common_ward Join swm.vehicles ON common_ward.id = swm.vehicles.ward_id) and trans_date_ul ='"+date+"' and act_shift_ul = '"+shift_str+"'"
+       
+        weight_query = "SELECT sendweighexitdata.vehicle_no,sendweighexitdata.weighbridge_ul, sendweighexitdata.trans_date_ul, sendweighexitdata.trans_time_ul, sendweighexitdata.act_shift_ul, sendweighexitdata.act_net_weight, sendweighexitdata.invehicle_image, sendweighexitdata.unladen_weight, common_ward.name FROM swm.sendweighexitdata JOIN swm.vehicles ON sendweighexitdata.vehicle_no = swm.vehicles.plate_number JOIN common_ward ON common_ward.id = swm.vehicles.ward_id  WHERE common_ward.name = '"+iward+"' AND sendweighexitdata.trans_date_ul = '"+date+"' AND sendweighexitdata.act_shift_ul = '"+shift_str+"'"
+        
+        #2
+        weight_query_all_wards = "SELECT sendweighexitdata.vehicle_no,sendweighexitdata.weighbridge_ul, sendweighexitdata.trans_date_ul, sendweighexitdata.trans_time_ul, sendweighexitdata.act_shift_ul, sendweighexitdata.act_net_weight, sendweighexitdata.invehicle_image, sendweighexitdata.unladen_weight, common_ward.name FROM swm.sendweighexitdata JOIN swm.vehicles ON sendweighexitdata.vehicle_no = swm.vehicles.plate_number JOIN common_ward ON common_ward.id = swm.vehicles.ward_id WHERE sendweighexitdata.trans_date_ul = '"+date+"' AND sendweighexitdata.act_shift_ul = '"+shift_str+"' order by common_ward.id"
+       
+        #3
+        if iward == 'ALL':
+          cursor.execute(weight_query_all_wards)
+        else:  
+          cursor.execute(weight_query)
+          
+        fetch_weight_data = cursor.fetchall()
+        
+        for weight_vals in fetch_weight_data:
+          weight_dict = dict()
+          weight_dict['vehicle_no'] = weight_vals[0]
+          weight_dict['weighbridge'] = weight_vals[1]
+          weight_dict['trans_date_ul'] = weight_vals[2]
+          weight_dict['trans_time_ul'] = weight_vals[3]
+          weight_dict['act_shift_ul'] = weight_vals[4]
+          weight_dict['act_net_weight'] = weight_vals[5]
+          weight_dict['invehicle_image'] = weight_vals[6]
+          weight_dict['unladen_weight'] = weight_vals[7]
+          #weight_dict['gross_weight'] = weight_vals[8]
+          weight_dict['ward_name'] = weight_vals[8]       #4
+          response_data['data'].append(weight_dict)
+        
+        
+    #form_params = request.session['reports_form_params']
+
+    return render(request,'reports/weight_report_demo.html',{'info_data' : response_data['info'],'all_data' : response_data['data']})
+    #return HttpResponse('Your parameter is  '+ str(date) + ' '+ str(shift))
+    #return JsonResponse({"results":response_data['data']})      
+    
+    
+    
+    
+def my_test_view(request):  
+
+    set_session_reporting_form_params(request)
+    #form_params = request.session['reports_form_params']
+    
+    response_data=dict()
+    response_data['status'] = 'success'
+    response_data['data'] = list()
+    response_data['bins'] = list()
+    
+    
+    connection = psycopg2.connect(user="mcgm",
+                                  password="mcgm",
+                                  host="localhost",
+                                  port="5432",
+                                  database="mcgm")
+    cursor = connection.cursor()
+    count = "0"
+    iward = None
+    if request.user.is_superuser:
+        iward = 'A'
+    
+    #if not request.user.is_superuser:
+    #      if request.user.appuser.is_contractor:
+    #        iward = request.user.appuser.bmc_contractor.ward
+    #      else:
+    #        iward = request.user.appuser.bmc_officer.ward
+    else:
+        if request.user.appuser.is_contractor:
+            iward = request.user.appuser.bmc_contractor.ward
+        else:
+            iward = request.user.appuser.bmc_officer.ward       
+
+    trial_res = dict()
+    trial_res['plate_number'] = list()
+    trial_res['compliance_result_yes_no'] = list()
+    trial_res['vehicle_type'] = list()
+    trial_res['date'] = list()
+    trial_res['shift'] = list()
+    trial_res['route_code'] = list()
+    trial_res['route_name'] = list()
+    trial_res['Date_RouteCode'] = list()
+    trial_res['bin_location'] = list()
+    trial_res['bin_code'] = list()
+    trial_res['final_result'] = list()
+    
+
+    if request.method == 'POST':
+     #try:
+        date = request.POST['date1']
+        shift = request.POST['shift']
+        
+        if request.user.is_superuser:                            #Change for Ward Selection
+          iward = request.POST['ward']                           #Change for Ward Selection
+        
+        trial_res['date'].append(date)
+        trial_res['shift'].append(shift)
+        
+        #if 1 == 1:
+        response_data=dict()
+        response_data['status'] = 'success'
+        response_data['data'] = list()
+        response_data['bins'] = list()
+
+    
+        fromtime = " 00:00:00+05:30"
+        totime = " 23:59:59+05:30"
+
+        fromdate = date+fromtime
+        todate = date+totime
+
+        if shift == '3':
+            
+            """
+            # Increment the date by 1 day
+            next_day = datetime.strptime(date, "%Y-%m-%d") + timedelta(days=1)
+
+            # Convert the next_day back to a string in 'yyyy-mm-dd' format
+            next_day_str = next_day.strftime("%Y-%m-%d")
+
+            print("Next day:", next_day_str)
+            """
+            
+            newdate = datetime.now() + timedelta(days=1)
+            #current_date_temp = datetime.datetime.strptime(date, "%Y-%m-%d")
+            #print(current_date_temp)
+            newdate = newdate.date()
+            #print(newdate)
+            newdate = str(newdate)
+            
+            
+            newdate = datetime.now() + timedelta(days=1)
+            #current_date_temp = datetime.datetime.strptime(date, "%Y-%m-%d")
+            #print(current_date_temp)
+            newdate = newdate.date()
+            #print(newdate)
+            newdate = str(newdate)
+            totime = " 05:59:59+05:30"
+            todate = newdate + totime
+            #print(todate)
+            Begindate = datetime.strptime(date, "%Y-%m-%d")
+            Begindate = Begindate.date()
+            #print(Begindate)
+            Enddate = Begindate + timedelta(days=1)
+            
+            newdate = str(Enddate)
+            
+            todate = newdate + totime
+            
+    #print("Fromdate ", fromdate)
+    #print("Todate ", todate)    
+        #shift  = form_data['shift']
+        
+        """
+        iward = str(iward)
+        postgreSQL_select_Query0 = f"select id from common_ward where name = '{iward}'"
+            
+        cursor.execute(postgreSQL_select_Query0)
+        fetch0 = cursor.fetchone()
+        
+        ward_id = str(fetch0[0])
+        """
+        
+        
+        
+        #Change for Ward Selection
+        
+        
+        
+        
+        if iward == 'ALL':
+            
+          postgreSQL_select_Query1_all_wards = f"select distinct t1.id,t1.plate_number,t1.vehicle_type,t2.id,t2.route_code,t2.route_name,t4.name from swm.vehicles t1, swm.route_allocation t2,swm.route_compliance_demo t3, common_ward t4 where t4.id = t1.ward_id and vehicle_type IN ('Refuse_Compactor','Refuse_Mini_Compactor') and t1.is_active = 't' and t2.is_active = 't' and t1.id = t2.vehicle_id and t2.shift = '{shift}' and t2.route_code = t3.route_code and t3.is_active = 't' order by t4.name asc;"     #NEW RC CHANGE
+          cursor.execute(postgreSQL_select_Query1_all_wards)
+        else:  
+          postgreSQL_select_Query1 = f"select distinct t1.id,t1.plate_number,t1.vehicle_type,t2.id,t2.route_code,t2.route_name,t4.name from swm.vehicles t1, swm.route_allocation t2, swm.route_compliance_demo t3, common_ward t4 where t4.name = '{iward}' and t1.ward_id = t4.id and t2.ward_id = t4.id and vehicle_type IN ('Refuse_Compactor','Refuse_Mini_Compactor') and t1.is_active = 't' and t2.is_active = 't' and t1.id = t2.vehicle_id and t2.shift = '{shift}' and t2.route_code = t3.route_code and t2.route_code like '%WW' and t3.is_active = 't';"    #NEW RC CHANGE
+          cursor.execute(postgreSQL_select_Query1)
+        
+        #cursor.execute(postgreSQL_select_Query1)
+            
+        fetch1 = cursor.fetchall()
+        
+        vehicle_id_array = []
+        plate_number_array = []
+        plate_number_website_array = []
+        vehicle_type_array = []
+        vehicle_type_website_array = []
+        vehicle_latitude_array = []
+        vehicle_longitude_array = []
+        route_name_array = []
+        route_name_website_array = []
+        route_code_array = []
+        route_code_website_array = []
+        bin_code_website_array = []
+        bin_location_website_array = []
+        lat_array = []
+        lon_array = []
+        compliance_result_array = []
+        compliance_result_yes_no_array = []
+        compliance_result_yes_no_website_array = []
+        count_yes_array = []
+        count_final_result_array = []
+        final_result = []
+        Date_RouteCode = []
+        datetime_array = []
+        
+        vehicle_type_array2 = []
+        vehicle_type_website_array2 = []
+        route_code_id_array = []
+
+        all_bin_info = dict()                       #ETH
+        display_bin_code = []                       #ETH
+        display_bin_location = []                       #ETH
+        display_final_result = []                       #ETH
+        bin_time_array = []
+        Date_and_Result_Array = []
+        collected_result_array = []
+        done = []
+        
+        bin_time = []                                        #ETH 23RD Mar
+        bt_txt_name = []
+        
+        ward_name_array = []                      #Change for Ward Name in Dropdown
+        
+        for row1 in fetch1:
+
+            bin_code_vals = []
+            bin_location_vals = []
+            bin_final_result_vals = []
+            
+
+            compliance_result_yes_no_website_array_2 = []
+
+            vehicle_id = str(row1[0])
+            plate_number = str(row1[1])
+            vehicle_type = str(row1[2])
+            route_code_id = int(row1[3])
+            route_code = str(row1[4])
+            route_name = str(row1[5])
+            ward_name = str(row1[6])                                        #change for ward name in dropdown
+            
+            vehicle_id_array.append(vehicle_id)
+
+
+            plate_number_array.append(plate_number)
+            plate_number_website_array.append(plate_number)
+
+
+            vehicle_type_array.append(vehicle_type)
+            vehicle_type_website_array.append(vehicle_type)
+
+            
+            route_code_id_array.append(route_code_id)
+            route_code_array.append(route_code)
+            route_name_array.append(route_name)
+
+            
+
+            route_code_array.append(route_code)
+            route_code_website_array.append(route_code)
+                
+
+            route_name_array.append(route_name)
+            route_name_website_array.append(route_name)
+             
+            ward_name_array.append(ward_name)                      #change for ward name in dropdown
+
+
+            date_route_code = date + "_" + route_code       #for map purpose
+            Date_RouteCode.append(date_route_code)
+            
+            
+            
+            
+
+            postgreSQL_select_Query2 = f"select distinct on (longitude,latitude) longitude,latitude,datetime from swm.vehicle_tracklog_historys where vehicle_id = '{vehicle_id}' and datetime between '{fromdate}' and '{todate}' and shift = '{shift}' order by longitude,latitude,datetime asc;"
+            
+            cursor.execute(postgreSQL_select_Query2)
+            
+            fetch2 = cursor.fetchall()
+
+            for row2 in fetch2:
+                longitude = str(row2[0])
+                longitude = float(longitude)
+                latitude = str(row2[1])
+                latitude = float(latitude)
+                datetime1 = str(row2[2])
+                datetime_array.append(datetime1)
+                vehicle_longitude_array.append(longitude)
+                vehicle_latitude_array.append(latitude)
+            countLen = len(vehicle_latitude_array)
+
+
+            postgreSQL_select_Query3 = f"select bin_location,bin_name from swm.route_compliance_demo where route_code = '{route_code}' and is_active = 't' order by id asc;"
+            
+            cursor.execute(postgreSQL_select_Query3)
+            
+            fetch3 = cursor.fetchall()
+            
+            
+            
+            for row3 in fetch3:
+
+                bin_location = str(row3[0])
+                bin_location_website_array.append(bin_location)
+                
+                
+                bin_code = str(row3[1])                                
+                bin_code_website_array.append(bin_code)
+                
+                bin_code_vals.append(bin_code)
+                bin_location_vals.append(bin_location)
+                """
+                bin_array = []                                         #ETH
+                bin_array.append(bin_code)                             #ETH
+                """
+                
+                bin_location_split = bin_location.split(',')
+                
+                lat = bin_location_split[0]
+                lat = float(lat)
+                lat = round(lat,6)               
+        
+
+                lon = bin_location_split[1]
+                lon = float(lon)
+                lon = round(lon,6)
+                
+                grid = float(0.0005)
+                #grid = float(0.00005)
+                grid = round(grid,6)
+
+                maxlon = lon + grid
+                maxlon = round(maxlon,6)
+            
+                maxlat = lat + grid
+                maxlat = round(maxlat,6)
+
+                minlon = lon - grid
+                minlon = round(minlon,6)
+
+                minlat = lat - grid
+                minlat = round(minlat,6)
+
+
+                geofence = f"{minlon} {maxlat},{maxlon} {maxlat},{maxlon} {minlat},{minlon} {minlat},{minlon} {maxlat}"
+
+                for x in range(countLen):
+
+                    postgreSQL_select_Query5 = f"SELECT ST_Contains(polygon::geometry, point::geometry) FROM (SELECT ST_GeographyFromText('POLYGON(({geofence}))') AS polygon,ST_GeographyFromText('POINT({vehicle_longitude_array[x]} {vehicle_latitude_array[x]})') AS point) AS data;"
+           
+                    cursor.execute(postgreSQL_select_Query5)
+        
+                    fetch5 = cursor.fetchall()
+
+                    for row5 in fetch5:
+                        compliance_result = str(row5[0])
+                        compliance_result_array.append(compliance_result)
+                        collected_result_array.append(compliance_result)
+
+                collected_result_array_len = len(collected_result_array)
+                for w in range(collected_result_array_len):
+                    Date_and_Result = datetime_array[w] + "_" + collected_result_array[w]
+                    Date_and_Result_Array.append(Date_and_Result)
+                
+                matches = [match for match in Date_and_Result_Array if "True" in match]
+                matches_length = len(matches)
+
+                if matches_length == 0:
+                    #print("None")
+                    done.append("None")
+            
+                else:
+                    #print("-->",collected_result_array_len)
+            
+                    bintime = matches[0]
+                    bintime_actual = bintime.replace("+05:30_True", "")
+                    #print(bintime_actual)
+                    done.append(bintime_actual)        
+                
+                
+                
+                
+                matches = []
+                Date_and_Result_Array = []
+                collected_result_array = []
+                k = "True"
+
+                if k in compliance_result_array:
+                    final_result.append("YES")
+                else:
+                    final_result.append("NO")
+
+                compliance_result_array = []
+                
+                
+                
+            str1 = " "
+            str1 = str1.join(final_result)
+
+            count_final_result = len(final_result)
+                
+            count_yes = final_result.count("YES")
+            count_no = final_result.count("NO")
+                
+            percentage_of_yes = (count_yes/count_final_result) * 100 
+                #print(percentage_of_yes)
+                
+            bin_final_result_vals.append(final_result)
+                
+            if percentage_of_yes >= 50:
+                compliance_result_yes_no = "ROUTE COMPLIED"
+
+            if percentage_of_yes < 50:
+                compliance_result_yes_no = "ROUTE NOT COMPLIED"
+
+            compliance_result_yes_no_website_array_2.append(compliance_result_yes_no)
+            compliance_result_yes_no_array.append(compliance_result_yes_no)
+            
+            
+            bin_time.append(done)             #ETH 23Mar **&&&&&&&&&&&&&&&&&&&&&&&&&&&
+            
+            #random_name = str(''.join(random.choices(string.ascii_uppercase + string.digits, k=7)))
+            
+            random_name = date + "_" + route_code
+            
+            bt_txt_name.append(random_name)
+            #try:
+            file_name = "/home/mcgm/Development/mcgm/mcgm/reports/bin_time_files/" + random_name + ".txt"
+            bin_time_txt = open(file_name,"w")
+            for ind_bin_time in done:  
+             bin_time_txt.write(ind_bin_time)
+             bin_time_txt.write("_")
+             
+            bin_time_txt.close()
+            #except:
+            
+            #"https://swm.vtms.cleanupmumbai.com/static/pdfreports/template/Sample_Route_Info_Template.xlsx"
+            
+            
+            
+                #compliance_result_yes_no_website_array.append(compliance_result_yes_no)
+                
+                #print("Vehicle: " + plate_number + ", Route Code: " + route_code + ", Result: " + compliance_result_yes_no)
+                #final_value = "Vehicle: " + plate_number + ", Route Code: " + route_code + ", Result: " + compliance_result_yes_no
+            
+            
+            compliance_result_yes_no_website_array.append(compliance_result_yes_no)
+            count_yes_array.append(count_yes)
+            count_final_result_array.append(count_final_result)
+            display_bin_code.append(bin_code_vals)
+            display_bin_location.append(bin_location_vals)
+            display_final_result.append(final_result)
+            
+            #bin_code_website_array = []
+            
+            #dummy_array_code.append("ABCDEFG")
+            
+            all_bin_info['bin_code'] = display_bin_code
+            all_bin_info['bin_location'] = display_bin_location
+            all_bin_info['final_result'] = display_final_result
+            
+            
+            final_result = []
+            vehicle_latitude_array = []
+            vehicle_longitude_array = []
+            done = []
+            
+            
+        if connection:
+            cursor.close()
+            connection.close()
+            print("PostgreSQL connection is closed")
+        
+        
+        
+        
+        
+        
+        #plate_number = "MH01ER0928"
+        trial_res['plate_number'].append(plate_number_website_array)
+        #trial_res['data'] = 'TRIAL DATA111'
+        
+        
+        trial_res['compliance_result_yes_no'].append(compliance_result_yes_no_website_array)
+
+        trial_res['vehicle_type'].append(vehicle_type_website_array)
+
+        trial_res['route_code'].append(route_code_website_array)
+        trial_res['route_name'].append(route_name_website_array)
+        trial_res['Date_RouteCode'].append(Date_RouteCode)
+        #trial_res['bin_code'].append(bin_code_website_array)
+        #trial_res['bin_location'].append(bin_location_website_array)
+        #trial_res['final_result'].append(all_bin_info)
+        
+        count = len(plate_number_website_array)
+        response_data['bins'].append(all_bin_info['bin_code']) 
+        n = 0
+        for n in range(count):
+          all_data = dict()
+          all_data['plate_number'] = plate_number_website_array[n]
+          all_data['compliance_result_yes_no'] = compliance_result_yes_no_website_array[n]
+          all_data['vehicle_type'] = vehicle_type_website_array[n]
+          all_data['count_yes'] = count_yes_array[n]
+          all_data['count_final_result'] = count_final_result_array[n]
+          all_data['route_code'] = route_code_website_array[n]
+          all_data['route_name'] = route_name_website_array[n]
+          all_data['bin_code'] = all_bin_info['bin_code'][n]
+          
+          all_data['ward_name'] = ward_name_array[n]
+          ward_name_array
+          #9 May Change for Bin Dropdown
+          all_data['bin_dropdown'] = list()
+          
+          bin_name = all_bin_info['bin_code'][n]
+          yes_and_no = all_bin_info['final_result'][n]
+          
+          for m in range(len(all_bin_info['bin_code'][n])):
+            dropdown_dict = dict()   
+            dropdown_dict['bins'] = bin_name[m]
+            dropdown_dict['result'] = yes_and_no[m]
+            all_data['bin_dropdown'].append(dropdown_dict)
+          #9 May change ends          
+          
+          
+          all_data['bin_location'] = all_bin_info['bin_location'][n]
+          all_data['final_result'] = all_bin_info['final_result'][n]
+          all_data['bin_time'] = bin_time[n]
+
+          concat_result = ''
+          for single_result in all_bin_info['final_result'][n]:
+            concat_result += single_result[0]
+            
+             
+          all_data['Date_RouteCode'] = Date_RouteCode[n]+ "_" + concat_result 
+          response_data['data'].append(all_data)
+     #except:
+        #return redirect('helpdesk')
+        ###return render(request,'reports/no_data.html',{})
+
+       
+        
+    #return HttpResponse('Route Result is: ' + count)
+    return render(request,'reports/route_compliance_demo.html',{'trial_res' : trial_res,'all_data' : response_data['data'],'bin_code' : response_data['bins']})
+
+
+
+#COMPLETE
+
+def wet_waste_report(request):
+
+    set_session_reporting_form_params(request)
+    #form_params = request.session['reports_form_params']
+    
+    response_data=dict()
+    response_data['status'] = 'success'
+    response_data['data'] = list()
+    response_data['bins'] = list()
+    
+    
+    connection = psycopg2.connect(user="mcgm",
+                                  password="mcgm",
+                                  host="localhost",
+                                  port="5432",
+                                  database="mcgm")
+    cursor = connection.cursor()
+    count = "0"
+    iward = None
+    if request.user.is_superuser:
+        iward = 'A'
+    
+    #if not request.user.is_superuser:
+    #      if request.user.appuser.is_contractor:
+    #        iward = request.user.appuser.bmc_contractor.ward
+    #      else:
+    #        iward = request.user.appuser.bmc_officer.ward
+    else:
+        if request.user.appuser.is_contractor:
+            iward = request.user.appuser.bmc_contractor.ward
+        else:
+            iward = request.user.appuser.bmc_officer.ward       
+
+    trial_res = dict()
+    trial_res['plate_number'] = list()
+    trial_res['compliance_result_yes_no'] = list()
+    trial_res['vehicle_type'] = list()
+    trial_res['date'] = list()
+    trial_res['shift'] = list()
+    trial_res['route_code'] = list()
+    trial_res['route_name'] = list()
+    trial_res['Date_RouteCode'] = list()
+    trial_res['bin_location'] = list()
+    trial_res['bin_code'] = list()
+    trial_res['final_result'] = list()
+    
+
+    if request.method == 'POST':
+     #try:
+        date = request.POST['date1']
+        shift = request.POST['shift']
+        
+        trial_res['date'].append(date)
+        trial_res['shift'].append(shift)
+        
+        
+        
+        #if 1 == 1:
+        response_data=dict()
+        response_data['status'] = 'success'
+        response_data['data'] = list()
+        response_data['bins'] = list()
+
+    
+        fromtime = " 00:00:00+05:30"
+        totime = " 23:59:59+05:30"
+
+        fromdate = date+fromtime
+        todate = date+totime
+
+        if shift == '3':
+            
+            
+            
+            newdate = datetime.now() + timedelta(days=1)
+            #current_date_temp = datetime.datetime.strptime(date, "%Y-%m-%d")
+            #print(current_date_temp)
+            newdate = newdate.date()
+            #print(newdate)
+            newdate = str(newdate)
+            totime = " 05:59:59+05:30"
+            todate = newdate + totime
+            #print(todate)
+            Begindate = datetime.strptime(date, "%Y-%m-%d")
+            Begindate = Begindate.date()
+            #print(Begindate)
+            Enddate = Begindate + timedelta(days=1)
+            
+            newdate = str(Enddate)
+            
+            todate = newdate + totime
+            
+        #print("Fromdate ", fromdate)
+        #print("Todate ", todate)    
+        #shift  = form_data['shift']
+    
+        iward = str(iward)
+        postgreSQL_select_Query0 = f"select id from common_ward where name = '{iward}'"
+            
+        cursor.execute(postgreSQL_select_Query0)
+        fetch0 = cursor.fetchone()
+        
+        ward_id = str(fetch0[0])
+        
+        wwr_q1 = "SELECT DISTINCT t1.ward_id FROM swm.route_allocation AS t1 JOIN swm.route_compliance_demo AS t3 ON t1.route_code = t3.route_code WHERE t1.route_code LIKE '%WW' and t1.is_active = 't' and t3.is_active = 't' and t1.shift = '"+shift+"' ORDER BY t1.ward_id "    #NEW RC CHANGE
+        
+        cursor.execute(wwr_q1)
+        ward_fetch = cursor.fetchall()
+        
+        
+        for ward_id1 in ward_fetch:
+            ward_id = ward_id1[0]
+            ward_id = str(ward_id)
+            
+            ward_name_query = f"select name from common_ward where id = '{ward_id}'"
+            
+            cursor.execute(ward_name_query)
+            ward_name = cursor.fetchone()
+        
+            postgreSQL_select_Query1 = f"select distinct t1.id,t1.plate_number,t1.vehicle_type,t2.id,t2.route_code,t2.route_name from swm.vehicles t1, swm.route_allocation t2, swm.route_compliance_demo t3 where t1.ward_id = '{ward_id}' and t2.ward_id = '{ward_id}' and vehicle_type IN ('Refuse_Compactor','Refuse_Mini_Compactor') and t1.is_active = 't' and t2.is_active = 't' and t1.id = t2.vehicle_id and t2.shift = '{shift}' and t2.route_code = t3.route_code and t3.is_active = 't'  and t2.route_code like '%WW';"    #NEW RC CHANGE
+        
+            cursor.execute(postgreSQL_select_Query1)
+            
+            fetch1 = cursor.fetchall()
+        
+            vehicle_id_array = []
+            plate_number_array = []
+            plate_number_website_array = []
+            vehicle_type_array = []
+            vehicle_type_website_array = []
+            vehicle_latitude_array = []
+            vehicle_longitude_array = []
+            route_name_array = []
+            route_name_website_array = []
+            route_code_array = []
+            route_code_website_array = []
+            bin_code_website_array = []
+            bin_location_website_array = []
+            lat_array = []
+            lon_array = []
+            compliance_result_array = []
+            compliance_result_yes_no_array = []
+            compliance_result_yes_no_website_array = []
+            count_yes_array = []
+            count_final_result_array = []
+            final_result = []
+            Date_RouteCode = []
+            datetime_array = []
+        
+            vehicle_type_array2 = []
+            vehicle_type_website_array2 = []
+            route_code_id_array = []
+
+            all_bin_info = dict()                       #ETH
+            display_bin_code = []                       #ETH
+            display_bin_location = []                       #ETH
+            display_final_result = []                       #ETH
+            bin_time_array = []
+            Date_and_Result_Array = []
+            collected_result_array = []
+            done = []
+        
+            bin_time = []                                        #ETH 23RD Mar
+            bt_txt_name = []
+            
+            for row1 in fetch1:
+
+                bin_code_vals = []
+                bin_location_vals = []
+                bin_final_result_vals = []
+                
+
+                compliance_result_yes_no_website_array_2 = []
+
+                vehicle_id = str(row1[0])
+                plate_number = str(row1[1])
+                vehicle_type = str(row1[2])
+                route_code_id = int(row1[3])
+                route_code = str(row1[4])
+                route_name = str(row1[5])
+                
+                
+                vehicle_id_array.append(vehicle_id)
+
+
+                plate_number_array.append(plate_number)
+                plate_number_website_array.append(plate_number)
+
+
+                vehicle_type_array.append(vehicle_type)
+                vehicle_type_website_array.append(vehicle_type)
+
+                
+                route_code_id_array.append(route_code_id)
+                route_code_array.append(route_code)
+                route_name_array.append(route_name)
+
+
+                route_code_array.append(route_code)
+                route_code_website_array.append(route_code)
+                    
+
+                route_name_array.append(route_name)
+                route_name_website_array.append(route_name)
+                
+
+                date_route_code = date + "_" + route_code       #for map purpose
+                Date_RouteCode.append(date_route_code)
+                
+                
+                
+                
+
+                postgreSQL_select_Query2 = f"select distinct on (longitude,latitude) longitude,latitude,datetime from swm.vehicle_tracklog_historys where vehicle_id = '{vehicle_id}' and datetime between '{fromdate}' and '{todate}' and shift = '{shift}' order by longitude,latitude,datetime asc;"
+                
+                cursor.execute(postgreSQL_select_Query2)
+                
+                fetch2 = cursor.fetchall()
+
+                for row2 in fetch2:
+                    longitude = str(row2[0])
+                    longitude = float(longitude)
+                    latitude = str(row2[1])
+                    latitude = float(latitude)
+                    datetime1 = str(row2[2])
+                    datetime_array.append(datetime1)
+                    vehicle_longitude_array.append(longitude)
+                    vehicle_latitude_array.append(latitude)
+                countLen = len(vehicle_latitude_array)
+
+
+                postgreSQL_select_Query3 = f"select bin_location,bin_name from swm.route_compliance_demo where route_code = '{route_code}' and is_active = 't' order by id asc;"       #NEW RC CHANGE
+                
+                cursor.execute(postgreSQL_select_Query3)
+                
+                fetch3 = cursor.fetchall()
+                
+                
+                
+                for row3 in fetch3:
+
+                    bin_location = str(row3[0])
+                    bin_location_website_array.append(bin_location)
+                    
+                    
+                    bin_code = str(row3[1])                                
+                    bin_code_website_array.append(bin_code)
+                    
+                    bin_code_vals.append(bin_code)
+                    bin_location_vals.append(bin_location)
+                    """
+                    bin_array = []                                         #ETH
+                    bin_array.append(bin_code)                             #ETH
+                    """
+                    
+                    bin_location_split = bin_location.split(',')
+                    
+                    lat = bin_location_split[0]
+                    lat = float(lat)
+                    lat = round(lat,6)               
+            
+
+                    lon = bin_location_split[1]
+                    lon = float(lon)
+                    lon = round(lon,6)
+                    
+                    grid = float(0.0005)
+                    #grid = float(0.00005)
+                    grid = round(grid,6)
+
+                    maxlon = lon + grid
+                    maxlon = round(maxlon,6)
+                
+                    maxlat = lat + grid
+                    maxlat = round(maxlat,6)
+
+                    minlon = lon - grid
+                    minlon = round(minlon,6)
+
+                    minlat = lat - grid
+                    minlat = round(minlat,6)
+
+
+                    geofence = f"{minlon} {maxlat},{maxlon} {maxlat},{maxlon} {minlat},{minlon} {minlat},{minlon} {maxlat}"
+
+                    for x in range(countLen):
+
+                        postgreSQL_select_Query5 = f"SELECT ST_Contains(polygon::geometry, point::geometry) FROM (SELECT ST_GeographyFromText('POLYGON(({geofence}))') AS polygon,ST_GeographyFromText('POINT({vehicle_longitude_array[x]} {vehicle_latitude_array[x]})') AS point) AS data;"
+            
+                        cursor.execute(postgreSQL_select_Query5)
+            
+                        fetch5 = cursor.fetchall()
+
+                        for row5 in fetch5:
+                            compliance_result = str(row5[0])
+                            compliance_result_array.append(compliance_result)
+                            collected_result_array.append(compliance_result)
+
+                    collected_result_array_len = len(collected_result_array)
+                    for w in range(collected_result_array_len):
+                        Date_and_Result = datetime_array[w] + "_" + collected_result_array[w]
+                        Date_and_Result_Array.append(Date_and_Result)
+                
+                    matches = [match for match in Date_and_Result_Array if "True" in match]
+                    matches_length = len(matches)
+
+                    if matches_length == 0:
+                        #print("None")
+                        done.append("None")
+            
+                    else:
+                        #print("-->",collected_result_array_len)
+                
+                        bintime = matches[0]
+                        bintime_actual = bintime.replace("+05:30_True", "")
+                        #print(bintime_actual)
+                        done.append(bintime_actual)        
+                
+                
+                
+                
+                    matches = []
+                    Date_and_Result_Array = []
+                    collected_result_array = []
+                    k = "True"
+
+                    if k in compliance_result_array:
+                        final_result.append("YES")
+                    else:
+                        final_result.append("NO")
+
+                    compliance_result_array = []
+                
+                
+                
+                str1 = " "
+                str1 = str1.join(final_result)
+
+                count_final_result = len(final_result)
+                    
+                count_yes = final_result.count("YES")
+                count_no = final_result.count("NO")
+                    
+                percentage_of_yes = (count_yes/count_final_result) * 100 
+                    #print(percentage_of_yes)
+                    
+                bin_final_result_vals.append(final_result)
+                    
+                if percentage_of_yes >= 50:
+                    compliance_result_yes_no = "ROUTE COMPLIED"
+
+                if percentage_of_yes < 50:
+                    compliance_result_yes_no = "ROUTE NOT COMPLIED"
+
+                compliance_result_yes_no_website_array_2.append(compliance_result_yes_no)
+                compliance_result_yes_no_array.append(compliance_result_yes_no)
+                
+                
+                bin_time.append(done)             #ETH 23Mar **&&&&&&&&&&&&&&&&&&&&&&&&&&&
+                
+                #random_name = str(''.join(random.choices(string.ascii_uppercase + string.digits, k=7)))
+                
+                random_name = date + "_" + route_code
+                
+                bt_txt_name.append(random_name)
+                #try:
+                file_name = "/home/mcgm/Development/mcgm/mcgm/reports/bin_time_files/" + random_name + ".txt"
+                bin_time_txt = open(file_name,"w")
+                for ind_bin_time in done:  
+                    bin_time_txt.write(ind_bin_time)
+                    bin_time_txt.write("_")
+                
+                bin_time_txt.close()
+                #except:
+                
+                #"https://swm.vtms.cleanupmumbai.com/static/pdfreports/template/Sample_Route_Info_Template.xlsx"
+                
+                
+                
+                    #compliance_result_yes_no_website_array.append(compliance_result_yes_no)
+                    
+                    #print("Vehicle: " + plate_number + ", Route Code: " + route_code + ", Result: " + compliance_result_yes_no)
+                    #final_value = "Vehicle: " + plate_number + ", Route Code: " + route_code + ", Result: " + compliance_result_yes_no
+            
+            
+                compliance_result_yes_no_website_array.append(compliance_result_yes_no)
+                count_yes_array.append(count_yes)
+                count_final_result_array.append(count_final_result)
+                display_bin_code.append(bin_code_vals)
+                display_bin_location.append(bin_location_vals)
+                display_final_result.append(final_result)
+                
+                #bin_code_website_array = []
+                
+                #dummy_array_code.append("ABCDEFG")
+                
+                all_bin_info['bin_code'] = display_bin_code
+                all_bin_info['bin_location'] = display_bin_location
+                all_bin_info['final_result'] = display_final_result
+                
+                
+                final_result = []
+                vehicle_latitude_array = []
+                vehicle_longitude_array = []
+                done = []
+            
+            
+        
+        
+        
+        
+        
+        
+        
+            #plate_number = "MH01ER0928"
+            trial_res['plate_number'].append(plate_number_website_array)
+            #trial_res['data'] = 'TRIAL DATA111'
+            
+            
+            trial_res['compliance_result_yes_no'].append(compliance_result_yes_no_website_array)
+
+            trial_res['vehicle_type'].append(vehicle_type_website_array)
+
+            trial_res['route_code'].append(route_code_website_array)
+            trial_res['route_name'].append(route_name_website_array)
+            trial_res['Date_RouteCode'].append(Date_RouteCode)
+            #trial_res['bin_code'].append(bin_code_website_array)
+            #trial_res['bin_location'].append(bin_location_website_array)
+            #trial_res['final_result'].append(all_bin_info)
+            
+            count = len(plate_number_website_array)
+            response_data['bins'].append(all_bin_info['bin_code']) 
+            
+            ######## FOR WET WASTE REPORT SPECIAL ###########################
+            #wwr_q1 = "SELECT DISTINCT t1.ward_id FROM swm.route_allocation AS t1 JOIN swm.route_compliance AS t3 ON t1.id = t3.route_code_id WHERE t1.route_code LIKE '%WW' and t1.is_active = 't' and t3.is_active = 't' and t1.shift = '"+shift+"' ORDER BY t1.ward_id"
+            
+            vehicle_numbers_str = ', '.join([f"'{vn}'" for vn in plate_number_website_array])
+        
+            if shift == '1':
+                shift_str = 'I'
+            elif shift == '2':
+                shift_str = 'II'
+            elif shift == '3':
+                shift_str = 'III'
+            
+            weight_q1 = "SELECT act_net_weight FROM swm.sendweighexitdata WHERE vehicle_no IN ("+vehicle_numbers_str+") AND trans_date_ul = '"+date+"' AND act_shift_ul = '"+shift_str+"'" 
+
+            
+            
+            cursor.execute(weight_q1)
+            weight_fetch = cursor.fetchall()
+            
+            total_weight = 0
+        
+            expected_weigh_array = []
+            for ind_weigh in weight_fetch:
+                total_weight += ind_weigh[0]
+            
+            
+            n = 0    
+            for n in range(count):    
+          
+                if vehicle_type_website_array[n] == 'Refuse_Compactor':
+                    lc_weight = 5200
+                    expected_weigh_array.append(lc_weight)
+                elif vehicle_type_website_array[n] == 'Refuse_Mini_Compactor':
+                    mc_weight = 2400
+                    expected_weigh_array.append(mc_weight)
+                n += 1
+        
+        
+        
+            
+        
+        
+            #LOOP FOR SENDING DATA TO 
+            n = 0
+            #for n in range(count):
+            if 1 == 1:
+                all_data = dict()
+                all_data['plate_number'] = plate_number_website_array[n]
+                all_data['compliance_result_yes_no'] = compliance_result_yes_no_website_array[n]
+                all_data['vehicle_type'] = vehicle_type_website_array[n]
+                all_data['count_yes'] = count_yes_array[n]
+                all_data['count_final_result'] = count_final_result_array[n]
+                all_data['route_code'] = route_code_website_array[n]
+                all_data['route_name'] = route_name_website_array[n]
+                all_data['bin_code'] = all_bin_info['bin_code'][n]
+          
+                #TRY FOR WET WASTE REPORT
+                all_data['ward_ids'] = ward_name[0]
+                all_data['all_count_yes'] = sum(count_yes_array)
+                all_data['all_count_final_result'] = sum(count_final_result_array)
+                all_data['num_route_codes'] = len(route_code_website_array)
+                all_data['shift'] = str(shift)
+                all_data['all_plate_number'] = plate_number_website_array
+                all_data['expected_weight'] = sum(expected_weigh_array)
+                all_data['actual_weight'] = total_weight
+                all_data['vehicles_str'] = vehicle_numbers_str
+          
+          
+                #9 May Change for Bin Dropdown
+                all_data['bin_dropdown'] = list()
+                
+                bin_name = all_bin_info['bin_code'][n]
+                yes_and_no = all_bin_info['final_result'][n]
+                
+                for m in range(len(all_bin_info['bin_code'][n])):
+                    dropdown_dict = dict()   
+                    dropdown_dict['bins'] = bin_name[m]
+                    dropdown_dict['result'] = yes_and_no[m]
+                    all_data['bin_dropdown'].append(dropdown_dict)
+                #9 May change ends          
+          
+          
+                all_data['bin_location'] = all_bin_info['bin_location'][n]
+                all_data['final_result'] = all_bin_info['final_result'][n]
+                all_data['bin_time'] = bin_time[n]
+          
+
+                concat_result = ''
+                for single_result in all_bin_info['final_result'][n]:
+                    concat_result += single_result[0]
+            
+             
+                all_data['Date_RouteCode'] = Date_RouteCode[n]+ "_" + concat_result 
+                
+                
+                response_data['data'].append(all_data)                    
+            #except:
+                #return redirect('helpdesk')
+                ###return render(request,'reports/no_data.html',{})
+
+       
+        
+    #return HttpResponse('Route Result is: ' + count)
+    if connection:
+                cursor.close()
+                connection.close()
+                print("PostgreSQL connection is closed")
+    
+    return render(request,'reports/wet_waste_report.html',{'trial_res' : trial_res,'all_data' : response_data['data'],'bin_code' : response_data['bins']})
+
+
+    #return HttpResponse('Your parameter is  '+ str(date) + ' '+ str(shift))
+    #return JsonResponse({"results":response_data['data']})
+    
+    
+    
+
+def map_test_temp(request): 
+    
+    response_data=dict()
+    response_data['status'] = 'success'
+    response_data['data'] = list()
+    response_data['bins'] = list()
+    
+    connection = psycopg2.connect(user="mcgm",
+                                  password="mcgm",
+                                  host="localhost",
+                                  port="5432",
+                                  database="mcgm")
+    cursor = connection.cursor()
+    
+    route_code = 'AX1005W'
+    q4 = "select id from swm.route_allocation where is_active='t' and route_code='"+route_code+"'"
+    cursor.execute(q4)
+    fetch_route_code_id = cursor.fetchone()
+    route_code_id = str(fetch_route_code_id[0])
+    
+    q2 = "select bin_code,bin_location,bin_name from swm.route_compliance_demo where is_active='t' and route_code='"+route_code+"'"
+    cursor.execute(q2)
+    fetch_bin_data = cursor.fetchall()
+    
+    array_length =  len(fetch_bin_data)
+    count = 1
+    for bin_vals in fetch_bin_data:
+        bin_dict = dict()
+        #bin_dict['bin_code'] = bin_vals[0]
+        bin_dict['bin_code'] = str(count)
+        
+        lat_lon_split = bin_vals[1].split(",")
+        bin_dict['bin_lat'] = lat_lon_split[0]
+        bin_dict['bin_lon'] = lat_lon_split[1].lstrip()
+        bin_dict['route_code'] = route_code
+        #bin_dict['bin_compliance'] = ''
+        bin_dict['bin_name'] = bin_vals[2]
+        
+        if count == 1:
+          bin_dict['is_ML_CP'] = 'ML'
+        elif count == array_length:
+          bin_dict['is_ML_CP'] = 'CP'  
+        else:
+          bin_dict['is_ML_CP'] = 'Bin'
+        
+        count = count + 1
+        response_data['bins'].append(bin_dict)
+    """
+    #response_data['bins'][0]['route_code'] = "hello"
+    total_compliance_count = len(all_compliance)
+    
+    n = 0
+    for n in range(total_compliance_count):
+        response_data['bins'][n]['bin_compliance'] = all_compliance[n]
+    """
+    """
+    #ward = Ward.objects.get(pk=request.GET['id'])
+    ward = Ward.objects.get(pk='1')
+    #response_data={}
+    response_data['ward_fence'] = ward.ward_fence.geojson
+    
+    response_data['status'] = 'success'
+    #return HttpResponse(json.dumps(response_data),content_type="application/json")
+    """
+    #return render(request,'reports/map_test_temp.html',{'bin_data' : response_data['bins'],'fence_data' : response_data['ward_fence']})
+    return render(request,'reports/map_test_temp.html',{'bin_data' : response_data['bins']}) 
+
+
+
+
+def info_report_test(request): 
+
+
+    response_data=dict()
+    response_data['status'] = 'success'
+    response_data['data'] = list()
+    response_data['summary'] = list()
+    response_data['wards'] = list()
+    
+    connection = psycopg2.connect(user="mcgm",
+                                  password="mcgm",
+                                  host="localhost",
+                                  port="5432",
+                                  database="mcgm")
+    cursor = connection.cursor()
+    
+    iward = None
+    if request.user.is_superuser:
+        iward = 'ALL'
+        ward_id = iward
+    #if not request.user.is_superuser:
+    #      if request.user.appuser.is_contractor:
+    #        iward = request.user.appuser.bmc_contractor.ward
+    #      else:
+    #        iward = request.user.appuser.bmc_officer.ward
+    else:
+        if request.user.appuser.is_contractor:
+            iward = request.user.appuser.bmc_contractor.ward
+        else:
+            iward = request.user.appuser.bmc_officer.ward     
+    
+        ward_name = Ward.objects.get(code=iward)
+        ward_id = ward_name.pk
+        ward_id = str(ward_id)
+    
+    #old_admin_query = "SELECT route_code, COUNT(*) AS count, 'Allocated' AS is_present FROM swm.route_compliance_demo WHERE is_active = 't' GROUP BY route_code UNION SELECT t2.route_code, 0 AS count, CASE WHEN t1.route_code IS NULL THEN 'Not_Allocated' ELSE 'Allocated' END AS is_present FROM swm.route_allocation AS t2 LEFT JOIN swm.route_compliance_demo AS t1 ON t2.route_code = t1.route_code WHERE t2.is_active = 't' ORDER BY route_code"  
+    
+    #old_admin_query = "SELECT route_code, COUNT(*) AS count FROM swm.route_compliance_demo WHERE is_active = 't' GROUP BY route_code UNION SELECT t2.route_code, 0 AS count FROM swm.route_allocation AS t2 LEFT JOIN swm.route_compliance_demo AS t1 ON t2.route_code = t1.route_code WHERE t1.route_code IS NULL AND t2.is_active = 't' ORDER BY route_code"
+    
+    if iward == "ALL":
+        admin_query = "SELECT route_code, COUNT(*) AS count FROM swm.route_compliance_demo WHERE is_active = 't' GROUP BY route_code UNION SELECT distinct route_code,0 as count FROM swm.route_allocation WHERE is_active = 't' and route_code NOT IN (SELECT route_code FROM swm.route_compliance_demo where is_active='t') order by route_code"
+        cursor.execute(admin_query)
+    else:
+        wardwise_query = "SELECT route_code, COUNT(*) AS count FROM swm.route_compliance_demo WHERE is_active = 't' and ward_id = '"+ward_id+"' GROUP BY route_code UNION SELECT distinct route_code,0 as count FROM swm.route_allocation WHERE is_active = 't' and ward_id = '"+ward_id+"' and route_code NOT IN (SELECT route_code FROM swm.route_compliance_demo where is_active='t') order by route_code"
+        cursor.execute(wardwise_query)
+    
+    fetch_route_data = cursor.fetchall()   
+    
+    allocation_query = "SELECT distinct route_code FROM swm.route_compliance_demo WHERE is_active = 't' and route_code NOT IN (SELECT route_code FROM swm.route_allocation where is_active='t') order by route_code"
+    cursor.execute(allocation_query)
+    allocation_data = cursor.fetchall()
+    
+    allocated_routecodes = []
+    for arc in allocation_data:
+        allocated_routecodes.append(arc[0])
+    
+    if iward == "ALL":
+        allwards_count_query = "SELECT COUNT(*) FROM (SELECT route_code FROM swm.route_compliance_demo WHERE is_active = 't' UNION SELECT distinct route_code FROM swm.route_allocation WHERE is_active = 't' and route_code NOT IN (SELECT route_code FROM swm.route_compliance_demo where is_active='t')) as count"
+        cursor.execute(allwards_count_query)
+    else:
+        wardwise_count_query = "SELECT COUNT(*) FROM (SELECT route_code FROM swm.route_compliance_demo WHERE is_active = 't' and ward_id = '"+ward_id+"' UNION SELECT distinct route_code FROM swm.route_allocation WHERE is_active = 't' and ward_id = '"+ward_id+"' and route_code NOT IN (SELECT route_code FROM swm.route_compliance_demo where is_active='t')) as count"
+        cursor.execute(wardwise_count_query)
+    
+    
+    count_data = cursor.fetchone()
+    
+    response_data['summary'].append(count_data[0])
+    
+    
+    for route_vals in fetch_route_data:
+        route_dict = dict()
+        
+        route_dict['shift'] = route_vals[0][2]
+        if route_vals[0][0] == "T":
+            route_dict['shift'] = route_vals[0][3]
+        
+        route_dict['route_code'] = route_vals[0]
+        route_dict['bin_count'] = route_vals[1]
+        
+        #route_vals[1] = int(route_vals[1])
+        
+        if route_vals[0] in allocated_routecodes:
+            route_dict['allocation_status'] = "Not Allocated"
+        else:
+            route_dict['allocation_status'] = "Allocated"
+        #route_dict['allocation_status'] = route_vals[2]
+        
+        
+        bin_name_query = "select bin_name from swm.route_compliance_demo where route_code = '"+route_vals[0]+"' and is_active = 't'"
+        cursor.execute(bin_name_query)
+        bin_data = cursor.fetchall()
+        
+        route_dict['bin_data'] = list()
+        
+        
+        if len(bin_data) == 0 or bin_data == None or bin_data[0] == None:
+            bin_dropdown = dict()
+            bin_dropdown['bin_name'] = 'None'
+            route_dict['bin_data'].append(bin_dropdown)
+        else:
+            for b_name in bin_data:
+                bin_dropdown = dict()
+                bin_dropdown['bin_name'] = b_name[0]    
+                route_dict['bin_data'].append(bin_dropdown)
+
+            
+        
+        response_data['data'].append(route_dict)  
+        
+   
+    
+    
+    
+    
+    all_wards = "select id,name from common_ward where id < 25 order by name"
+    cursor.execute(all_wards)    
+    all_ward_data = cursor.fetchall()
+    
+    response_data['wards'].append(all_ward_data)
+    
+    for each_ward in all_ward_data:
+        
+        
+        ward_id = str(each_ward[0])
+        ward_name = each_ward[1]
+        
+        ward_count  = "SELECT COUNT(*) FROM (SELECT route_code FROM swm.route_compliance_demo WHERE is_active = 't' and ward_id = '"+ward_id+"' UNION SELECT distinct route_code FROM swm.route_allocation WHERE is_active = 't' and ward_id = '"+ward_id+"' and route_code NOT IN (SELECT route_code FROM swm.route_compliance_demo where is_active='t')) as count"
+        cursor.execute(ward_count)
+
+        ward_route_count = cursor.fetchone()
+        
+        ward_dict = dict()
+        
+        ward_dict['name'] = each_ward[1]
+        ward_dict['id'] = ward_route_count[0]
+        response_data['wards'].append(ward_dict) 
+        
+        
+    return render(request,'reports/new_routecomp_demo.html',{'route_data' : response_data['data'],'count_data' : response_data['summary'],'ward_data' : response_data['wards']})      
+
+
+
+def new_routecomp_upload_bins(request):
+    
+    if request.method == 'POST':
+     #try:  
+        excel_file = request.FILES["allocation_excel_file"]
+        wb = load_workbook(filename = excel_file)
+        #ws = wb['route_allocation']
+        
+        ws = wb.active
+        excel_data = list()
+        #header= ['bin_code','bin_name','route_code','bin_location']
+        header= ['bin_name','route_code','bin_location','ward']
+        
+        for row in ws.iter_rows(min_row=1,max_col=4):
+            row_content = list()
+            for cell in row:
+                row_content.append(cell.value)
+
+            if not row_content[0]:
+                continue
+            
+            #row_content[0] = str(row_content[0]).strip()       #bin_code
+            row_content[0] =  str(row_content[0])              #bin_name
+            row_content[1] =  str(row_content[1]).strip()           #route_code
+            row_content[1] =  row_content[1].upper()           #route_code IN CAPS
+            row_content[2] =  str(row_content[2]).strip() + "," +  str(row_content[3]).strip()    #bin_location
+            row_content[3] =  row_content[1].strip() 
+            
+            
+            if row_content[2] and row_content[0] and row_content[1]:
+                
+                rc = str(row_content[1]).strip() 
+                if rc[1] == 'X' or rc[1] == 'x':  
+                  row_content[3] = rc[0]
+                else:
+                  row_content[3] = rc[0] + "/" + rc[1]
+                  #row_content[0] =  Ward.objects.get(code=row_content[0])
+                  
+                try:
+                  ward_id = Ward.objects.get(code=row_content[3])
+                except Ward.DoesNotExist:
+                  ward_id = None
+
+                if not ward_id:
+                    print(f"ward_id {row_content[3]} does not exists")
+                    continue
+                row_content[3] = ward_id
+                
+                excel_data.append(dict(zip(header,row_content)))
+            
+                
+        for each_record in excel_data:
+            try:
+                each_record['created_by'] = request.user
+                 
+                #each_record['vehicle_type'] = each_record['vehicle_type'].upper()
+                Route_Compliance_Demo.objects.create(**each_record);
+                
+                #CODE TO GET BIN COUNT
+                
+                
+            except:
+                print ("error occurred while creating routes")        
+        
+        return redirect('info_report_test')
+     #except:
+        #return redirect('helpdesk')
+        #return render(request,'reports/errorpage.html',{}) 
+    return render(request,'reports/upload_bins.html',{}) 
+
+
+
+###---------------------------------------------------------------------------------------------------------------------
+
+
+def vehicle_location_report(request):
+    
+    set_session_reporting_form_params(request)
+    form_params = request.session['reports_form_params']
+    
+    plate_no_dict = list()
+    plate_no_dict = Vehicle.objects.values_list('plate_number', flat=True)
+    if request.method == 'POST':
+        response_data=dict()
+        response_data['status'] = 'success'
+        response_data['data'] = list()
+        form_data = QueryDict(request.POST['form_data'].encode('ASCII'))
+        from_time = dateutil.parser.parse(form_data['from_time'])
+        response_data['fromtime'] = str(from_time)
+        to_time   = dateutil.parser.parse(form_data['to_time'])
+        response_data['totime'] = str(to_time)
+        plate_no  = form_data['vehicle']
+        vehicle   = Vehicle.objects.get(plate_number=plate_no)
+        vc = chain(vehicle.vehicle_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime').distinct('datetime'), vehicle.current_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime').distinct('datetime'))
+        sorted_vc = sorted(vc,key=by_datetime)
+
+        seen        = dict()
+        speed_zero  = dict()
+        
+        
+        iward = None
+        if not request.user.is_superuser:
+          if request.user.appuser.is_contractor:
+            iward = request.user.appuser.bmc_contractor.ward
+          else:
+            iward = request.user.appuser.bmc_officer.ward
+
+    
+        iwardfilenamestr = ""
+        #FOR WARD USERS
+        if iward:
+          #ajit's code block 1 starts - initializing the dictionary from txt file.
+          mydict = {}
+        
+          iwardfilenamestr = str(iward).replace("/","") 
+        
+          filename = "/home/mcgm/Development/mcgm/mcgm/fulldata/"+ str(iwardfilenamestr)+ "_fulldata.txt"
+          a_file = codecs.open(filename, encoding="utf-8")
+          for line in a_file:
+            key, value = line.split(":::")
+            mydict[key] = value
+          #ajit code block 1 ends here
+          
+        #FOR SUPERUSER  
+        else:  
+          #ajit's code block 1 starts - initializing the dictionary from txt file.
+          mydict = {}
+          filename = "/home/mcgm/Development/mcgm/mcgm/fulldata/fulldata.txt"
+          a_file = codecs.open(filename, encoding="utf-8")
+          for line in a_file:
+            key, value = line.split(":::")
+            mydict[key] = value
+          #ajit code block 1 ends here
+
+        for each_vehicle_record in sorted_vc:
+            #logic to skip consecutive stationary entries 
+            if each_vehicle_record.speed == 0.0:
+                if each_vehicle_record.speed in speed_zero.keys():
+                    continue
+                else:
+                    speed_zero[each_vehicle_record.speed]=1
+            else:
+                speed_zero = {}
+
+            #logic to keep a entry for a minute  
+            tm_upto_minute = each_vehicle_record.datetime.strftime("%d_%m_%Y_%H_%M")
+            if tm_upto_minute in seen.keys():
+                continue
+            else:
+                seen[tm_upto_minute]=1
+
+
+
+            #from here: ajit's code block 2 starts - computing and saving the addresses in the response data dictionary
+            inputlat = each_vehicle_record.latitude
+            inputlong = each_vehicle_record.longitude
+            inputlatlong = str(inputlat)+","+str(inputlong)
+            #accept the input and turn it into the nearest value whose answer we have in our text file database
+            newlat = format((round(inputlat,6)),'.6f')
+            newlong = format((round(inputlong, 6)),'.6f')
+            latfract = int(newlat[3:9])
+            longfract = int(newlong[3:9])
+            latadjustmentoffset = latfract%1000
+            if(int(newlat[0:2]) == 18):
+                finallatfract = latfract+(999-latadjustmentoffset)
+            else:
+                finallatfract = latfract+(223-latadjustmentoffset)
+                finallatfract = str(finallatfract).zfill(6)
+            longadjustmentoffset = longfract%1000
+            finallongfract = longfract+(896-longadjustmentoffset)
+            latmain = int(math.floor(float(newlat)))
+            longmain = int(math.floor(float(newlong)))
+            finallatlong = str(latmain)+"."+str(finallatfract)+","+str(longmain)+"."+str(finallongfract)
+            try:
+                resultaddress = mydict[finallatlong]
+                resultaddress = (resultaddress.split(","))[:2]
+            except:
+                resultaddress = "Out of Mumbai."
+            #ajit code block 2 ends here
+
+            each_vehicle_record_data = dict()
+            each_vehicle_record_data['vehicle']     = plate_no
+            each_vehicle_record_data['date']        = str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))
+            each_vehicle_record_data['time']        = str(each_vehicle_record.datetime.strftime("%H:%M:%S"))
+            each_vehicle_record_data['area']        = resultaddress
+            each_vehicle_record_data['speed']       = str(each_vehicle_record.speed)
+            response_data['data'].append(each_vehicle_record_data)
+            
+            
+            
+            
+        return HttpResponse(json.dumps(response_data),content_type="application/json")
+    return render(request,'reports/vehicle_location_report.html',{ 'form_params' : form_params, 'plate_no_dict': plate_no_dict})
+
+
+
+
+#FOR NEW ROUTE REPORT
+
+def vehicle_location_ps2pdf(request):
+    set_session_reporting_form_params(request)
+    form_params = request.session['reports_form_params']
+
+    if request.method == 'POST':
+
+        #banned_vehicle_list = ["MH47Y5832","MH47Y5831","MH47Y5842","MH47Y5843","MH47Y6348","MH47Y6345","MH47Y6423","MH47Y6352","MH47Y6424","MH47Y6349","MH47Y6351","MH47Y6420","MH47Y6356","MH47Y6353","MH47Y6359","MH47Y6367","MH47Y6368","MH47Y6347","MH47Y6350","MH47Y6344","MH47Y6355","MH47Y6357","MH47Y6419","MH47Y6365","MH47Y6418","MH47Y6421","MH47Y6435","MH47Y6434","MH47Y6436","MH47Y6437","MH47Y6362","MH47Y6369","MH47Y6360","MH47Y6346","MH47Y6361","MH47Y6366","MH47Y5849","MH47Y6410","MH47Y6409","MH47Y6416","MH47Y6339","MH47Y6341","MH47Y6340","MH47Y6343","MH47Y6334","MH47Y6335","MH47Y6408","MH47Y6342","MH47Y6445","MH47Y6405","MH47Y6413","MH47Y6415","MH47Y6441","MH47Y6414","MH47Y6404","MH47Y6407","MH47Y6411","MH47Y6406","MH47Y6412","MH47Y6338","MH47Y6439","MH47Y6440","MH47Y6443","MH47Y6329","MH47Y6330","MH47Y6332","MH47Y6328","MH47Y6331","MH47Y6337","MH47Y6442","MH47Y6438","MH47Y6333","MH47Y5850","MH47Y6495","MH47Y6484","MH47Y6482","MH47Y6483","MH47Y6481","MH47Y6485","MH47AS1364","MH47AS1366","MH47AS1365","MH47Y7471","MH47Y7481","MH47Y7484","MH47Y7482","MH47Y7479","MH47Y7478","MH47Y7472","MH47Y7476","MH47Y7473","MH47Y7464","MH47Y7483","MH47Y7469","MH47Y7462","MH47Y7467","MH47Y7461","MH47Y7486","MH47Y7457","MH47Y7459","MH47Y7460","MH47Y7485","MH47Y7466","MH47Y7488","MH47Y7468","MH47Y7458","MH47Y7456","MH47Y7463","MH47Y7743","MH47Y7746","MH47Y7748","MH47Y8025","MH47Y8016","MH47Y7750","MH47Y7751","MH47Y7747","MH47Y8024","MH47Y8013","MH47Y8011","MH47Y8014","MH47Y8009","MH47Y8017","MH47Y8012","MH47Y8015","MH47Y7465","MH47Y8003","MH47Y7993","MH47Y7995","MH47Y7998","MH47Y7994","MH47Y7996","MH47Y8006","MH47Y8004","MH47Y8099","MH47Y8098","MH47Y8101","MH47Y8097","MH47Y8088","MH47Y8092","MH47Y8094","MH47Y8087","MH47Y8089","MH47Y8086","MH47Y8085","MH47Y8093","MH47Y8095","MH47Y8096","MH47Y8005","MH47Y8018","MH47Y7489","MH47Y7744","MH47Y7480","MH47Y8007","MH47Y8465","MH47Y8746","MH47Y8747"]
+        banned_vehicle_list = []
+        noPDF = "https://swm.vtms.cleanupmumbai.com/static/pdfreports/no_vehicle_route_report.pdf"
+        #response_data=dict()
+        #response_data['status'] = 'success'
+        #response_data['data'] = list()
+        form_data = QueryDict(request.POST['form_data'].encode('ASCII'))
+        from_time = dateutil.parser.parse(form_data['from_time'])
+        #response_data['fromtime'] = str(from_time)
+        to_time   = dateutil.parser.parse(form_data['to_time'])
+        #response_data['totime'] = str(to_time)
+        plate_no  = form_data['vehicle']
+        if plate_no in banned_vehicle_list:
+            return HttpResponse(noPDF)
+        
+        timedelay = form_data['timedelay']
+        vehicle   = Vehicle.objects.get(plate_number=plate_no)
+        vc = chain(vehicle.vehicle_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime').distinct('datetime'), vehicle.current_tracklog_historys.filter(datetime__range=(from_time,to_time)).order_by('datetime').distinct('datetime'))
+        sorted_vc = sorted(vc,key=by_datetime)
+
+        seen        = dict()
+        speed_zero  = dict()
+
+
+        iward = None
+        """
+        if not request.user.is_superuser:
+          if request.user.appuser.is_contractor:
+            iward = request.user.appuser.bmc_contractor.ward
+          else:
+            iward = request.user.appuser.bmc_officer.ward
+        """
+    
+        iwardfilenamestr = ""
+        #FOR WARD USERS
+        if iward:
+          #ajit's code block 1 starts - initializing the dictionary from txt file.
+          mydict = {}
+        
+          iwardfilenamestr = str(iward).replace("/","") 
+        
+          filename = "/home/mcgm/Development/mcgm/mcgm/fulldata/"+ str(iwardfilenamestr)+ "_fulldata.txt"
+          a_file = codecs.open(filename, encoding="utf-8")
+          for line in a_file:
+            key, value = line.split(":::")
+            mydict[key] = value
+          #ajit code block 1 ends here
+          
+        #FOR SUPERUSER  
+        else:  
+          #ajit's code block 1 starts - initializing the dictionary from txt file.
+          mydict = {}
+          filename = "/home/mcgm/Development/mcgm/mcgm/fulldata/fulldata.txt"
+          a_file = codecs.open(filename, encoding="utf-8")
+          for line in a_file:
+            key, value = line.split(":::")
+            mydict[key] = key
+          #ajit code block 1 ends here
+
+
+        psfilename = "/home/mcgm/Development/mcgm/mcgm/static/pdfreports/"+str(plate_no)+"_"+str(from_time)+"_to_"+str(to_time)+".ps"
+        pdffilename = "/home/mcgm/Development/mcgm/mcgm/static/pdfreports/"+str(plate_no)+"_"+str(from_time)+"_to_"+str(to_time)+".pdf"
+        pdffilelink = "//swm.vtms.cleanupmumbai.com/static/pdfreports/"+str(plate_no)+"_"+str(from_time)+"_to_"+str(to_time)+".pdf"
+        #replace all bad unix characters with underscores
+        psfilename = psfilename.replace(" ", "_")
+        psfilename = psfilename.replace(":", "_")
+        pdffilename = pdffilename.replace(" ", "_")
+        pdffilename = pdffilename.replace(":", "_")
+        pdffilelink = pdffilelink.replace(" ", "_")
+        pdffilelink= pdffilelink.replace(":", "_")
+        pdffilelink = "http:"+pdffilelink
+
+
+
+
+        now = datetime.now()
+        # dd/mm/YY H:M:S
+        dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+
+
+        page1 = """%!PS-Adobe-2.0
+
+%%FIRST_PAGE_START
+%%IMAGE
+/MCGM_LOGO
+{
+save
+/showpage {} bind def
+238 600 translate
+0.5 0.5 scale
+(/home/mcgm/Development/mcgm/mcgm/static/pdfreports/mcgmlogo.eps) run
+restore
+}def
+
+%%PROCEDURE
+/ReportNamefont
+/Times findfont 20 scalefont def
+
+/WORDS_FONT
+/Helvetica-Bold findfont 12 scalefont def
+
+/WORDS_DATA_FONT
+/Helvetica findfont 12 scalefont def
+
+/PrintReportName {
+0 setgray 
+216 550 moveto
+ReportNamefont setfont
+(Route Travel Report) show
+}def
+
+/FirstPageBorder
+{
+40 300 moveto
+515 0 rlineto
+0 230 rlineto
+-515 0 rlineto
+0 -400 rlineto 
+closepath
+%10 setlinewidth 
+1 0.83 0.83 setrgbcolor fill
+stroke
+} def
+
+/FirstPageFromBoxBorder
+{
+65 470 moveto
+460 0 rlineto
+0 20 rlineto
+-460 0 rlineto
+0 -20 rlineto 
+closepath
+%10 setlinewidth 
+1 1 1 setrgbcolor fill
+stroke
+} def
+
+/FirstPageTOBoxBorder
+{
+65 400 moveto
+460 0 rlineto
+0 20 rlineto
+-460 0 rlineto
+0 -20 rlineto 
+closepath
+%10 setlinewidth 
+1 1 1 setrgbcolor fill
+stroke
+} def
+
+/FirstPage3rdBoxBorder
+{
+65 330 moveto
+460 0 rlineto
+0 20 rlineto
+-460 0 rlineto
+0 -20 rlineto 
+closepath
+%10 setlinewidth 
+1 1 1 setrgbcolor fill
+stroke
+} def
+%%FIRST_PAGE_FINISH
+
+%%SECOND_PAGE_START
+%PROCEDURE
+/HEADER_FONT
+/Helvetica-Bold findfont 10 scalefont def
+
+/DATA_FONT
+/Helvetica findfont 9 scalefont def
+
+%%%%%%%%%%%%PRINTING CODE %%MAIN CODE%%%%%%%%%%%%%%%%%%
+%%%%%%%%%FIRSTPAGE 
+1
+{
+FirstPageBorder
+FirstPageFromBoxBorder
+FirstPageTOBoxBorder
+FirstPage3rdBoxBorder
+PrintReportName
+MCGM_LOGO
+
+%FROM_WORD_1st_PAGE
+0 setgray 65 500 moveto
+WORDS_FONT setfont
+(From:) show
+
+%FROM_WORD_1st_PAGE
+0 setgray 73 476 moveto
+WORDS_DATA_FONT setfont
+("""+str(from_time)+""") show
+
+%TO_WORD_1st_PAGE
+0 setgray 65 430 moveto
+WORDS_FONT setfont
+(To:) show
+
+%FROM_WORD_1st_PAGE
+0 setgray 73 406 moveto
+WORDS_DATA_FONT setfont
+("""+str(to_time)+""") show
+
+%3rd_WORD_1st_PAGE
+0 setgray 65 360 moveto
+WORDS_FONT setfont
+(Report Generated Date:) show
+
+%FROM_WORD_1st_PAGE
+0 setgray 73 336 moveto
+WORDS_DATA_FONT setfont
+("""+dt_string+""") show
+
+showpage
+} repeat"""
+
+
+        # Append-adds at last
+        #htmlfile = open(htmlfilename, "a")  # append mode
+        psfile = open(psfilename, "a", encoding="utf-8")
+        psfile.write(page1)
+
+
+
+
+        loopcounter = 1
+        pagerowcounter = 0
+        for each_vehicle_record in sorted_vc:
+            #logic to skip consecutive stationary entries 
+            #if each_vehicle_record.speed == 0.0:
+            #    if each_vehicle_record.speed in speed_zero.keys():
+            #        continue
+            #    else:
+            #        speed_zero[each_vehicle_record.speed]=1
+            #else:
+            #    speed_zero = {}
+
+            #logic to keep a entry for a minute  
+            tm_upto_minute = each_vehicle_record.datetime.strftime("%d_%m_%Y_%H_%M")
+            if tm_upto_minute in seen.keys():
+                continue
+            else:
+                if(timedelay == "1"):
+                    seen[tm_upto_minute]=1
+                elif(timedelay == "2"):
+                    seen[tm_upto_minute]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=1)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                elif(timedelay == "5"):
+                    seen[tm_upto_minute]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=1)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=2)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=3)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=4)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                #10-min delay
+                else:
+                    seen[tm_upto_minute]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=1)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=2)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=3)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=4)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=5)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+                
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=6)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=7)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=8)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                    dt_obj = datetime.strptime(tm_upto_minute, "%d_%m_%Y_%H_%M")
+                    final_time = dt_obj + timedelta(minutes=9)
+                    final_time_str = final_time.strftime('%d_%m_%Y_%H_%M')
+                    seen[final_time_str]=1
+
+                
+                
+
+#            location=Point(float(each_vehicle_record.longitude), float(each_vehicle_record.latitude))
+#            area    = None
+#
+#            try:
+#                pass
+#                #area = Ewd.objects.filter(ewd_fence__contains=location).get()
+#            except:
+#                area = None
+#
+#            area = area.name if area else ''
+
+            #from here: ajit's code block 2 starts - computing and saving the addresses in the response data dictionary
+            inputlat = each_vehicle_record.latitude
+            inputlong = each_vehicle_record.longitude
+            inputlatlong = str(inputlat)+","+str(inputlong)
+            #accept the input and turn it into the nearest value whose answer we have in our text file database
+            newlat = format((round(inputlat,6)),'.6f')
+            newlong = format((round(inputlong, 6)),'.6f')
+            latfract = int(newlat[3:9])
+            longfract = int(newlong[3:9])
+            latadjustmentoffset = latfract%1000
+            if(int(newlat[0:2]) == 18):
+                finallatfract = latfract+(999-latadjustmentoffset)
+            else:
+                finallatfract = latfract+(223-latadjustmentoffset)
+                finallatfract = str(finallatfract).zfill(6)
+            longadjustmentoffset = longfract%1000
+            finallongfract = longfract+(896-longadjustmentoffset)
+            latmain = int(math.floor(float(newlat)))
+            longmain = int(math.floor(float(newlong)))
+            finallatlong = str(latmain)+"."+str(finallatfract)+","+str(longmain)+"."+str(finallongfract)
+            """ try:
+                resultaddress = mydict[finallatlong]
+                resultaddress = (resultaddress.split(","))[:2]
+            except:
+                resultaddress = "Out of Mumbai." """
+            
+            if finallatlong not in mydict:
+                resultaddress = "Out of Mumbai"
+            else:
+                resultaddress =  mydict[finallatlong]
+                resultaddress = (resultaddress.split(","))[:2]
+                resultaddress =  finallatlong                           #ADDED FOR LOCATION REPORT
+            #ajit code block 2 ends here
+
+
+            finalresultaddress = ""
+            finalresultaddress = finalresultaddress.join(resultaddress)
+            finalresultaddress = finalresultaddress[0:40]
+            finalresultaddress = finalresultaddress.replace("(", " ")
+            finalresultaddress = finalresultaddress.replace(")", " ")
+            charcount = 40
+            if(len(finalresultaddress) == 40):
+                while(finalresultaddress[charcount-1]!= " " ):
+                    charcount-=1
+            finalresultaddress = finalresultaddress = finalresultaddress[0:charcount]
+
+            finalspeed = ""
+            finalspeed = finalspeed.join(str(each_vehicle_record.speed))
+
+
+            if(pagerowcounter == 0):
+                staticdata = """\n%%%%%%%%%SECONDPAGE
+%%SECOND_PAGE_NUMBERS_TO_BE_PRINTED%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+1
+{
+%TABLE BORDER
+newpath
+50 54 moveto     %BOTTOM CORNER
+0 680 rlineto    %Y-AXIS UP
+496 0 rlineto    %X-AXIS RIGHT
+0 -680 rlineto   %Y-AXIS DOWN
+-496 0 rlineto   %X-AXIS LEFT
+0 setlinewidth   %THICKNESS
+stroke           %PRINT
+
+%COLUMN LINES(1,2,3,4,5)
+newpath
+85 54 moveto    %TO CHANGE VERTICAL LINES
+0 680 rlineto   %BOTTOM-UP LENGTH
+stroke
+
+newpath
+150 54 moveto
+0 680 rlineto
+stroke
+
+newpath
+215 54 moveto
+0 680 rlineto
+stroke
+
+newpath
+270 54 moveto
+0 680 rlineto
+stroke
+
+newpath
+490 54 moveto
+0 680 rlineto
+stroke
+
+newpath
+50 734 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 714 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 694 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 674 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 654 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 634 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 614 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 594 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 574 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 554 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 534 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 514 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 494 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 474 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 454 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 434 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 414 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 394 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 374 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 354 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 334 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 314 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 294 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 274 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 254 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 234 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 214 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 194 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 174 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 154 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 134 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 114 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 94 moveto
+496 0 rlineto
+stroke
+
+newpath
+50 74 moveto
+496 0 rlineto
+stroke
+
+%-----------------------
+%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 55 720 moveto   %CHANGE THIS TO MOVE HEADERS
+HEADER_FONT setfont
+(Index) show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 98 720 moveto   %CHANGE THIS TO MOVE HEADERS
+HEADER_FONT setfont
+(Vehicle) show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 168 720 moveto   %CHANGE THIS TO MOVE HEADERS
+HEADER_FONT setfont
+(Date) show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 231 720 moveto   %CHANGE THIS TO MOVE HEADERS
+HEADER_FONT setfont
+(Time) show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 350 720 moveto   %CHANGE THIS TO MOVE HEADERS
+HEADER_FONT setfont
+(Location) show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 505 720 moveto   %CHANGE THIS TO MOVE HEADERS
+HEADER_FONT setfont
+(Speed) show
+%----------------------------
+%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 700 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 700 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 700 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 700 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 700 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 700 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------
+"""
+                
+                psfile.write(staticdata)
+                pagerowcounter+=2
+                loopcounter+=1
+
+
+
+
+            elif(pagerowcounter == 2):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 680 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 680 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 680 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 680 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 680 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 680 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+
+            elif(pagerowcounter == 3):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 660 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 660 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 660 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 660 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 660 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 660 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 4):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 640 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 640 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 640 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 640 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 640 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 640 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+
+            elif(pagerowcounter == 5):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 620 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 620 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 620 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 620 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 620 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 620 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 6):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 600 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 600 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 600 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 600 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 600 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 600 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+
+            elif(pagerowcounter == 7):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 580 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 580 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 580 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 580 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 580 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 580 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+
+            elif(pagerowcounter == 8):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 560 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 560 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 560 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 560 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 560 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 560 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 9):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 540 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 540 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 540 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 540 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 540 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 540 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 10):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 520 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 520 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 520 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 520 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 520 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 520 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+
+            elif(pagerowcounter == 11):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 500 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 500 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 500 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 500 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 500 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 500 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 12):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 480 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 480 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 480 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 480 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 480 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 480 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 13):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 460 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 460 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 460 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 460 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 460 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 460 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 14):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 440 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 440 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 440 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 440 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 440 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 440 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+
+            elif(pagerowcounter == 15):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 420 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 420 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 420 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 420 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 420 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 420 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+
+
+            elif(pagerowcounter == 16):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 400 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 400 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 400 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 400 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 400 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 400 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+
+            elif(pagerowcounter == 17):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 380 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 380 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 380 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 380 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 380 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 380 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+
+            elif(pagerowcounter == 18):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 360 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 360 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 360 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 360 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 360 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 360 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 19):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 340 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 340 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 340 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 340 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 340 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 340 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 20):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 320 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 320 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 320 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 320 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 320 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 320 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 21):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 300 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 300 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 300 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 300 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 300 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 300 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 22):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 280 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 280 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 280 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 280 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 280 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 280 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+
+            elif(pagerowcounter == 23):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 260 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 260 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 260 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 260 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 260 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 260 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 24):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 240 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 240 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 240 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 240 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 240 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 240 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 25):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 220 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 220 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 220 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 220 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 220 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 220 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 26):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 200 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 200 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 200 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 200 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 200 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 200 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 27):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 180 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 180 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 180 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 180 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 180 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 180 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 28):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 160 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 160 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 160 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 160 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 160 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 160 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 29):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 140 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 140 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 140 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 140 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 140 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 140 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 30):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 120 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 120 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 120 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 120 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 120 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 120 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 31):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 100 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 100 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 100 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 100 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 100 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 100 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 32):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 80 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 80 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 80 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 80 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 80 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 80 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------"""
+
+                psfile.write(appenddata)
+                pagerowcounter+=1
+                loopcounter+=1
+
+            elif(pagerowcounter == 33):
+                appenddata = """%-----------------------
+%HORIZONTAL_DATA
+%COLUMN_DATA_2st_PAGE
+0 setgray 58 60 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(loopcounter)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 92 60 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(plate_no)+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 158 60 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 225 60 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+str(each_vehicle_record.datetime.strftime("%H:%M:%S"))+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 275 60 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalresultaddress+""") show
+
+%COLUMN_DATA_2st_PAGE
+0 setgray 510 60 moveto   %CHANGE THIS TO MOVE HEADERS
+DATA_FONT setfont
+("""+finalspeed+""") show
+%----------------------------
+showpage
+} repeat"""
+
+                psfile.write(appenddata)
+                pagerowcounter = 0
+                loopcounter+=1
+
+        if(pagerowcounter != 33):
+            appenddata = """
+showpage
+} repeat"""
+            psfile.write(appenddata)
+        psfile.close()
+        pdfgenerationcommand = "ps2pdf -dNOSAFER "+psfilename+" "+pdffilename
+        
+        """ each_vehicle_record_data = dict()
+        each_vehicle_record_data['vehicle']     = plate_no
+        each_vehicle_record_data['date']        = str(each_vehicle_record.datetime.strftime("%d-%m-%Y"))
+        each_vehicle_record_data['time']        = str(each_vehicle_record.datetime.strftime("%H:%M:%S"))
+        each_vehicle_record_data['area']        = resultaddress
+        each_vehicle_record_data['speed']       = str(each_vehicle_record.speed)
+        response_data['data'].append(each_vehicle_record_data) """
+        os.system(pdfgenerationcommand)
+        os.remove(psfilename)
+        #pdfaccesslink = "http://swm.vtms.cleanupmumbai.com/static/pdfreports/"+str(plate_no)+"_"+str(from_time)+"_to_"+str(to_time)+".pdf"
+        return HttpResponse(pdffilelink)
+    return render(request,'reports/vehicle_route_report.html',{ 'form_params' : form_params})

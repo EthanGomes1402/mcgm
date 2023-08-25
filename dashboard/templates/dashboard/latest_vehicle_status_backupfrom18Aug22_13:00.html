@@ -1,0 +1,1825 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>VTMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/fontawesome.min.css">
+    <link rel="stylesheet" href="{% static 'css2/all.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css2/OverlayScrollbars.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css2/adminlte.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css2/style.css' %}">
+
+
+    <link href="https://use.fontawesome.com/releases/v5.0.6/css/all.css" rel="stylesheet">
+	<!--<link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}"> -->
+	<link rel="stylesheet" href="{% static 'css/jquery-ui.css' %}">
+	<link rel="stylesheet" href="{% static 'css/leaflet.css' %}"/>
+	<!--<link rel="stylesheet" href="{% static 'css/style.css' %}"/> -->
+	<!--<link rel="stylesheet" href="{% static 'css/bootstrap-datetimepicker.min.css' %}"/>-->
+	<!--<link rel="stylesheet" href="{% static 'css/theme_default.css' %}"/> -->
+	<link rel="stylesheet" href="{% static 'css/MarkerCluster.css' %}"/>
+	<link rel="stylesheet" href="{% static 'css/MarkerCluster.Default.css' %}"/>
+ <link rel="stylesheet" href="{% static 'css2/daterangepicker.css' %}"/>
+ <link rel="stylesheet" href="{% static 'css2/datepicker.css' %}"/>
+ <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+
+
+ <script src="{% static 'js/jquery.min.js' %}"></script>
+  <!--<script src="{% static 'js/moment.js' %}"></script> -->
+  <script src="{% static 'js/popper.min.js' %}"></script>
+  <script src="{% static 'js/bootstrap.min.js' %}"></script>
+  <script src="{% static 'js/jquery-ui.min.js' %}"></script>
+  <script src="{% static 'js/jquery.tablesorter.min.js' %}"></script>
+  <script src="{% static 'js/jquery.table2excel.js' %}"></script>
+  <script src="{% static 'js/leaflet.js' %}"></script>
+  <!--<script src="{% static 'js/bootstrap-datetimepicker.min.js' %}"></script> -->
+  <script src="{% static 'js/tableHTMLExport.js' %}"></script>
+  <script src="{% static 'js/jspdf.js' %}"></script>
+  <script src="{% static 'js/jspdf.plugin.autotable.min.js' %}"></script>
+  <!--<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+  integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+  crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>-->
+  <script src="{% static 'js/leaflet_routing_machine.js' %}"></script>
+  <script src="{% static 'js/leaflet.markercluster.js' %}"></script>
+  <script src="{% static 'js/MovingMarker.js' %}"></script>
+</head>
+
+<body class="hold-transition sidebar-mini layout-navbar-fixed">
+    <!-- Site wrapper -->
+    <div class="wrapper">
+        
+        <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+                </li>
+            </ul>
+            <!-- Right navbar links -->
+            <ul class="navbar-nav ml-auto">
+                <!-- Navbar Search -->
+                <div class="contact-bg">
+                    <li class="nav-item">
+                        <h5 class="mb-0">Help Desk</h5>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-widget="" href="#" role="button">
+                            <i class="fas fa-phone-alt"></i> +91 22 2925 0372 / +91 9769784764
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-widget="" href="mailto:vtms-support@qdnet.com" role="button">
+                            <i class="fas fa-envelope"></i> vtms-support@qdnet.com
+                        </a>
+                    </li>
+                </div>
+             <!--    <li class="nav-item">
+                    <a class="nav-link" data-widget="navbar-search" href="#" role="button">
+                        <i class="fas fa-search"></i>
+                    </a>
+                   <div class="navbar-search-block">
+                        <form class="form-inline">
+                            <div class="input-group input-group-sm">
+                                <input class="form-control form-control-navbar" type="search" placeholder="Search" aria-label="Search">
+                                <div class="input-group-append">
+                                    <button class="btn btn-navbar" type="submit"><i class="fas fa-search"></i>
+                                </button>
+                                    <button class="btn btn-navbar" type="button" data-widget="navbar-search">
+                  <i class="fas fa-times"></i>
+                </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div> 
+                </li>-->
+                <li class="nav-item">
+                    <a class="nav-link" data-widget="fullscreen" href="#" role="button">
+                        <i class="fas fa-expand-arrows-alt"></i>
+                    </a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link" data-toggle="" href="{% url 'logout' %}">
+                      Welcome {{ user.username }}  | <b class="logout">Logout</b>
+                      
+                    </a>
+                </li>
+
+            </ul>
+        </nav>
+
+        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+            <!-- Brand Logo -->
+            <a href="#" class="brand-link elevation-4">
+                <img src="{% static 'images2/mcgm-logo.png' %}" alt="VTMS" class="brand-image img-circle elevation-3" width="150">
+                <span class="brand-text font-weight-light">VTMS</span>
+            </a>
+
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+                    <div class="image">
+                        <img src="{% static 'images2/user.jpg' %}" class="img-circle elevation-2" alt="User Image">
+                    </div>
+                    <div class="info">
+                        <a href="#" class="d-block">{{ user.username }}</a>
+                    </div>
+                </div>
+
+                <!-- SidebarSearch Form -->
+            <!--    <div class="form-inline">
+                    <div class="input-group" data-widget="sidebar-search">
+                        <input class="form-control form-control-sidebar" type="search" placeholder="Search" aria-label="Search"> 
+                        <div class="input-group-append">
+                            <button class="btn btn-sidebar">
+              <i class="fas fa-search fa-fw"></i>
+            </button>
+                        </div>
+                    </div>
+                </div> -->
+
+                <!-- Sidebar Menu -->
+                <nav class="mt-2">
+                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon"><img src="{% static 'images2/dashboard.png' %}" alt="Dashboard" width="25"></i>
+                                <p>Dashboard
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{% url 'latest_vehicle_status' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Vehicle Status</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{% url 'quick_view' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Map View Report</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon"><img src="{% static 'images2/report.png' %}" alt="Report" width="25"></i>
+                                <p>
+                                    Report
+                                    <i class="fas fa-angle-left right"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{% url 'vehicle_route_report' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Vehicle Route Report</p>
+                                    </a>
+                                </li>
+                                {% if user.is_authenticated and user.is_superuser %}
+                                <div class="ml-3 new-menu">
+                                <li class="sidebar-dropdown">
+                                    <div class="dropdown">
+                                      <a href="#" class="dropdown-toggle" data-toggle="dropdown">Alert</a>
+                                      <div class="dropdown-menu">
+                                          <a href="{% url 'alert_geofence' %}" class="dropdown-item">Geofence</a>
+                                          <a href="{% url 'alert_power_disconnect' %}" class="dropdown-item">Power Disconnect</a>
+                                          <a href="{% url 'alert_route_deviation' %}" class="dropdown-item">Route Deviation</a>
+                                          <a href="{% url 'alert_speed' %}" class="dropdown-item">Speed</a>
+                                      </div>
+                                  </div>
+                                  </li>
+                
+                                  <li class="sidebar-dropdown">
+                                    <div class="dropdown">
+                                      <a href="#" class="dropdown-toggle" data-toggle="dropdown">Bin Status</a>
+                                      <div class="dropdown-menu">
+                                          <a href="{% url 'bin_collection_status' %}" class="dropdown-item">Bin Collection Status</a>
+                                          <a href="{% url 'bin_rfid_tag_status' %}" class="dropdown-item">Bin RFID Tag Status</a>
+                                      </div>
+                                  </div>
+                                  </li>
+                                  <li class="sidebar-dropdown">
+                                    <div class="dropdown">
+                                      <a href="#" class="dropdown-toggle" data-toggle="dropdown">Garage Traction</a>
+                                      <div class="dropdown-menu">
+                                          <a href="{% url 'garage_traction' %}" class="dropdown-item">Garage Traction</a>
+                                      </div>
+                                    </div>
+                                  </li>
+                                  <li class="sidebar-dropdown">
+                                    <div class="dropdown">
+                                      <a href="#" class="dropdown-toggle" data-toggle="dropdown">Landfill Site Usage</a>
+                                      <div class="dropdown-menu">
+                                          <a href="{% url 'land_fill_site_usage_current' %}" class="dropdown-item">Dmpgnd by current date</a>
+                                          <a href="{% url 'land_fill_site_usage_dumping_groundwise' %}" class="dropdown-item">Garbage Traction by Dmpgnd</a>
+                                          <a href="{% url 'land_fill_site_usage_weightwise' %}" class="dropdown-item">Weight Brought In At DMPGND</a>
+                                      </div>
+                                  </div>
+                                  </li>
+                
+                                  <li class="sidebar-dropdown">
+                                    <div class="dropdown">
+                                      <a href="#" class="dropdown-toggle" data-toggle="dropdown">Location </a>
+                                      <div class="dropdown-menu">
+                                          <a href="{% url 'location_check_post' %}" class="dropdown-item">Checkpost</a>
+                                          <a href="{% url 'location_dumping_ground' %}" class="dropdown-item">DMPGND</a>
+                                          <a href="{% url 'location_garage' %}" class="dropdown-item">Garage</a>
+                                          <a href="{% url 'location_mlc' %}" class="dropdown-item">MLC</a>
+                                          <a href="{% url 'location_transfer_station' %}" class="dropdown-item">TS</a>
+                                      </div>
+                                  </div>
+                                  </li>
+                
+                                  <li class="sidebar-dropdown">
+                                    <div class="dropdown">
+                                      <a href="#" class="dropdown-toggle" data-toggle="dropdown">POI</a>
+                                      <div class="dropdown-menu">
+                                          <a href="{% url 'poi_departmental_offices' %}" class="dropdown-item">Departmental Offices</a>
+                                          <a href="{% url 'poi_departmental_workshops' %}" class="dropdown-item">Departmental Workshops</a>
+                                          <a href="{% url 'poi_dmpgnd' %}" class="dropdown-item">Dumping Grounds</a>
+                                          <a href="{% url 'poi_garbage_collection_points' %}" class="dropdown-item">Garbage Collection Points</a>
+                                          <a href="{% url 'poi_mlcs' %}" class="dropdown-item">MLC</a>
+                                          <a href="{% url 'poi_other_points' %}" class="dropdown-item">Other Points</a>
+                                          <a href="{% url 'poi_station_locations' %}" class="dropdown-item">Station Locations</a>
+                                          <a href="{% url 'poi_swm_garages' %}" class="dropdown-item">SWM Garages</a>
+                                          <a href="{% url 'poi_swm_offices' %}" class="dropdown-item">SWM Offices</a>
+                                          <a href="{% url 'poi_transfer_stations' %}" class="dropdown-item">Transfer Stations</a>
+                                          <a href="{% url 'poi_ward_offices' %}" class="dropdown-item">Wards Offices</a>
+                                          <a href="{% url 'poi_work_sites' %}" class="dropdown-item">Work Sites</a>
+                                      </div>
+                                  </div>
+                                  </li>
+                
+                                  <li class="sidebar-dropdown">
+                                    <div class="dropdown">
+                                      <a href="#" class="dropdown-toggle" data-toggle="dropdown">Register</a>
+                                      <div class="dropdown-menu">
+                                          <a href="{% url 'register_transfer_station_vehiclewise' %}" class="dropdown-item">Transfer Station Vehiclewise</a>
+                                          <a href="{% url 'register_vehicle' %}" class="dropdown-item">Vehicle Register</a>
+                                      </div>
+                                  </div>
+                                  </li>
+                
+                                  <li class="sidebar-dropdown">
+                                    <div class="dropdown">
+                                      <a href="#" class="dropdown-toggle" data-toggle="dropdown">Stoppage</a>
+                                      <div class="dropdown-menu">
+                                          <a href="{% url 'stoppage' %}" class="dropdown-item">Stoppage</a>
+                                      </div>
+                                  </div>
+                                  </li>
+                
+                                  <li class="sidebar-dropdown">
+                                    <div class="dropdown">
+                                      <a href="#" class="dropdown-toggle" data-toggle="dropdown">Vehicle History</a>
+                                      <div class="dropdown-menu">
+                                          <a href="{% url 'vehicle_route_history' %}" class="dropdown-item">Route History</a>
+                                          <a href="{% url 'vehicle_summery' %}" class="dropdown-item">Vehicle Summery</a>
+                                      </div>
+                                  </div>
+                                  </li>
+                
+                                  <li class="sidebar-dropdown">
+                                    <div class="dropdown">
+                                      <a href="#" class="dropdown-toggle" data-toggle="dropdown">Vehicle Status</a>
+                                      <div class="dropdown-menu">
+                                          <a href="{% url 'vehicle_status_bin_rfid_tag' %}" class="dropdown-item">Bin RFID Tag</a>
+                                          <a href="{% url 'vehicle_status_bin_rfid_tag_status' %}" class="dropdown-item">Bin RFID Tag Status</a>
+                                          <a href="{% url 'vehicle_status_bin_rfid_tag_unregistered' %}" class="dropdown-item">Bin RFID Tag unregistered</a>
+                                          <a href="{% url 'vehicle_wind_schield_tag' %}" class="dropdown-item">VWTR</a>
+                                      </div>
+                                  </div>
+                                  </li>
+                
+                                  <li class="sidebar-dropdown">
+                                    <div class="dropdown">
+                                      <a href="#" class="dropdown-toggle" data-toggle="dropdown">Vehicle Trace</a>
+                                      <div class="dropdown-menu">
+                                          <a href="{% url 'vehicle_trace' %}" class="dropdown-item">Vehicle Trace</a>
+                                      </div>
+                                  </div>
+                                  </li>
+                
+                                  <li class="sidebar-dropdown">
+                                    <div class="dropdown">
+                                      <a href="#" class="dropdown-toggle" data-toggle="dropdown">Vehicle Tracking</a>
+                                      <div class="dropdown-menu">
+                                          <a href="{% url 'vehicle_tracking' %}" class="dropdown-item">Vehicle Tracking</a>
+                                      </div>
+                                  </div>
+                                  </li>
+                
+                                  <li class="sidebar-dropdown">
+                                    <div class="dropdown">
+                                      <a href="#" class="dropdown-toggle" data-toggle="dropdown">Weight</a>
+                                      <div class="dropdown-menu">
+                                          <a href="{% url 'weight_locationwise' %}" class="dropdown-item">LWR</a>
+                                          <a href="{% url 'weight_wardwise' %}" class="dropdown-item">Ward Traction</a>
+                                          <a href="{% url 'weight_history' %}" class="dropdown-item">Weight History</a>
+                                          <a href="{% url 'weight_zonewise' %}" class="dropdown-item">Zone Traction</a>
+                                      </div>
+                                  </div>
+                                  </li>
+                                  </div>
+                                {% endif %}
+                            </ul>
+                        </li>
+
+
+                        {% if user.is_authenticated and user.is_superuser %}
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon"><img src="{% static 'images2/report.png' %}" alt="Report" width="25"></i>
+                                <p>
+                                    Admin
+                                    <i class="fas fa-angle-left right"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{% url 'vehicles' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Vehicle</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="{% url 'bins' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Bin</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="{% url 'routes' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Route</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="{% url 'route_schedules' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Route Schedule</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="{% url 'stop_stations' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Stop Station</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="{% url 'contractors' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Contractor</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="{% url 'vgms' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Garage Vehicle Mapping</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="{% url 'wcms' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Ward Contractor Mapping</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="{% url 'installations' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Installation</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="{% url 'wards' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Ward</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="{% url 'ewds' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>EWD</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="{% url 'divs' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Div</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="{% url 'zones' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Zone</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Staff Management</p>
+                                    </a>
+                                </li>
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+
+
+
+
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+
+        
+        <div class="content-wrapper">
+            <section class="content-header">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-info">
+                                <div class="inner">
+                                    <h3 id = "totalvehiclecount_heading"></h3>
+                                    <p>All Vehicles</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas "><img src="{% static 'images2/vehicle.png' %}" alt="No of Vehicles" width="80"></i>
+                                </div>
+                                <a href="javascript:showAllVehicles();" class="small-box-footer">
+                              Click Here <i class="fas fa-arrow-circle-right"></i>
+                            </a>
+                            </div>
+                        </div>
+                        <!-- ./col -->
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-success">
+                                <div class="inner">
+                                    <h3>{{  all_online_entries | length }}</h3>
+                                    <p>Online</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas "><img src="{% static 'images2/online.png' %}" alt="Online Vehicle" width="80"></i>
+                                </div>
+                                <a href="javascript:showAllVehicles_online();" class="small-box-footer">
+                                    Click Here <i class="fas fa-arrow-circle-right"></i>
+                            </a>
+                            </div>
+                        </div>
+                        <!-- ./col -->
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-danger">
+                                <div class="inner">
+                                    <h3>{{ all_offline_entries | length }}</h3>
+                                    <p>Offline</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas "><img src="{% static 'images2/offline.png' %}" alt="Offline Vehicle" width="80"></i>
+                                </div>
+                                <a href="javascript:showAllVehicles_offline();" class="small-box-footer">
+                                    Click Here <i class="fas fa-arrow-circle-right"></i>
+                            </a>
+                            </div>
+                        </div>
+                        <!-- ./col -->
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-warning">
+                                <div class="inner">
+                                    <h3 id = "allvehiclesummary_heading">  </h3>
+                                    <p>All Vehicle Summary</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas "><img src="{% static 'images2/report1.png' %}" alt="Reports" width="50"></i>
+                                </div>
+                                <a href="javascript:showVehicleSummary();" class="small-box-footer">
+                              More info <i class="fas fa-arrow-circle-right"></i>
+                            </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+
+            
+            <section class="content" id = "VehicleSummary" style = "display: none;">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-md-6 vehicle-summary">
+                            <div class="card mb-5" style = " width: 1000px;">
+                                <div class="card-header">
+                                    <h3 class="card-title">All Vehicle Summary</h3> 
+                                    
+                                </div>
+
+
+
+                            <div class="progress-group">
+                                Refuse Mini Compactor
+                                <span class="float-right">Total:  <b id = "mccount"></b></span>
+                                <div class="progress progress-sm">
+                                    <div id = "mccountpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="refuse_mini_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="refuse_mini_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "refuse_mini_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "refuse_mini_off"; style="color:#dc3545"></b></span>
+                            </div>
+
+                            <div class="progress-group">
+                                Refuse Compactor
+                                <span class="float-right">Total:  <b id = "lccount"></b></span>
+                                <div class="progress progress-sm">
+                                    <div id = "lccountpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="refuse_com_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="refuse_com_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "refuse_com_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "refuse_com_off"; style="color:#dc3545"></b></span>
+                            </div>
+
+
+                            <div class="progress-group">
+                                         Small Closed Vehicle
+                                <span class="float-right">Total:  <b id = "scvcount"></b></span>
+                                <div class="progress progress-sm">
+                                    <div id = "scvcountpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="small_closed_veh_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="small_closed_veh_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "small_closed_veh_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "small_closed_veh_off"; style="color:#dc3545"></b></span>
+                            </div>
+
+
+                            <div class="progress-group">
+                                Watch and Ward
+                                <span class="float-right">Total:  <b id = "wwcount"></b></span>
+                                <div class="progress progress-sm">
+                                    <div id = "wwcountpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="watch_and_ward_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="watch_and_ward_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "watch_and_ward_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "watch_and_ward_off"; style="color:#dc3545"></b></span>
+                            </div>
+
+
+                            <div class="progress-group">
+                                Tempo
+                                <span class="float-right">Total:  <b id = "dwcount"></b></span>
+                                <div class="progress progress-sm">
+                                    <div id = "dwcountpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="tempo_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="tempo_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "tempo_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "tempo_off"; style="color:#dc3545"></b></span>
+                            </div>
+                            
+                            <div class="progress-group">
+                                Side Loading Compactor
+                                <span class="float-right">Total:  <b id = "slcount"></b></span>
+                                <div class="progress progress-sm">
+                                    <div id = "slcountpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="side_loader_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="side_loader_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "side_loader_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "side_loader_off"; style="color:#dc3545"></b></span>
+                            </div>
+
+
+                            <div class="progress-group">
+                                Mechanical Power Sweeper
+                                <span class="float-right">Total:  <b id = "mpscount"></b></span>
+                                <div class="progress progress-sm">
+                                    <div id = "mpscountpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="mech_power_sw_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="mech_power_sw_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "mech_power_sw_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "mech_power_sw_off"; style="color:#dc3545"></b></span>
+                            </div>
+
+                            <div class="progress-group">
+                                Dumper
+                                <span class="float-right">Total:  <b id = "dmpcount"></b></span>
+                                <div class="progress progress-sm">
+                                    <div id = "dmpcountpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="dumper_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="dumper_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "dumper_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "dumper_off"; style="color:#dc3545"></b></span>
+                            </div>
+
+                            <div class="progress-group">
+                                Bakayantra (JCB)
+                                <span class="float-right">Total:  <b id = "jcbcount"></b></span>
+                                <div class="progress progress-sm">
+                                    <div id = "jcbcountpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="bakayantra_jcb_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="bakayantra_jcb_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "bakayantra_jcb_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "bakayantra_jcb_off"; style="color:#dc3545"></b></span>
+                            </div>
+                        
+
+                            <div class="progress-group">
+                                Compactor
+                                <span class="float-right">Total:  <b id = "compactorcount"></b></span>
+                                <div class="progress progress-sm">
+                                    <div id = "compactorcountpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="only_comp_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="only_comp_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "only_comp_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "only_comp_off"; style="color:#dc3545"></b></span>
+                            </div>
+
+                            <div class="progress-group">
+                                Beach Cleaning Machine
+                                <span class="float-right">Total:  <b id = "beach_cleaning_count"></b></span>
+                                <div class="progress progress-sm">
+                                    <div id = "beach_cleaning_countpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="beach_clean_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="beach_clean_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "beach_clean_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "beach_clean_off"; style="color:#dc3545"></b></span>
+                            </div>
+                            
+
+                            <div class="progress-group">
+                                Tractor Trailer
+                                <span class="float-right">Total:  <b id = "tractor_trailer_count"></b></span>
+                                <div class="progress progress-sm">
+                                    <div id = "tractor_trailer_countpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="trac_trail_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="trac_trail_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "trac_trail_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "trac_trail_off"; style="color:#dc3545"></b></span>
+                            </div>
+
+                            <div class="progress-group">
+                                Steer Skid Loader
+                                <span class="float-right">Total:  <b id = "skid_loader_count"></b></span>
+                                <div class="progress progress-sm">
+                                    <div id = "skid_loader_countpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" id="str_sk_loader_on_percent"></div>
+                                    <div class="progress-bar progress-bar-striped bg-danger" id="str_sk_loader_off_percent"></div>
+                                  </div>
+                                  
+                                  <span class="float-left">Online:<b id = "str_sk_loader_on"; style="color:#28a745"></b></span>
+                                  <span class="float-left">/Offline:<b id = "str_sk_loader_off"; style="color:#dc3545"></b></span>
+                            </div>
+
+                            <div class="progress-group">
+                                Other
+                                <span class="float-right"><b id = "othercount"></b></span>
+                                <div class="progress progress-sm">
+                                    <div id = "othercountpercent" class="progress-bar progress-bar-striped bg-warning" ></div>
+                                </div>
+
+
+                            </div>
+                            </div>
+
+
+
+<br>
+<br>
+
+
+                    </div>
+                </div>
+            </section>
+
+
+
+
+
+
+
+
+            <!-- Main content -->
+            <section class="content" id = "AllVehicles_online" style = "display: none;">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card mb-5">
+                                <div class="card-header">
+                                    
+                                    <a href = "#" id="export_to_csv_online" style="float: right;"><img class = "" alt = "download_csv" src = "{% static 'images2/csv2.png' %}" width = "40px" height = "40px"> &nbsp; </img></a>
+                                    <a href = "#" id="export_to_pdf_online" style="float: right;"><img class = "" alt = "download_pdf" src = "{% static 'images2/pdf2.png' %}" width = "40px" height = "40px"> &nbsp; </img></a>
+                                    <h3 class="card-title">Online Vehicles </h3><input type="text" style="float:right;" placeholder="Search Online Vehicles.." name="SearchOnlineVehicles" id="SearchOnlineVehicles" onkeyup="SearchOnlineVehicles()"> 
+
+                                </div>
+                                <!-- /.card-header -->
+                                <div class="card-body">
+                                    {% if all_online_entries %}
+                                    <table id="vehicletable_online" class="table table-bordered table-striped tablesorter">
+                                        <thead style="text-align:center">
+                                            <tr>
+                                                <th>Sr. No.</th>
+                                                <th>Vehicle</th>
+                                                <th>Type</th>
+                                                <th>Location</th>
+                                                <th>Time</th>
+                                                <th>Ward</th>
+                                                <th>Contractor</th>
+                                                <!--<th>Vehicle Status</th>
+                                                <th>Contractor</th> 
+                                                <th>Ward</th> -->
+                                                <th class = "mapview">View</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for each_entry in all_online_entries reversed %}
+                                            <tr>
+                                                <td>{{ forloop.counter }}</td>
+                                                <td>{{ each_entry.veh  }}</td>
+                                                <td style = "text-transform: uppercase;">{{ each_entry.type }}</td>
+                                                <td>{{ each_entry.ward  }} </td>
+                                                <td>{{ each_entry.time | default_if_none:"" }}</td>
+                                                <td>{{ each_entry.veh_ward}}</td>
+                                                <td>{{ each_entry.veh_contractor}}</td>
+                                                <!--<td>{{ each_entry.trip_status }}</td>-->
+                                                <!--<td>{% firstof bin.ward bin.route.ward  %}</td>-->
+                                                <!--<td bgcolor="{{ each_entry.veh_class }}">{{ each_entry.veh_status }}</td>
+                                                <td bgcolor="{{ each_entry.speed_class }}">{{ each_entry.speed_status }}</td> 
+                                                <td></td> -->
+                                                <td class="area mapview"><img src="{% static 'img/location.png' %}"><span style="display:none;">{{  each_entry.lat }},{{each_entry.lon }}</span> </td>
+                                            </tr>
+                                            
+                                            
+                                          {% endfor %}
+                                        </tbody>
+                                    </table>
+                                    {% else %}
+  	                                    <h1>No Data Found</h1>
+                                    {% endif %}
+                                    <div id="loadpositionmap" style="display: none;" align="center">
+                                    </div>
+                                  </div>
+                                <!-- /.card-body -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+
+            <section class="content" id = "AllVehicles_offline" style="display: none;">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card mb-5">
+                                <div class="card-header">
+                                    <a href = "#" id="export_to_csv_offline" style="float: right;"><img class = "" alt = "download_csv" src = "{% static 'images2/csv2.png' %}" width = "40px" height = "40px"> &nbsp; </img></a>
+                                    <a href = "#" id="export_to_pdf_offline" style="float: right;"><img class = "" alt = "download_pdf" src = "{% static 'images2/pdf2.png' %}" width = "40px" height = "40px"> &nbsp; </img></a>
+                                    
+                                    <h3 class="card-title">Offline Vehicles </h3><input type="text" style="float:right;" placeholder="Search Offline Vehicles.." name="SearchOfflineVehicles" id="SearchOfflineVehicles" onkeyup="SearchOfflineVehicles()"> 
+                                </div>
+                                <div class="card-body">
+                                    {% if all_offline_entries %}
+                                    <table id="vehicletable_offline" class="table table-bordered table-striped tablesorter">
+                                        <thead style="text-align:center">
+                                            <tr>
+                                                <th>Sr. No.</th>
+                                                <th>Vehicle</th>
+                                                <th>Type</th>
+                                                <th>Location</th>
+                                                <th>Time</th>
+                                                <th>Ward</th>
+                                                <th>Contractor</th>
+                                                <!--<th>Vehicle Status</th>
+                                                <th>Contractor</th> 
+                                                <th>Ward</th> -->
+                                                <th  class = "mapview">View</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for each_entry in all_offline_entries reversed %}
+                                            <tr>
+                                                <td>{{ forloop.counter }}</td>
+                                                <td>{{ each_entry.veh  }}</td>
+                                                <td style = "text-transform: uppercase;">{{ each_entry.type }}</td>
+                                                <td>{{ each_entry.ward  }} </td>
+                                                <td>{{ each_entry.time | default_if_none:"" }}</td>
+                                                <td>{{ each_entry.veh_ward}}</td>
+                                                <td>{{ each_entry.veh_contractor}}</td>
+                                                <!--<td>{{ each_entry.trip_status }}</td>-->
+                                                <!--<td>{% firstof bin.ward bin.route.ward  %}</td>-->
+                                                <!--<td bgcolor="{{ each_entry.veh_class }}">{{ each_entry.veh_status }}</td>
+                                                <td bgcolor="{{ each_entry.speed_class }}">{{ each_entry.speed_status }}</td> 
+                                                <td></td> -->
+                                                <td class="area mapview"><img src="{% static 'img/location.png' %}"><span style="display:none;">{{  each_entry.lat }},{{each_entry.lon }}</span> </td>
+                                            </tr>
+                                          {% endfor %}
+                                        </tbody>
+                                    </table>
+                                    {% else %}
+  	                                    <h1>No Data Found</h1>
+                                    {% endif %}
+                                    <!--<div id="loadpositionmap" style="display: none;" align="center">
+                                    </div>-->
+                                  </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="content" id = "AllVehicles" >
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card mb-5">
+                                <div class="card-header">
+                                    <a href = "#" id="export_to_csv_all" style="float: right;"><img class = "" alt = "download_csv" src = "{% static 'images2/csv2.png' %}" width = "40px" height = "40px"> &nbsp; </img></a>
+                                    <a href = "#" id="export_to_pdf_all" style="float: right;"><img class = "" alt = "download_pdf" src = "{% static 'images2/pdf2.png' %}" width = "40px" height = "40px"> &nbsp; </img></a>
+                                    <h3 class="card-title">All Vehicles </h3><input type="text" style="float:right;" placeholder="Search All Vehicles.." name="SearchAllVehicles" id="SearchAllVehicles" onkeyup="SearchAllVehicles()"> 
+                                </div>
+                                <!-- /.card-header -->
+                                <div class="card-body">
+                                    {% if all_online_entries or all_offline_entries%}
+                                    <table id="vehicletable" class="table table-bordered table-striped tablesorter">
+                                        <thead style="text-align:center">
+                                            <tr>
+                                                <th>Sr. No.</th>
+                                                <th>Vehicle</th>
+                                                <th>Type</th>
+                                                <th>Location</th>
+                                                
+                                                <th>Time</th>
+                                                <th>Ward</th>
+                                                <th>Contractor</th>
+                                                <th class = "mapview">View</th>
+                                            </tr>
+                                        </thead>
+
+                                        <!-- <thead>
+                                            <tr>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th colspan="8">All Vehicles</th>
+                                                <th hidden></th>
+                                                <th hiddne></th>
+                                                <th hidden></th>
+                                                <th hidden></th>
+                                            </tr>
+                                        </thead> -->
+                                        
+                                        <tbody id ="addofflinelisthere">
+
+                                            <!-- <tr>
+                                                <td>Sr. No.</td>
+                                                <td>Vehicle</td>
+                                                <td>Type</td>
+                                                <td>Location</td>
+                                                
+                                                <td>Time</td>
+                                                <td>Ward</td>
+                                                <td>Contractor</td>
+                                                <td>View</td>
+                                            </tr> -->
+                                            
+                                            {% for each_entry in all_online_entries reversed %}
+                                            <tr>
+                                                <td>{{ forloop.counter }}</td>
+                                                <td>{{ each_entry.veh  }}</td>
+                                                <td style = "text-transform: uppercase;">{{ each_entry.type }}</td>
+                                                <td>{{ each_entry.ward  }} </td>
+                                                <td>{{ each_entry.time | default_if_none:"" }}</td>
+                                                <td>{{ each_entry.veh_ward}}</td>
+                                                <td>{{ each_entry.veh_contractor}}</td>
+                                                <!--<td>{{ each_entry.trip_status }}</td>-->
+                                                <!--<td>{% firstof bin.ward bin.route.ward  %}</td>-->
+                                                <!--<td bgcolor="{{ each_entry.veh_class }}">{{ each_entry.veh_status }}</td>
+                                                <td bgcolor="{{ each_entry.speed_class }}">{{ each_entry.speed_status }}</td> 
+                                                <td></td> -->
+                                                <td class="area mapview"><img src="{% static 'img/location.png' %}"><span style="display:none;">{{  each_entry.lat }},{{each_entry.lon }}</span> </td>
+                                            </tr>
+                                        
+                                          {% endfor %}
+                                          
+                                          
+                                        </tbody>
+                                    </table>
+                                    {% else %}
+  	                                    <h1>No Data Found</h1>
+                                    {% endif %}
+                                    <div id="loadpositionmap" style="display: none;" align="center">
+                                    </div>
+                                  </div>
+                                <!-- /.card-body -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            
+        </div>
+
+        <footer class="main-footer" style="z-index: 999">
+            <strong>Copyright &copy; 2022 <a href="https://qdnet.com" target="blank">Qdnet Technologies Pvt. Ltd.</a>.</strong> All rights reserved.
+        </footer>
+
+
+    </div>
+    <!-- ./wrapper -->
+
+
+    <div class="modal fade" id="modal-default">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Map View</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+         <span aria-hidden="true">&times;</span>
+        </button>
+                </div>
+                <div class="modal-body">
+                    <p>Map here</p>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <!--<script src="{% static 'js2/jquery.min.js' %}"></script> -->
+    <script src="{% static 'js2/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'js2/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'js2/dataTables.bootstrap4.min.js' %}"></script>
+    <script src="{% static 'js2/jquery.overlayScrollbars.min.js' %}"></script>
+
+    <script src="{% static 'js2/adminlte.min.js' %}"></script>
+
+    <script>
+//Code U for search bar starts
+        const SearchAllVehicles = () =>{
+            let filter = document.getElementById("SearchAllVehicles").value.toUpperCase();
+            let table = document.getElementById("vehicletable");
+            let tr = table.getElementsByTagName("tr");
+            for (var i = 0; i < tr.length; i++){
+                let td = tr[i].getElementsByTagName("td")[1];
+                if(td){
+                    let VehicleName = td.textContent || td.innerHTML;
+                    if (VehicleName.toUpperCase().indexOf(filter) > -1){
+                        tr[i].style.display ="";
+                    }
+                    else{
+                        tr[i].style.display ="none";
+                    }
+                }
+            }
+        }
+
+        const SearchOfflineVehicles = () =>{
+            let filter = document.getElementById("SearchOfflineVehicles").value.toUpperCase();
+            let table = document.getElementById("vehicletable_offline");
+            let tr = table.getElementsByTagName("tr");
+            for (var i = 0; i < tr.length; i++){
+                let td = tr[i].getElementsByTagName("td")[1];
+                if(td){
+                    let VehicleName = td.textContent || td.innerHTML;
+                    if (VehicleName.toUpperCase().indexOf(filter) > -1){
+                        tr[i].style.display ="";
+                    }
+                    else{
+                        tr[i].style.display ="none";
+                    }
+                }
+            }
+        }
+
+        const SearchOnlineVehicles = () =>{
+            let filter = document.getElementById("SearchOnlineVehicles").value.toUpperCase();
+            let table = document.getElementById("vehicletable_online");
+            let tr = table.getElementsByTagName("tr");
+            for (var i = 0; i < tr.length; i++){
+                let td = tr[i].getElementsByTagName("td")[1];
+                if(td){
+                    let VehicleName = td.textContent || td.innerHTML;
+                    if (VehicleName.toUpperCase().indexOf(filter) > -1){
+                        tr[i].style.display ="";
+                    }
+                    else{
+                        tr[i].style.display ="none";
+                    }
+                }
+            }
+        }
+//Code U for search bar ends
+
+        $('#vehicletable').DataTable({
+            "paging": false,
+            "lengthChange": false,
+            "searching": false,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": true,
+        });
+
+
+        //updatevehiclecount();
+
+        function updatevehiclecount(){
+
+
+            /* var a = "{{scvcount}}";
+            var b = "{{lccount}}";
+            var c = "{{mccount}}";
+            var d = "{{wwcount}}";
+            var e = "{{dwcount}}";
+            var f = "{{mpscount}}";
+            var g = "{{othercount}}";
+
+            var result = parseInt(a) + parseInt(b) + parseInt(c) + parseInt(d) + parseInt(e) + parseInt(f) + parseInt(g);
+
+        
+
+
+            //Update vehicle summary
+            var mccountpercent = (c/result)*100;
+            var lccountpercent = (b/result)*100;
+            var scvcountpercent = (a/result)*100;
+            var wwcountpercent = (d/result)*100;
+            var dwcountpercent = (e/result)*100;
+            var mpscountpercent = (f/result)*100;
+            var othercountpercent = (g/result)*100;
+
+            document.getElementById("mccountpercent").style.width = String(mccountpercent)+"%";
+            document.getElementById("lccountpercent").style.width = String(lccountpercent)+"%";
+            document.getElementById("scvcountpercent").style.width = String(scvcountpercent)+"%";
+            document.getElementById("wwcountpercent").style.width = String(wwcountpercent)+"%";
+            document.getElementById("dwcountpercent").style.width = String(dwcountpercent)+"%";
+            document.getElementById("mpscountpercent").style.width = String(mpscountpercent)+"%";
+            document.getElementById("othercountpercent").style.width = String(othercountpercent)+"%"; */
+        }
+
+
+
+
+    </script>
+
+
+
+
+
+
+
+<!-- Load Esri Leaflet from CDN -->
+<script src="https://unpkg.com/esri-leaflet@2.4.1/dist/esri-leaflet.js"
+integrity="sha512-xY2smLIHKirD03vHKDJ2u4pqeHA7OQZZ27EjtqmuhDguxiUvdsOuXMwkg16PQrm9cgTmXtoxA6kwr8KBy3cdcw=="
+crossorigin=""></script>
+
+
+<!-- Load Esri Leaflet Geocoder from CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/esri-leaflet-geocoder@2.3.3/dist/esri-leaflet-geocoder.css"
+  integrity="sha512-IM3Hs+feyi40yZhDH6kV8vQMg4Fh20s9OzInIIAc4nx7aMYMfo+IenRUekoYsHZqGkREUgx0VvlEsgm7nCDW9g=="
+  crossorigin="">
+  <script src="https://unpkg.com/esri-leaflet-geocoder@2.3.3/dist/esri-leaflet-geocoder.js"
+  integrity="sha512-HrFUyCEtIpxZloTgEKKMq4RFYhxjJkCiF5sDxuAokklOeZ68U2NPfh4MFtyIVWlsKtVbK5GD2/JzFyAfvT5ejA=="
+  crossorigin=""></script>
+
+  <script>
+      let mymap = L.map('loadpositionmap').setView([19.122777, 72.894568],19);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      subdomain :['a','b','c']	
+      }).addTo(mymap);
+
+      var bin_icon = L.icon({
+          iconUrl: '{% static "img/Bin.jpeg" %}',
+          iconSize: [24, 34],
+      });
+      var geocodeService = L.esri.Geocoding.geocodeService();
+
+      var marker;
+      $(document).ready(function(){
+              setTimeout(function () {
+              location.reload(true);
+              },60000); 
+
+          $('table').tablesorter({theme:'metro-dark'});
+          $("td.area").click(function () {
+                      if( marker ){
+                                mymap.removeLayer(marker);
+              }
+
+              var [lat,lon] = $(this).children().text().split(',');
+              var latlng = L.latLng(lat,lon);
+                              mymap.panTo(latlng);
+                  geocodeService.reverse().latlng(latlng).run(function (error, result) {
+                        if (error) {
+                          return;
+                  }
+                  marker = L.marker(result.latlng).addTo(mymap).bindPopup(result.address.Match_addr).openPopup();
+              });
+
+              $("#loadpositionmap").dialog({
+                  modal: true,
+                  autoOpen: false,
+                  title: " Bin ",
+                  width: 600,
+                  height: 600
+              });
+              $("#loadpositionmap").dialog('open');
+              mymap.invalidateSize();
+              return false;
+          });
+
+          $("a.delete_bin").click(function () {
+              var bin_id = $(this).attr('id');
+              var $tr = $(this).closest('tr');
+
+              $.ajax({
+                  type:'POST',
+                  url:'{% url "delete_bin" %}',
+                  data: {
+                      'id':bin_id 
+                  },
+                  beforeSend: function(xhr) {
+                      xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+                  },
+                  success:function(res){
+                      $tr.find('td').fadeOut(1000,function(){
+                          $tr.remove();
+                      })	
+                  },
+                  error:function(a,b,c){
+                      alert(b);
+                      alert(c);
+                  }
+              });
+          });
+      });
+  </script>
+
+
+
+
+<script>
+
+
+
+    function showAllVehicles(){
+        document.getElementById("AllVehicles").style.display = "block";
+        document.getElementById("AllVehicles_online").style.display = "none";
+        document.getElementById("AllVehicles_offline").style.display = "none";
+        document.getElementById("VehicleSummary").style.display = "none";
+        
+
+    }
+
+    function showAllVehicles_online(){
+        document.getElementById("AllVehicles").style.display = "none";
+        document.getElementById("AllVehicles_online").style.display = "block";
+        document.getElementById("AllVehicles_offline").style.display = "none";
+        document.getElementById("VehicleSummary").style.display = "none";
+
+    }
+    
+    function showAllVehicles_offline(){
+        document.getElementById("AllVehicles").style.display = "none";
+        document.getElementById("AllVehicles_online").style.display = "none";
+        document.getElementById("AllVehicles_offline").style.display = "block";
+        document.getElementById("VehicleSummary").style.display = "none";
+    }
+
+
+    function showVehicleSummary(){
+        document.getElementById("AllVehicles").style.display = "none";
+        document.getElementById("AllVehicles_online").style.display = "none";
+        document.getElementById("AllVehicles_offline").style.display = "none";
+        document.getElementById("VehicleSummary").style.display = "block";
+        //updatevehiclecount();
+
+    }
+
+    $("a#export_to_pdf_online").click(function() {
+            let dNow = new Date();
+            let file_time_str = (parseInt(dNow.getMonth())+1).toString() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+
+
+            const nodeList = document.querySelectorAll(".mapview");
+                for (let i = 0; i < nodeList.length; i++) {
+                        nodeList[i].style.display = "none";
+                }
+
+            $("#vehicletable_online").tableHTMLExport({type:'pdf',filename:"vehicle_online" + file_time_str + ".pdf"});
+
+            for (let i = 0; i < nodeList.length; i++) {
+                        nodeList[i].style = "";
+                }
+
+
+
+        });
+
+        $("a#export_to_pdf_offline").click(function() {
+            let dNow = new Date();
+            let file_time_str = (parseInt(dNow.getMonth())+1).toString() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+
+            const nodeList = document.querySelectorAll(".mapview");
+                for (let i = 0; i < nodeList.length; i++) {
+                        nodeList[i].style.display = "none";
+                }
+
+            $("#vehicletable_offline").tableHTMLExport({type:'pdf',filename:"vehicle_offline" + file_time_str + ".pdf"});
+
+            for (let i = 0; i < nodeList.length; i++) {
+                        nodeList[i].style = "";
+                }
+        });
+
+        $("a#export_to_pdf_all").click(function() {
+            let dNow = new Date();
+            let file_time_str = (parseInt(dNow.getMonth())+1).toString() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+
+            const nodeList = document.querySelectorAll(".mapview");
+                for (let i = 0; i < nodeList.length; i++) {
+                        nodeList[i].style.display = "none";
+                }
+
+            $("#vehicletable").tableHTMLExport({type:'pdf',filename:"vehicle_all" + file_time_str + ".pdf"});
+
+            for (let i = 0; i < nodeList.length; i++) {
+                        nodeList[i].style = "";
+                }
+
+        });
+
+
+        $("a#export_to_csv_online").click(function() {
+            let dNow = new Date();
+            let file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+            
+            /* const nodeList = document.querySelectorAll(".mapview");
+                for (let i = 0; i < nodeList.length; i++) {
+                        nodeList[i].style.display = "none";
+                } */
+
+            $("#vehicletable_online").tableHTMLExport({type:'csv',filename: "vehicle_online" + file_time_str + ".csv"});
+            
+            /* for (let i = 0; i < nodeList.length; i++) {
+                        nodeList[i].style = "";
+                } */
+        });
+
+        $("a#export_to_csv_offline").click(function() {
+            let dNow = new Date();
+            let file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+            
+            /* const nodeList = document.querySelectorAll(".mapview");
+                for (let i = 0; i < nodeList.length; i++) {
+                        nodeList[i].style.display = "none";
+                } */
+
+            $("#vehicletable_offline").tableHTMLExport({type:'csv',filename: "vehicle_offline" + file_time_str + ".csv"});
+            
+            /* for (let i = 0; i < nodeList.length; i++) {
+                        nodeList[i].style = "";
+                } */
+        });
+
+        $("a#export_to_csv_all").click(function() {
+            let dNow = new Date();
+            let file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+            
+            /* const nodeList = document.querySelectorAll(".mapview");
+                for (let i = 0; i < nodeList.length; i++) {
+                        nodeList[i].style.display = "none";
+                        nodeList[i].hidden = true;
+                } */
+
+            $("#vehicletable").tableHTMLExport({type:'csv',filename: "vehicle_all" + file_time_str + ".csv"});
+            
+            /* for (let i = 0; i < nodeList.length; i++) {
+                        nodeList[i].style = "";
+                } */
+        });
+
+
+
+            function appendtoAllVehicles(){
+                localStorage.clear();//clean up junk from old logged-in session.
+                document.getElementById("vehicletable_info").style = "display:none;";
+                var online = parseInt("{{  all_online_entries | length }}");
+                var offline = "{{ all_offline_enties | length}}";
+                online+=1;
+                var mccount = 0;
+                var lccount = 0;
+                var scvcount = 0;
+                var wwcount = 0;
+                var dwcount = 0;
+                var slcount = 0;
+                var mpscount = 0;
+                var dmpcount = 0;
+                var jcbcount = 0;
+
+                //CHANGE
+                var compactorcount = 0;
+                var beach_cleaning_count = 0;
+                var tractor_trailer_count = 0;
+                var skid_loader_count = 0;
+                var othercount = 0;
+                var totalcount = 0;
+
+                var mccountonline = 0;   //Trial
+                var mccountoffline = 0; 
+
+                var lccountonline = 0;
+                var lccountoffline = 0;
+
+                var scvcountonline = 0;
+                var scvcountoffline = 0;
+
+                var wwcountonline = 0;
+                var wwcountoffline = 0;
+
+                var dwcountonline = 0;
+                var dwcountoffline = 0;
+
+                var slcountonline = 0;
+                var slcountoffline = 0;
+
+                var mpscountonline = 0;
+                var mpscountoffline = 0;
+
+                var dmpcountonline = 0;
+                var dmpcountoffline = 0;
+
+                var jcbcountonline = 0;
+                var jcbcountoffline = 0;
+
+                ////////////////////
+                var compactorcountonline = 0;
+                var compactorcountoffline = 0;
+
+                var beach_cleaning_countonline = 0;
+                var beach_cleaning_countoffline = 0;
+
+                var tractor_trailer_countonline = 0;
+                var tractor_trailer_countoffline = 0;
+
+                var skid_loader_countonline = 0;
+                var skid_loader_countoffline = 0;
+
+                {% for each_entry in all_offline_entries reversed %}
+                
+                var table = document.getElementById("vehicletable");
+                var row = table.insertRow(online);
+                
+                var cell1 = row.insertCell(0);
+                var cell2 = row.insertCell(1);
+                var cell3 = row.insertCell(2);
+                var cell4 = row.insertCell(3);
+                var cell5 = row.insertCell(4);
+                var cell6 = row.insertCell(5);
+                var cell7 = row.insertCell(6);
+                var cell8 = row.insertCell(7);
+
+                cell1.innerHTML = online;
+                cell2.innerHTML = "{{ each_entry.veh  }}";
+                cell3.style = "text-transform: uppercase;";
+                cell3.innerHTML = "{{ each_entry.type }}";
+                cell4.innerHTML = `{{ each_entry.ward  }}`;
+                cell5.innerHTML = "{{ each_entry.time | default_if_none:"" }}";
+                cell6.innerHTML = "{{ each_entry.veh_ward}}";
+                cell7.innerHTML = "{{ each_entry.veh_contractor}}";
+                cell8.id = "maploc";
+
+                cell8.className = "area";
+                cell8.className = "mapview";
+                cell8.innerHTML = "<img src=\"{% static 'img/location.png' %}\"><span style=\"display:none;\">{{  each_entry.lat }},{{each_entry.lon }}</span>";
+
+                online++;
+
+
+
+
+
+                //counting types of vehicles here:
+                if(cell3.innerHTML == "Refuse_Mini_Compactor" || cell3.innerHTML == "refuse_mini_compactor")
+                {mccountoffline++;}
+                else if(cell3.innerHTML == "Refuse_Compactor" || cell3.innerHTML == "refuse_compactor")
+                {lccountoffline++;}
+                else if(cell3.innerHTML == "Small_Closed_Vehicle" || cell3.innerHTML == "small_closed_vehicle")
+                {scvcountoffline++;}
+                else if(cell3.innerHTML == "Ward_and_Watch" || cell3.innerHTML == "ward_and_watch")
+                {wwcountoffline++;}
+                else if(cell3.innerHTML == "Tempo" || cell3.innerHTML == "tempo")
+                {dwcountoffline++;}
+                else if(cell3.innerHTML == "Side_Loading_Compactor" || cell3.innerHTML == "side_loading_compactor")
+                {slcountoffline++;}
+                else if(cell3.innerHTML == "Mechanical_Power_Sweeper" || cell3.innerHTML == "mechanical_power_sweeper")
+                {mpscountoffline++;}
+                else if(cell3.innerHTML == "Dumper" || cell3.innerHTML == "dumper")
+                {dmpcountoffline++;}
+                else if(cell3.innerHTML == "Bakayantra(JCB)" || cell3.innerHTML == "bakayantra(JCB)")
+                {jcbcountoffline++;}
+                
+                //CHANGE
+                else if(cell3.innerHTML == "Compactor" || cell3.innerHTML == "compactor")
+                {compactorcountoffline++;}
+                else if(cell3.innerHTML == "Beach_Cleaning_Machine" || cell3.innerHTML == "beach_cleaning_machine")
+                {beach_cleaning_countoffline++;}
+                else if(cell3.innerHTML == "Tractor_Trailer" || cell3.innerHTML == "tractor_trailer")
+                {tractor_trailer_countoffline++;}
+                else if(cell3.innerHTML == "Steer_Skid_Loader" || cell3.innerHTML == "STEER_SKID_LOADER")
+                {skid_loader_countoffline++;}
+                else{othercount++;}
+                totalcount++;
+
+
+
+                //ADDING ALL VEHICLES TO SESSION STORAGE TO USE LATER IN REPORTS PAGE
+                localStorage.setItem("{{each_entry.veh}}", "{{each_entry.time}}")
+                {% endfor %}
+
+
+
+
+
+                {% for each_entry in all_online_entries reversed %}
+                if("{{ each_entry.type }}" == "Refuse_Mini_Compactor"   || "{{ each_entry.type }}" == "refuse_mini_compactor")
+                {mccountonline++;}
+                else if("{{ each_entry.type }}" == "Refuse_Compactor" || "{{ each_entry.type }}" == "refuse_compactor")
+                {lccountonline++;}
+                else if("{{ each_entry.type }}" == "Small_Closed_Vehicle" || "{{ each_entry.type }}" == "small_closed_vehicle")
+                {scvcountonline++;}
+                else if("{{ each_entry.type }}" == "Ward_and_Watch" || "{{ each_entry.type }}" == "ward_and_watch")
+                {wwcountonline++;}
+                else if("{{ each_entry.type }}" == "Side_Loading_Compactor" || "{{ each_entry.type }}" == "side_loading_compactor")
+                {slcountonline++;}
+                else if("{{ each_entry.type }}" == "Tempo" || "{{ each_entry.type }}" == "tempo")
+                {dwcountonline++;}
+                else if("{{ each_entry.type }}" == "Mechanical_Power_Sweeper" || "{{ each_entry.type }}" == "mechanical_power_sweeper")
+                {mpscountonline++;}
+                else if("{{ each_entry.type }}" == "Dumper" || "{{ each_entry.type }}" == "dumper")
+                {dmpcountonline++;}
+                else if("{{ each_entry.type }}" == "Bakayantra(JCB)" || "{{ each_entry.type }}" == "bakayantra(JCB)")
+                {jcbcountonline++;}
+
+                else if("{{ each_entry.type }}" == "Compactor" || "{{ each_entry.type }}" == "Compactor")
+                {compactorcountonline++;}
+                else if("{{ each_entry.type }}" == "Beach_Cleaning_Machine" || "{{ each_entry.type }}" == "beach_cleaning_machine")
+                {beach_cleaning_countonline++;}
+                else if("{{ each_entry.type }}" == "Tractor_Trailer" || "{{ each_entry.type }}" == "tractor_trailer")
+                {tractor_trailer_countonline++;}
+                else if("{{ each_entry.type }}" == "Steer_Skid_Loader" || "{{ each_entry.type }}" == "STEER_SKID_LOADER")
+                {skid_loader_countonline++;}
+                else
+                {othercount++;}
+                totalcount++;
+
+                //ADDING ALL VEHICLES TO SESSION STORAGE TO USE LATER IN REPORTS PAGE
+                localStorage.setItem("{{each_entry.veh}}", "{{each_entry.time}}")
+
+                {% endfor %}
+
+                mccount = mccountoffline + mccountonline;
+                lccount = lccountoffline + lccountonline;
+                scvcount = scvcountoffline + scvcountonline;
+                wwcount = wwcountoffline + wwcountonline;
+                dwcount = dwcountoffline + dwcountonline;
+                slcount = slcountoffline + slcountonline;
+                mpscount = mpscountoffline + mpscountonline;
+                dmpcount = dmpcountoffline + dmpcountonline;
+                jcbcount = jcbcountoffline + jcbcountonline;
+
+                //
+                compactorcount = compactorcountoffline + compactorcountonline;
+                beach_cleaning_count = beach_cleaning_countoffline + beach_cleaning_countonline;
+                tractor_trailer_count = tractor_trailer_countoffline + tractor_trailer_countonline;
+                skid_loader_count = skid_loader_countoffline + skid_loader_countonline;
+                
+                ////////////////////////////
+
+                var refuse_mini_off = mccountoffline;
+                var refuse_mini_on = mccountonline;
+
+                var refuse_com_off = lccountoffline;
+                var refuse_com_on = lccountonline;
+
+                var small_closed_veh_off = scvcountoffline;
+                var small_closed_veh_on = scvcountonline;
+                
+                var watch_and_ward_off = wwcountoffline;
+                var watch_and_ward_on = wwcountonline;
+
+                var tempo_off = dwcountoffline;
+                var tempo_on = dwcountonline;
+
+                var side_loader_off = slcountoffline;
+                var side_loader_on = slcountonline;
+
+                var mech_power_sw_off = mpscountoffline;
+                var mech_power_sw_on = mpscountonline;
+
+                var dumper_off = dmpcountoffline;
+                var dumper_on = dmpcountonline;
+
+                var bakayantra_jcb_off = jcbcountoffline;
+                var bakayantra_jcb_on = jcbcountonline;
+
+
+                //
+                var only_comp_off = compactorcountoffline;
+                var only_comp_on = compactorcountonline;
+
+                var beach_clean_off = beach_cleaning_countoffline;
+                var beach_clean_on = beach_cleaning_countonline;
+                
+                var trac_trail_off = tractor_trailer_countoffline;
+                var trac_trail_on = tractor_trailer_countonline;
+
+                var str_sk_loader_off = skid_loader_countoffline;
+                var str_sk_loader_on = skid_loader_countonline;
+                ///////////////////////////////
+
+                var mccountpercent = (mccount/totalcount)*100;
+                var lccountpercent = (lccount/totalcount)*100;
+                var scvcountpercent = (scvcount/totalcount)*100;
+                var wwcountpercent = (wwcount/totalcount)*100;
+                var dwcountpercent = (dwcount/totalcount)*100;
+                var slcountpercent = (slcount/totalcount)*100;
+                var mpscountpercent = (mpscount/totalcount)*100;
+                var dmpcountpercent = (dmpcount/totalcount)*100;
+                var jcbcountpercent = (jcbcount/totalcount)*100;
+
+                //change
+                var compactorcountpercent = (compactorcount/totalcount)*100;
+                var beach_cleaning_countpercent = (beach_cleaning_count/totalcount)*100;
+                var tractor_trailer_countpercent = (tractor_trailer_count/totalcount)*100;
+                var skid_loader_countpercent = (skid_loader_count/totalcount)*100;
+
+
+                var othercountpercent = (othercount/totalcount)*100;
+
+
+                var refuse_mini_off_percent = (refuse_mini_off/totalcount)*100;
+                var refuse_mini_on_percent = (refuse_mini_on/totalcount)*100;
+
+                var refuse_com_off_percent = (refuse_com_off/totalcount)*100;
+                var refuse_com_on_percent = (refuse_com_on/totalcount)*100;
+
+                var small_closed_veh_off_percent = (small_closed_veh_off/totalcount)*100;
+                var small_closed_veh_on_percent = (small_closed_veh_on/totalcount)*100;
+
+                var watch_and_ward_off_percent = (watch_and_ward_off/totalcount)*100;
+                var watch_and_ward_on_percent = (watch_and_ward_on/totalcount)*100;
+
+                var tempo_off_percent = (tempo_off/totalcount)*100;
+                var tempo_on_percent = (tempo_on/totalcount)*100;
+
+                
+                var side_loader_off_percent = (side_loader_off/totalcount)*100;
+                var side_loader_on_percent = (side_loader_on/totalcount)*100;
+
+                var mech_power_sw_off_percent = (mech_power_sw_off/totalcount)*100;
+                var mech_power_sw_on_percent = (mech_power_sw_on/totalcount)*100;
+
+                var dumper_off_percent = (dumper_off/totalcount)*100;
+                var dumper_on_percent = (dumper_on/totalcount)*100;
+
+               
+
+                var bakayantra_jcb_off_percent = (bakayantra_jcb_off/totalcount)*100;
+                var bakayantra_jcb_on_percent = (bakayantra_jcb_on/totalcount)*100;
+
+
+                //
+                var only_comp_off_percent = (only_comp_off/totalcount)*100;
+                var only_comp_on_percent = (only_comp_on/totalcount)*100;
+
+
+                var beach_clean_off_percent = (beach_clean_off/totalcount)*100;
+                var beach_clean_on_percent = (beach_clean_on/totalcount)*100;
+
+                var trac_trail_off_percent = (trac_trail_off/totalcount)*100;
+                var trac_trail_on_percent = (trac_trail_on/totalcount)*100;
+
+                var str_sk_loader_off_percent = (str_sk_loader_off/totalcount)*100;
+                var str_sk_loader_on_percent = (str_sk_loader_on/totalcount)*100;
+
+                /////////////////////////////////
+
+
+                document.getElementById("mccountpercent").style.width = String(mccountpercent)+"%";
+                document.getElementById("lccountpercent").style.width = String(lccountpercent)+"%";
+                document.getElementById("scvcountpercent").style.width = String(scvcountpercent)+"%";
+                document.getElementById("wwcountpercent").style.width = String(wwcountpercent)+"%";
+                document.getElementById("dwcountpercent").style.width = String(dwcountpercent)+"%";
+                document.getElementById("slcountpercent").style.width = String(slcountpercent)+"%";
+                document.getElementById("mpscountpercent").style.width = String(mpscountpercent)+"%";
+                document.getElementById("dmpcountpercent").style.width = String(dmpcountpercent)+"%";
+                document.getElementById("jcbcountpercent").style.width = String(jcbcountpercent)+"%";
+
+                //CHANGE
+                document.getElementById("compactorcountpercent").style.width = String(compactorcountpercent)+"%";
+                document.getElementById("beach_cleaning_countpercent").style.width = String(beach_cleaning_countpercent)+"%";
+                document.getElementById("tractor_trailer_countpercent").style.width = String(tractor_trailer_countpercent)+"%";
+                document.getElementById("skid_loader_countpercent").style.width = String(skid_loader_countpercent)+"%";
+
+                document.getElementById("othercountpercent").style.width = String(othercountpercent)+"%";
+
+                /* var element = document.getElementById("maploc");
+                element.className = "area"; */
+                document.getElementById("refuse_mini_off_percent").style.width = String(refuse_mini_off_percent)+"%";
+                document.getElementById("refuse_mini_on_percent").style.width = String(refuse_mini_on_percent)+"%";
+
+                document.getElementById("refuse_com_off_percent").style.width = String(refuse_com_off_percent)+"%";
+                document.getElementById("refuse_com_on_percent").style.width = String(refuse_com_on_percent)+"%";
+ 
+
+                document.getElementById("small_closed_veh_off_percent").style.width = String(small_closed_veh_off_percent)+"%";
+                document.getElementById("small_closed_veh_on_percent").style.width = String(small_closed_veh_on_percent)+"%";
+
+                document.getElementById("watch_and_ward_off_percent").style.width = String(watch_and_ward_off_percent)+"%";
+                document.getElementById("watch_and_ward_on_percent").style.width = String(watch_and_ward_on_percent)+"%";
+
+                document.getElementById("tempo_off_percent").style.width = String(tempo_off_percent)+"%";
+                document.getElementById("tempo_on_percent").style.width = String(tempo_on_percent)+"%";
+
+                document.getElementById("side_loader_off_percent").style.width = String(side_loader_off_percent)+"%";
+                document.getElementById("side_loader_on_percent").style.width = String(side_loader_on_percent)+"%";
+
+                document.getElementById("mech_power_sw_off_percent").style.width = String(mech_power_sw_off_percent)+"%";
+                document.getElementById("mech_power_sw_on_percent").style.width = String(mech_power_sw_on_percent)+"%";
+
+                document.getElementById("dumper_off_percent").style.width = String(dumper_off_percent)+"%";
+                document.getElementById("dumper_on_percent").style.width = String(dumper_on_percent)+"%";
+
+                document.getElementById("bakayantra_jcb_off_percent").style.width = String(bakayantra_jcb_off_percent)+"%";
+                document.getElementById("bakayantra_jcb_on_percent").style.width = String(bakayantra_jcb_on_percent)+"%";
+
+                
+                //
+                document.getElementById("only_comp_off_percent").style.width = String(only_comp_off_percent)+"%";
+                document.getElementById("only_comp_on_percent").style.width = String(only_comp_on_percent)+"%";
+
+                document.getElementById("beach_clean_off_percent").style.width = String(beach_clean_off_percent)+"%";
+                document.getElementById("beach_clean_on_percent").style.width = String(beach_clean_on_percent)+"%";
+
+
+                document.getElementById("trac_trail_off_percent").style.width = String(trac_trail_off_percent)+"%";
+                document.getElementById("trac_trail_on_percent").style.width = String(trac_trail_on_percent)+"%";
+
+ 
+                document.getElementById("str_sk_loader_off_percent").style.width = String(str_sk_loader_off_percent)+"%";
+                document.getElementById("str_sk_loader_on_percent").style.width = String(str_sk_loader_on_percent)+"%";
+
+
+                ///////////////////
+                document.getElementById("totalvehiclecount_heading").innerHTML = totalcount;
+                document.getElementById("allvehiclesummary_heading").innerHTML = totalcount;
+
+                document.getElementById("mccount").innerHTML = mccount;
+                document.getElementById("lccount").innerHTML = lccount;
+                document.getElementById("scvcount").innerHTML = scvcount;
+                document.getElementById("wwcount").innerHTML = wwcount;
+                document.getElementById("dwcount").innerHTML = dwcount;
+                document.getElementById("slcount").innerHTML = slcount;
+                document.getElementById("mpscount").innerHTML = mpscount;
+                document.getElementById("dmpcount").innerHTML = dmpcount;
+                document.getElementById("jcbcount").innerHTML = jcbcount;
+
+                //CHANGE
+                document.getElementById("compactorcount").innerHTML = compactorcount;
+                document.getElementById("beach_cleaning_count").innerHTML = beach_cleaning_count;
+                document.getElementById("tractor_trailer_count").innerHTML = tractor_trailer_count;
+                document.getElementById("skid_loader_count").innerHTML = skid_loader_count;
+
+                document.getElementById("othercount").innerHTML = othercount;
+
+                document.getElementById("refuse_mini_off").innerHTML = refuse_mini_off;
+                document.getElementById("refuse_mini_on").innerHTML = refuse_mini_on;
+
+                document.getElementById("refuse_com_off").innerHTML = refuse_com_off;
+                document.getElementById("refuse_com_on").innerHTML = refuse_com_on;
+
+                document.getElementById("small_closed_veh_off").innerHTML = small_closed_veh_off;
+                document.getElementById("small_closed_veh_on").innerHTML = small_closed_veh_on;
+
+                document.getElementById("watch_and_ward_off").innerHTML = watch_and_ward_off;
+                document.getElementById("watch_and_ward_on").innerHTML = watch_and_ward_on;
+
+                document.getElementById("tempo_off").innerHTML = tempo_off;
+                document.getElementById("tempo_on").innerHTML = tempo_on;
+
+                document.getElementById("side_loader_off").innerHTML = side_loader_off;
+                document.getElementById("side_loader_on").innerHTML = side_loader_on;
+
+                document.getElementById("mech_power_sw_off").innerHTML = mech_power_sw_off;
+                document.getElementById("mech_power_sw_on").innerHTML = mech_power_sw_on;
+
+                document.getElementById("dumper_off").innerHTML = dumper_off;
+                document.getElementById("dumper_on").innerHTML = dumper_on;
+
+                document.getElementById("bakayantra_jcb_off").innerHTML = bakayantra_jcb_off;
+                document.getElementById("bakayantra_jcb_on").innerHTML = bakayantra_jcb_on;
+
+                //
+
+                document.getElementById("only_comp_off").innerHTML = only_comp_off;
+                document.getElementById("only_comp_on").innerHTML = only_comp_on;
+
+                document.getElementById("beach_clean_off").innerHTML = beach_clean_off;
+                document.getElementById("beach_clean_on").innerHTML = beach_clean_on;
+
+                document.getElementById("trac_trail_off").innerHTML = trac_trail_off;
+                document.getElementById("trac_trail_on").innerHTML = trac_trail_on;
+                
+                document.getElementById("str_sk_loader_off").innerHTML = str_sk_loader_off;
+                document.getElementById("str_sk_loader_on").innerHTML = str_sk_loader_on;
+
+            }
+
+        appendtoAllVehicles();
+</script>
+
+
+
+
+
+
+</body>
+
+</html>

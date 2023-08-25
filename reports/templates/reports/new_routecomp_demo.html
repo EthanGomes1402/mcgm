@@ -1,0 +1,379 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+	<h1>New Route Info</h1>
+{% endblock %}
+
+<style>
+
+.center{
+    
+        text-align: center;
+    }
+
+.centered-cell {
+    text-align: center;
+ }    
+
+
+ .dropdown {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .dropdown-button {
+    background-color: #f1f1f1;
+    color: black;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 100%;
+    top: 100%;
+    left: 0;
+    border: 1px solid #ddd;
+    z-index: 1;
+  }
+  
+  .dropdown-content table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .dropdown-content th, .dropdown-content td {
+    border: 1px solid #ddd;
+    padding: 8px;
+  }
+  
+  .dropdown-content th {
+    background-color: #f2f2f2;
+  }
+  
+  .dropdown-content td {
+    text-align: center;
+  }
+  
+  .dropdown:hover .dropdown-content {
+    display: block;
+  }
+  
+
+</style>
+
+
+
+{% block content_title %} Route Information{% endblock %}
+{% block content %}
+
+
+
+  <div>
+    {% for count in count_data %}
+    
+
+   
+       
+     
+      
+
+
+      <a class="btn btn-info   px-3 ml-1" href="{% url 'new_routecomp_upload_bins' %}"><b>Upload Route Info</b></a>   
+      <a class="btn btn-info   px-3 ml-1" href="https://swm.vtms.cleanupmumbai.com/static/pdfreports/template/Sample_Route_Info_Template.xlsx"><b>Sample Templates</b></a>
+      <a class="btn btn-info   px-3 ml-1" href="https://swm.vtms.cleanupmumbai.com/static/pdfreports/template/ROUTE_INFORMATION_PROCEDURE.pdf"><b>User Guide</b></a>
+      
+
+        {% if user.is_authenticated and user.is_superuser %}
+     
+        <button class="btn btn-success   px-3 ml-1" onclick="toggleDropdown()"> Summary </button>
+        {% endif %}
+        
+        {% endfor %}
+        <div class="dropdown-content" id="dropdownContent" style="display: none;">
+          <!-- Your table or content goes here -->
+          <table id="vehicletable_online" class="table table-bordered table-striped tablesorter">
+            <thead style="text-align:center">
+              <tr>
+                
+                <th>Ward</th>
+                <th>Total Routes</th>
+              </tr>
+            </thead>
+            <tbody>
+                {% for ward in ward_data %}
+              <tr>
+                <td>{{ ward.name }}</td>
+                <td>{{ ward.id }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      
+      
+
+
+
+
+
+
+
+
+     
+ <!--   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>  -->
+    
+
+
+
+   
+
+
+
+
+
+
+
+ 
+    <br><br>
+  <button class="btn btn-danger  btn-sm px-3 ml-2" id="export_to_excel" style="float: right;">Export To Excel</button>
+ <!-- <button class="btn btn-danger  btn-sm px-3 ml-2" id="export_to_csv" style="float: right;">Export To CSV</button> -->
+  <button class="btn btn-danger  btn-sm px-3 ml-2" id="export_to_pdf" style="float: right;">Export To PDF</button>
+  {% for count in count_data %}
+  <h4><b>Total Routes: {{count}}</b></h4>
+  {% endfor %}
+
+  
+  <br>
+  <table class="table tablesorter" id="view_bins">
+    <thead class="thead-inverse"  style="text-align: center;">
+      <tr>
+        <th>Sr No</th>
+     <!--   <th>Location Code</th> 
+        <th>Shift</th>
+        
+        <th>Route Name</th>  -->
+
+        
+        <th>Shift</th>
+        <th>Route Code</th>
+        <th>Bins</th>
+        <th>Allocation Status</th>
+        <th>Map View</th>
+        <th>Action</th>
+
+        
+
+      <!--  <th>Action</th> -->
+
+      </tr>
+    </thead>
+    <tbody>
+      {% for data in route_data %}
+        <tr  style="text-align: center;">
+          <td>  {{ forloop.counter }} </td>
+       <!--   <td>{{ bin.shift }} </td>  
+          <td>{{ bin.route_name }} </td>   -->
+          <td>{{ data.shift }}   </td>
+          <td>{{ data.route_code }} </td>
+
+          <td>
+            {% if data.bin_data %}
+            <a onclick="toggleDropdown2(this)" role="button">{{ data.bin_count }}</a>
+                      <div class="dropdown" style="display: none;">
+                <table class="table table-bordered tablesorter">
+                    <thead>
+                        <tr>
+                            <th>Bins</th>
+                            
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in data.bin_data %}
+                            <tr>
+                                <td>{{ item.bin_name }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+          </td>
+
+          
+
+
+
+
+          <td> {{ data.allocation_status }} </td>
+          <td> <a href="{% url 'bin_mapview' param=data.route_code %}"><img src="{% static 'img/location.png' %}"></a>  </td>
+          
+       <!--
+           
+         <td>
+        {% if data.bin_data %}
+        <a onclick="toggleDropdown(this)" role="button">View Bins</a>
+                  <div class="dropdown" style="display: none;">
+            <table class="table table-bordered tablesorter">
+                <thead>
+                    <tr>
+                        <th>Bins</th>
+                        
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in data.bin_data %}
+                        <tr>
+                            <td>{{ item.bins }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+      </td>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+         <td>{{ bin.bin_code }} </td> 
+          <td>{{ bin.bin_name }} </td>
+          <td>{{ bin.route_code}}</td>
+         <td>{{ bin.bin_location}}</td> -->
+
+
+         <!--
+
+            <td>  {{ forloop.counter }} </td>
+          <td>{{ allocated_route.shift }} </td>
+          <td>{{ allocated_route.route_code}}</td>
+          <td>{{ allocated_route.route_name}}</td>
+	        <td>{{ allocated_route.vehicle}}</td>
+         -->
+
+         <td>
+         <div class="btn-group btn-group-sm">
+          <a id="{{data.route_code}}" href="#" class="btn btn-danger delete_route_info"><i class="fas fa-trash"></i></a>
+          </div>
+         </td>
+        
+
+        <!--  <td class="area mapview"><img src="{% static 'img/Bin.jpeg' %}"><span style="display:none;">19.057425,72.928246</span> </td> -->
+     <script>
+      var bin_count =  "{{data.bin_count}}"
+       console.log("BIN COUNT IS: "+bin_count)
+     </script>
+       
+          <!--
+          <td>{{ vehicle.maker }} </td>
+          <td style="text-transform: uppercase;">{{ vehicle.vehicle_type }}</td>
+          <td>{{ vehicle.contractor }}</td>
+          <td> 
+            <td>-->
+
+        </tr>
+
+      {% endfor %}
+    </tbody>
+  </table>
+ 
+
+
+
+
+
+
+
+
+
+
+{% endblock %}
+
+{% block js %}
+
+<script>
+    function toggleDropdown2(button) {
+      var dropdown = button.nextElementSibling;
+      dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
+    }
+    </script>
+
+
+<script>
+
+
+  function toggleDropdown() {
+    var dropdownContent = document.getElementById("dropdownContent");
+    if (dropdownContent.style.display === "none") {
+      dropdownContent.style.display = "block";
+    } else {
+      dropdownContent.style.display = "none";
+    }
+  }
+  
+</script>
+
+
+
+<script>
+  
+	$(document).ready(function(){
+	    $('table').tablesorter({theme:'metro-dark'});
+        $("a.delete_route_info").click(function () {
+            var id = $(this).attr('id');
+            console.log("ID is: "+id)
+            var $tr = $(this).closest('tr');
+
+            $.ajax({
+                type:'POST',
+                url:'{% url "delete_route_info" %}',
+                data: {
+                    'id': id
+                },
+                beforeSend: function(xhr) {
+                    xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+                },
+                success:function(res){
+                    $tr.find('td').fadeOut(1000,function(){
+                        $tr.remove();
+                    })	
+                },
+                error:function(a,b,c){
+                    alert(b);
+                    alert(c);
+                }
+            });
+        });
+
+		$("button#export_to_excel").click(function() {
+			var dNow = new Date();
+			var file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+			$("#view_bins").table2excel({
+				name: "view_bins",
+				filename: "view_bins_" + file_time_str + ".xlsx"//do not include extension
+			});
+		});
+	   
+     
+		$("button#export_to_pdf").click(function() {
+			$("#view_bins").tableHTMLExport({type:'pdf',filename:'view_bins.pdf'});
+		});
+	});
+
+
+</script>
+{% endblock %}

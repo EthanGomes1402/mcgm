@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Route Info{% endblock %}
+{% block content_title %}Upload Route Info{% endblock %}
+{% block content %}
+  
+ 
+  <form method="post" novalidate enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="file" title="Upload Route Code Data" name="allocation_excel_file" style="border:1px solid black; padding: 5px;" required="required">
+    <button type="submit" class="btn btn-success">Upload</button>
+  </form>
+  <br>
+  <div>
+    <h4><b>NOTE: </b>Please Upload an Excel File with <b style = "color: red">.xlsx</b> Extension</h4>
+  </div>
+  
+
+{% endblock %}
+
+{% block script %}
+{% endblock %} 

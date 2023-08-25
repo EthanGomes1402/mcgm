@@ -6,6 +6,12 @@ from swmadmin.models import Vehicle,Route,Bin
 from swmadmin.models import Stop_station
 from psqlextra.types import PostgresPartitioningMethod
 from psqlextra.models import PostgresPartitionedModel
+from common.models import Ward
+
+
+class CustomManager(models.Manager):
+    def get_queryset(self):
+            return super().get_queryset().filter(is_active=True)
 
 # Create your models here.
 class Alert(models.Model):
@@ -333,3 +339,102 @@ class Faulty_records(models.Model):
     class Meta:
         db_table = "faulty_records"
         ordering = ['created_at',]
+        
+        
+class Route_Allocation(models.Model):  
+    
+    shift_choices = [
+        ('1','6am-2pm'),
+        ('2','2pm-10pm'),
+        ('3','10pm-6am')
+    ]
+    
+    
+     
+    shift = models.CharField(max_length=1,choices=shift_choices,default='1')
+    #route_code = models.ForeignKey(Route_Codes,on_delete=models.CASCADE,null=True) 
+    #route_code = models.CharField(max_length=20,unique=True)
+    route_code = models.CharField(max_length=20)
+    route_name = models.CharField(max_length=150,null=True)
+    vehicle = models.ForeignKey(Vehicle,on_delete=models.CASCADE,null=True)
+    #ward_name = models.CharField(max_length=20,null=True)
+    ward = models.ForeignKey(Ward, related_name='route_allocation_2',on_delete=models.PROTECT,null=True)
+    #models.ForeignKey(Ward, related_name='vehicles',on_delete=models.PROTECT,null=True)
+    #models.ForeignKey(Ward, related_name='route_allocation',on_delete=models.PROTECT,null=True)
+    is_active  = models.BooleanField(default=1)
+    created_at = models.DateTimeField(auto_now=True,null=True)
+    created_by   = models.ForeignKey(User, related_name='+',on_delete=models.PROTECT,verbose_name ='Created by',null=True )
+    bin_count = models.CharField(max_length=20,null=True)
+    
+    objects     = CustomManager()
+    
+    class Meta:
+        db_table = "route_allocation"
+
+    def __str__(self):
+        return self.route_code    
+           
+
+class Helpdesk(models.Model):
+    
+    
+    email = models.EmailField(max_length=100)
+    phone_number = models.CharField(max_length=15,null=True)
+    query = models.CharField(max_length=1000)
+    action = models.CharField(max_length=1000,null=True)
+    is_active  = models.BooleanField(default=1)
+    created_at = models.DateTimeField(auto_now=True,null=True)
+    created_by   = models.ForeignKey(User, related_name='+',on_delete=models.PROTECT,verbose_name ='Created by',null=True )  
+    ward = models.ForeignKey(Ward, related_name='helpdesk',on_delete=models.PROTECT,null=True)
+    updated_at = models.DateTimeField(auto_now=True,null=True)
+    updated_by = models.ForeignKey(User, related_name='+',on_delete=models.PROTECT,verbose_name ='Updated by',null=True )  
+    
+    objects     = CustomManager()
+    
+    class Meta:
+        db_table = "helpdesk"
+
+
+
+class Route_Compliance(models.Model):
+    
+    bin_code = models.CharField(max_length=20,null=True)
+    bin_location = models.CharField(max_length=100)
+    #bin_geofence = models.CharField(max_length=1000)
+    route_code = models.ForeignKey(Route_Allocation, related_name='bin_data',on_delete=models.PROTECT,null=True)
+    bin_name = models.CharField(max_length=200,null=True)
+    is_active  = models.BooleanField(default=1)
+    created_at = models.DateTimeField(auto_now=True,null=True)
+    created_by   = models.ForeignKey(User, related_name='+',on_delete=models.PROTECT,verbose_name ='Created by',null=True )
+    ward = models.ForeignKey(Ward, related_name='route_compliance',on_delete=models.PROTECT,null=True)
+    
+    objects     = CustomManager()
+    
+    class Meta:
+        db_table = "route_compliance"
+
+    #def __str__(self):
+    #    return self.assigned_route_code   
+    
+    
+
+class Route_Compliance_Demo(models.Model):
+    
+    bin_code = models.CharField(max_length=20,null=True)
+    bin_location = models.CharField(max_length=100,default="None")
+    is_active  = models.BooleanField(default=1)
+    created_at = models.DateTimeField(auto_now=True,null=True)
+    created_by   = models.ForeignKey(User, related_name='+',on_delete=models.PROTECT,verbose_name ='Created by',null=True )
+    #bin_geofence = models.CharField(max_length=1000)
+    #route_code = models.ForeignKey(Route_Allocation, related_name='bin_data',on_delete=models.PROTECT,null=True)
+    route_code = models.CharField(max_length=100,default="None")
+    bin_name = models.CharField(max_length=200,null=True)
+    ward = models.ForeignKey(Ward, related_name='route_compliance_demo',on_delete=models.PROTECT,null=True)
+    
+    objects     = CustomManager()
+    
+    class Meta:
+        db_table = "route_compliance_demo"
+
+    #def __str__(self):
+    #    return self.assigned_route_code  

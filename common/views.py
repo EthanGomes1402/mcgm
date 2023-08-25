@@ -61,11 +61,11 @@ class WardUpdateView(UpdateView):
 def upload_wards(request):
     if request.method == 'POST':
         mykmlfile = request.FILES["excel_file"]
-        with open('/tmp/wards.kml','wb+') as destination:
+        with open('/home/mcgm/Development/mcgm/mcgm/fulldata/wards.kml','wb+') as destination:
             for chunk in mykmlfile.chunks():
                 destination.write(chunk)
 
-        ds = DataSource('/tmp/wards.kml')
+        ds = DataSource('/home/mcgm/Development/mcgm/mcgm/fulldata/wards.kml')
         for layer in ds:
             for feat in layer:
                 geom = feat.geom

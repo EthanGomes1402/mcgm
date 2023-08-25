@@ -1,0 +1,943 @@
+{% extends 'base_loc.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}  {% endblock %}
+
+{% block extrastylesheet %}
+ <style>
+  div.loader {
+    width: 100px;
+    height: 100px;
+    position: absolute;
+    top:0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+ }
+ </style>
+
+
+
+<style>
+
+/* 	.rftablenew .bmclogo {
+
+		margin: auto;
+
+		display: block;
+
+		width: 14%;
+
+		margin-bottom: 20px;
+
+	} */
+
+	
+
+	.newtable-bg {
+
+		background: #cae0f9;
+
+		padding: 20px;
+
+		border-radius: 10px;
+
+	}
+
+	
+
+	.start-table {
+
+		margin-top: 20px;
+
+		padding-top: 20px;
+
+		border-top: 1px solid #4f8bcf;
+
+	}
+
+	
+
+	.newtable-bg .form-control {
+
+		border: 1px solid #4f8bcf;
+
+		color: #000;
+
+	}
+
+	
+
+	.start-table .table>thead:first-child>tr:first-child>th {
+
+		border: 1px solid #4f8bcf;
+
+	}
+
+	
+
+	.start-table .table-new {
+
+		background: #fff;
+
+		padding: 15px;
+
+	}
+
+	
+
+	.table-new .table-bordered>tbody>tr>td {
+
+		border: 1px solid #4f8bcf;
+
+	}
+
+</style>
+
+
+
+
+
+
+{% endblock %}
+
+{% block content_title %} {% endblock %}
+{% block content %}
+
+
+<!-- <marquee>This page testing is going on - Developer</marquee> -->
+
+
+<section class="content">
+    <div class="container-fluid">
+
+
+
+        <div class="row">
+            <div class="col-md-3">
+
+                <form id="vehicle_summery_report" name="vehicle_summery_report">
+                <label for="">Vehicle No</label>
+				<!-- <small>(Eg: MH01DR1234)</small> -->
+                <input type="text" class="form-control" placeholder="Enter Vehicle No." style="text-transform: uppercase" name="vehicle" id="vehicle" required list="vehicleList" autocomplete="off">
+				<datalist id="vehicleList"></datalist>
+            </div>
+
+
+
+            <div class="col-md-3">
+                <label for="">From Date</label>
+                <div class="input-group date" id="fromdate" data-target-input="nearest">
+                    <input type="text" class="form-control datetimepicker-input" data-toggle="datetimepicker" data-target="#fromdate" name = "from_time" id = "from_time"  autocomplete="off" required/>
+                    <div class="input-group-append" data-target="#fromdate" data-toggle="datetimepicker">
+                        <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label for="">To  Date</label>
+                <div class="input-group date" id="todate" data-target-input="nearest">
+                    <input type="text" class="form-control datetimepicker-input" data-toggle="datetimepicker" data-target="#todate" name = "to_time" id = "to_time" autocomplete="off" required/>
+                    <div class="input-group-append" data-target="#todate" data-toggle="datetimepicker">
+                        <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <!-- <button type = "submit" class="btn btn-success submit-btn">Submit</button> -->
+				<button type = "submit" class="btn btn-success submit-btn" id = "id001" onclick="setTimeout(disableFunction, 1);">Generate PDF Report</button>
+            </div>
+			
+			<div class="col-md-9">
+				<br>
+				<label style = "display: inline-block;">Select Time Delay: </label>&emsp;
+				<input type="radio" id="1" name="timedelay" value="1" style = "display: inline-block;" checked="checked">
+				<label for="1" style = "display: inline-block;">1 minute</label>&emsp;
+				<input type="radio" id="2" name="timedelay" value="2" style = "display: inline-block;">
+				<label for="2" style = "display: inline-block;">2 minute</label>&emsp;
+				<input type="radio" id="5" name="timedelay" value="5" style = "display: inline-block;">
+				<label for="5" style = "display: inline-block;">5 minute</label>&emsp;
+				<input type="radio" id="10" name="timedelay" value="10" style = "display: inline-block;">
+				<label for="10" style = "display: inline-block;">10 minute</label>
+			</div>
+        </form>
+
+
+        </div>
+    </div>
+	
+
+	<p id = "linktoaccesspdf"></p>
+	<div width="100%" class = "mt-3 " style="display:none;" id="vehicle_summery_data">
+		<div class = "mb-2 d-block">
+
+		<button class = "btn btn-danger  btn-sm px-3 ml-2" id="export_to_excel" style="float: right;">Export To Excel</button>
+		<button class = "btn btn-danger  btn-sm px-3 ml-2" id="export_to_csv" style="float: right;">Export To CSV</button>
+		<button class = "btn btn-danger  btn-sm px-3 ml-2" id="export_to_pdf" style="float: right;">Export To PDF</button>
+		<!-- <button class = "btn btn-danger  btn-sm px-3 ml-2" id="export_to_pdf2" style="float: right;">Export To PDF(Lite)</button> -->
+		<!-- <button class = "btn btn-danger  btn-sm px-3 ml-2" id="testbutton" style="float: right;">Export To PDF Test</button> -->
+
+		</div>
+		<!-- loader -->
+<div id = "spinner" class="loader-wrapper" style="display: none;">
+	<div class="truck-wrapper">
+		<div class="truck">
+			<div class="truck-container"></div>
+			<div class="wheel-back"></div>
+			<div class="wheel-front"></div>
+			<div class="smoke"></div>
+		</div>
+	</div>
+</div>
+
+		<div id = "printablearea" class="canvas_div_pdf">
+
+			<!--<img id = "logo" src = "{% static 'images2/mcgm-logo.png' %}" width = "80px" height = "80px" style = "margin-left: 460px; display: block;"> -->
+			
+
+			<div class="container-fluid rftablenew">
+
+				<div class="row w-100">
+		
+					<div class="col-md-12">
+						<img src="{% static 'images2/mcgm-logo.png' %}" alt="BMC Logo" class="img-fluid mx-auto d-block " width = "150">
+
+			<h3 style = "text-align: center;">Route Travel Report</h3>
+			<div class="newtable-bg">
+	
+				<div class="row">
+	
+					<div class="col-md-4">
+	
+						<div class="form-block">
+	
+							<div class="form-group">
+	
+								<label for="fromdate">From Time: </label><input type = "text" id = "fromtime" class="form-control" disabled></input></div>
+	
+						</div>
+	
+					</div>
+	
+					<div class="col-md-4">
+	
+						<div class="form-block">
+	
+							<div class="form-group">
+	
+								<label for="todate">To Time: </label>
+	
+								<input id = "totime" type="text" class="form-control" disabled></input>
+	
+	
+							</div>
+	
+						</div>
+	
+					</div>
+	
+					<div class="col-md-4">
+	
+						<div class="form-block">
+	
+							<div class="form-group">
+	
+								<label for="reportgendate">Report Generated On: </label><input disabled id = "timenow" type="text" class="form-control"></input></div>
+								
+						</div>
+	
+					</div>
+					
+				</div>
+
+
+
+
+				
+			<div class="row start-table">
+
+                <div class="col-md-12">
+
+                    <div class="table-new">
+			<!--<table  id="vehicle_summery" width="100%" class="table tablesorter"> -->
+				<table id = "vehicle_summery" class="table table-bordered tablesorter"> 
+			<thead>
+				<tr>
+					<th>Index</th>
+					<th>Vehicle</th>
+					<th>Date</th>
+					<th>Time</th>
+					<th>Location</th>
+					<th>Speed</th>
+					
+				</tr>
+				
+			</thead>
+			<tbody><tr>
+				<!-- <td>Index</td>
+				<td>Vehicle</td>
+				<td>Date</td>
+				<td>Time</td>
+				<td>Location</td>
+				<!--<th>Distance</th> //comment within comment
+				<td>Speed</td>
+			</tr> --></tbody>
+		</table>
+
+		</div>
+	</div>
+	</div>
+	</div>
+		
+					</div>
+		
+				</div> 
+
+			<!-- <h5 id = "fromtime"></h5>
+			<h5 id = "totime"></h5>
+			<h5 id = "timenow"></h5> -->
+
+
+			
+	</div>
+	</div>
+	</div>
+
+
+
+
+
+</section>
+
+
+
+
+<!-- loader -->
+<div id = "spinner2" class="loader-wrapper" style="display: none;">
+	<div class="truck-wrapper">
+		<div class="truck">
+			<div class="truck-container"></div>
+			<div class="wheel-back"></div>
+			<div class="wheel-front"></div>
+			<div class="smoke"></div>
+		</div>
+	</div>
+</div>
+
+
+
+
+<!-- 
+<div id="spinner" style="display: none;" class="loader">
+    <img src="{% static 'img/loader.gif' %}" class="img-responsive">
+</div> -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{% endblock %}
+
+{% block js %}
+
+<script>
+	function disableFunction() {
+    document.getElementById("id001").disabled = 'true';
+}
+
+</script>
+<!--Load scripts for pdf generation-->
+<!--<script src="https://code.jquery.com/jquery-1.12.4.js"></script> -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.min.js"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.js"></script>
+  <script>
+
+
+
+	
+    var form_data = JSON.parse('{{ form_params | escapejs }}');
+    form_data = form_data.areal_hierarchy_params;
+
+    /* $('#from_time').datetimepicker({
+       	useCurrent: false, //Important! See issue #1075
+	    format:'YYYY-MM-DD HH:mm:ss'
+    });
+
+    $('#to_time').datetimepicker({
+       	useCurrent: false,
+	    format:'YYYY-MM-DD HH:mm:ss'
+    }); */
+
+	//Date and time picker
+	$('#fromdate, #todate').datetimepicker({
+		useCurrent: false,
+	    format:'YYYY-MM-DD HH:mm:ss',
+		icons: {
+                time: 'far fa-clock'
+            }
+			
+        });
+
+
+    $("#from_time").on("dp.change", function (e) {
+        $('#to_time').data("DateTimePicker").minDate(e.date);
+    });
+
+    $("#to_time").on("dp.change", function (e) {
+        $('#from_time').data("DateTimePicker").maxDate(e.date);
+    });
+
+    $(document).ready(function(){
+        
+
+		
+
+		$("#vehicle_summery_report").submit(function(event) {
+
+//check if result have some data
+if($("table#vehicle_summery tbody").children().length > 0 ){
+	$('#vehicle_summery tbody tr').remove();
+}
+
+event.preventDefault();
+document.getElementById("linktoaccesspdf").innerHTML = "We are generating thousands of rows of data for you. Please Wait..."
+$('#spinner').show();
+$('#spinner2').show();
+var submitted_form_data = $('#vehicle_summery_report').serialize();
+
+$.ajax({
+	type:'POST',
+	url:'{% url "vehicle_location_ps2pdf" %}',              //POST TO GENERATE PDF
+	data: { 'form_data' : submitted_form_data},
+	beforeSend: function(xhr) {
+		xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+	},
+	success:function(res){
+
+
+		
+		/* var indexcounter = 0;
+		var html = [];
+		var out  = [], o = -1;
+		var rows = res.data;
+		var fromtime = res.fromtime;
+		var totime = res.totime;
+		var timenow = Date(Date.now()).toString();
+		var timelength = timenow.length;
+		var timenow = timenow.slice(0, timelength-30);
+		document.getElementById("fromtime").value = fromtime;
+		document.getElementById("totime").value = totime;
+		document.getElementById("timenow").value= timenow; */
+		/* document.getElementById("timenow").value= Date(Date.now()).toString(); */
+
+		
+		//next if else condition was added by ajit to dynamically adjust ui.
+		/* if(rows.length <= 1)
+		{
+			document.getElementById("sumarryreportdiv").style.height = "250px";
+		}
+		else{
+			document.getElementById("sumarryreportdiv").style.height = "98px";
+		}
+		 */
+		
+		
+		//out[++o] = "<tr style = \"font-weight: bold;\";><td>Index</td><td>Vehicle</td><td>Date</td><td>Time</td><td>Location</td><td>Speed</td></tr>";
+		
+		
+		
+		
+		
+		/* for( var row, iRow = -1; row = rows[++iRow]; ) {
+			out[++o] ='<tr class="routerow"><td>';
+			out[++o] = ++indexcounter;
+			out[++o] = '</td><td>'; 
+			out[++o] = row.vehicle;
+			out[++o] = '</td><td>'; 
+			out[++o] = row.date; 
+			out[++o] = '</td><td>'; 
+			out[++o] = row.time;  
+			out[++o] = '</td><td>'; 
+			out[++o] = row.area;
+			out[++o] = '</td><td>';
+			out[++o] = row.speed; 
+			out[++o] ='</td></tr>';
+		} */
+		/* $('#vehicle_summery tbody').html(out.join(''));
+		//$("table#vehicle_summery").formatTable();
+
+		if($("table#vehicle_summery tbody").children().length > 0 ) {
+			//$('#vehicle_summery').tablesorter();
+			$('#spinner').hide();
+			$('#spinner2').hide();
+			$('div#vehicle_summery_data').show();
+		}
+		else {
+			$('#spinner').hide();
+			$('#spinner2').hide();
+			alert("No Records For Mentioned Criteria");
+			return false;
+		} */
+
+
+		//alert(res);
+
+		$('#spinner').hide();
+		$('#spinner2').hide();
+		document.getElementById("linktoaccesspdf").innerHTML = "<a target = \"_blank\" href =\""+res+"\">Your report is ready! Click here to access it.</a>";
+		window.open(res, "_blank");
+
+
+
+	},
+	error:function(a,b,c){
+		alert(b);
+		alert(c);
+$('#spinner').hide();	
+	}
+});
+});
+
+	});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*         $("button#export_to_excel").click(function() {
+            let dNow = new Date();
+            let file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+            $("#vehicle_summery").table2excel({
+                name: "vehicle_summery_report",
+                filename: "vehicle_history_report_" + file_time_str + ".xlsx"//do not include extension
+            });
+        });
+           
+        $("button#export_to_csv").click(function() {
+            let dNow = new Date();
+            let file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+
+            $("#vehicle_summery").tableHTMLExport({type:'csv',filename: "vehicle_history_report_" + file_time_str + ".csv"});
+        });
+
+        $("button#export_to_pdf").click(function() {
+            //let dNow = new Date();
+            //let file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+
+            //$("#vehicle_summery").tableHTMLExport({type:'pdf',filename:"vehicle_history_report_" + file_time_str + ".pdf"});
+
+
+			//generatepdf();
+
+        });
+
+
+		$("button#export_to_pdf2").click(function() {
+            let dNow = new Date();
+            let file_time_str = dNow.getMonth() + '_' + dNow.getDate() + '_' + dNow.getFullYear() + '_' + dNow.getHours() + '_' + dNow.getMinutes() + '_' + dNow.getSeconds();
+
+            $("#vehicle_summery").tableHTMLExport({type:'pdf',filename:"vehicle_history_report_" + file_time_str + ".pdf"});
+
+
+			//generatepdf();
+
+        });
+     */
+
+function setAllDefElemValues(form_data) {
+	$('#selectDiv').empty();
+	$('#selectDiv').append($('<option></option>').val(0).html('All Divisions').attr("name", "defdiv"));
+	$('#selectZone').empty();
+	$('#selectZone').append($('<option></option>').val(0).html('All Zones').attr("name", "defzone"));
+	$('#selectGarage').empty();
+	$('#selectGarage').append($('<option></option>').val(0).html('All Garages').attr("name", "defgarage"));
+	$('#selectVehicle').empty();
+	$('#selectVehicle').append($('<option></option>').val(0).html('All Vehicles').attr("name", "defvehicle"));
+	$('div#from_time input').val('');
+	$('div#to_time input').val('');
+
+	var alldefdivs = new Array();
+	var alldefzones = new Array();
+	var alldefvehicles = new Array();
+	var alldefgarages = new Array();
+
+	$.each(form_data, function(each_div, zone_info) {
+		div_additional_info[each_div] = zone_info;
+		div_properties = each_div.split('_'); 
+		$('#selectDiv').append($('<option></option>').val(div_properties[1]).html(div_properties[0]).attr("name",div_properties[0]))
+		alldefdivs.push(div_properties[1]);
+		$.each(zone_info, function(each_zone, ward_info) {
+		    zone_additional_info[each_zone] = ward_info; 
+		    zone_properties = each_zone.split('_');
+		    $('#selectZone').append($('<option></option>').val(zone_properties[1]).html(zone_properties[0]).attr("name",zone_properties[0]))
+		    alldefzones.push(zone_properties[1]);
+		    $.each(ward_info, function(each_ward,other_info ) {
+			ward_additional_info[each_ward]=other_info;
+
+			$.each(other_info.garages, function(index,each_stop_station ) {
+		        	garage_additional_info[each_stop_station.id]=each_stop_station;
+			});    
+
+			$.each(other_info.garages, function(index,each_stop_station ) {
+			    $('#selectGarage').append($('<option></option>').val(each_stop_station.id).html(each_stop_station.name));
+			    alldefgarages.push(each_stop_station.id);
+			    $.each(each_stop_station.vehicles, function(index,each_stop_station_vehicle ) {
+				$('#selectVehicle').append($('<option></option>').val(each_stop_station_vehicle.id).html(each_stop_station_vehicle.plate_number));
+				alldefvehicles.push(each_stop_station_vehicle.id);
+			    });
+			}); 
+		    });
+		});
+	});
+
+	if( alldefdivs.length ){
+		var alldefaultdivs = alldefdivs.join('_');
+		document.getElementsByName('defdiv')[0].value = alldefaultdivs;
+	}
+
+	if( alldefzones.length ){
+		var alldefaultzones = alldefzones.join('_');
+		document.getElementsByName('defzone')[0].value = alldefaultzones;
+	}
+
+	if ( alldefgarages.length ){
+		var alldefaultgarages = alldefgarages.join('_');
+		document.getElementsByName('defgarage')[0].value = alldefaultgarages;
+	}
+
+	if ( alldefvehicles.length ){
+		var alldefaultvehicles = alldefvehicles.join('_');
+		document.getElementsByName('defvehicle')[0].value = alldefaultvehicles;
+	}
+}
+
+function onChangeDiv() {
+    	var selected_div = $("#selectDiv").find('option:selected').attr("name") + '_' + $("#selectDiv").val();
+	if (!selected_div.includes("def")) {
+		$('#selectZone').empty();
+		$('#selectZone').append($('<option></option>').val(0).html('All Zones').attr("name", "defzone"));
+		$('#selectGarage').empty();
+		$('#selectGarage').append($('<option></option>').val(0).html('All Garages').attr("name", "defgarage"));
+		$('#selectVehicle').empty();
+		$('#selectVehicle').append($('<option></option>').val(0).html('All Vehicles').attr("name", "defvehicle"));
+
+		var alldefzones = new Array();
+		var alldefgarages = new Array();
+		var alldefvehicles = new Array();
+
+		$.each(form_data[selected_div], function(each_zone, ward_info) {
+		    zone_properties = each_zone.split('_');
+		    $('#selectZone').append($('<option></option>').val(zone_properties[1]).html(zone_properties[0]).attr("name",zone_properties[0]))
+		    alldefzones.push(zone_properties[1]);
+		    $.each(ward_info, function(each_ward,other_info ) {
+			if(form_data[selected_div][each_zone][each_ward]['garages'].length ){
+				if(form_data[selected_div][each_zone][each_ward]['garages'].length ){
+					$.each(form_data[selected_div][each_zone][each_ward]['garages'], function(each_garage_index,garage_info) {
+						$('#selectGarage').append($('<option></option>').val(garage_info.id).html(garage_info.name).attr("name",garage_info.name));
+						alldefgarages.push(garage_info.id);
+						$.each(garage_info.vehicles, function(index,each_stop_station_vehicle ) {
+						    $('#selectVehicle').append($('<option></option>').val(each_stop_station_vehicle.id).html(each_stop_station_vehicle.plate_number));
+						    alldefvehicles.push(each_stop_station_vehicle.id);
+						});
+					});
+				}
+			}
+		    });
+		});
+
+		if( alldefzones.length ){
+			var alldefaultzones = alldefzones.join('_');
+			document.getElementsByName('defzone')[0].value = alldefaultzones;
+		}
+
+		if ( alldefgarages.length ){
+			var alldefaultgarages = alldefgarages.join('_');
+			document.getElementsByName('defgarage')[0].value = alldefaultgarages;
+		}
+
+		if ( alldefvehicles.length ){
+			var alldefaultvehicles = alldefvehicles.join('_');
+			document.getElementsByName('defvehicle')[0].value = alldefaultvehicles;
+		}
+	}
+	else{
+		setAllDefElemValues(form_data);
+	}
+}
+
+function onChangeZone() {
+    	var selected_div = $("#selectDiv").find('option:selected').attr("name") + '_' + $("#selectDiv").val();
+	var selected_zone = $("#selectZone").find('option:selected').attr("name") + '_'+ $("#selectZone").val();
+
+	if (!selected_zone.includes("def")) {
+		$('#selectVehicle').empty();
+		$('#selectVehicle').append($('<option></option>').val(0).html('All Vehicles').attr("name", "defvehicle"));
+		$('#selectGarage').empty();
+		$('#selectGarage').append($('<option></option>').val(0).html('All Garages').attr("name", "defgarages"));
+
+		var alldefvehicles = new Array();
+		var alldefgarages = new Array();
+
+		$.each(zone_additional_info[selected_zone], function(each_ward,ward_info) {
+			ward_properties = each_ward.split('_');
+			$('#selectWard').append($('<option></option>').val(ward_properties[1]).html(ward_properties[0]).attr("name",ward_properties[0]));
+
+			if(zone_additional_info[selected_zone][each_ward]['garages'].length ){
+				$.each(zone_additional_info[selected_zone][each_ward]['garages'], function(each_garage_index,garage_info) {
+					$('#selectGarage').append($('<option></option>').val(garage_info.id).html(garage_info.name).attr("name",garage_info.name));
+					alldefgarages.push(garage_info.id);
+					$.each(garage_info.vehicles, function(index,each_stop_station_vehicle ) {
+					    $('#selectVehicle').append($('<option></option>').val(each_stop_station_vehicle.id).html(each_stop_station_vehicle.plate_number));
+					    alldefvehicles.push(each_stop_station_vehicle.id);
+					});
+				});
+			}
+		});
+
+		if ( alldefvehicles.length){
+			var alldefaultvehicles = alldefvehicles.join('_');
+			document.getElementsByName('defvehicle')[0].value = alldefaultvehicles;
+		}
+
+		if ( alldefgarages.length ){
+			var alldefaultgarages = alldefgarages.join('_');
+			document.getElementsByName('defgarages')[0].value = alldefaultgarages;
+		}
+	}
+	else{
+		var default_zones = $("#selectZone").val().split('_');
+		$('#selectVehicle').empty();
+		$('#selectVehicle').append($('<option></option>').val(0).html('All Vehicles').attr("name", "defvehicle"));
+		$('#selectGarage').empty();
+		$('#selectGarage').append($('<option></option>').val(0).html('All Garages').attr("name", "defgarages"));
+
+		var alldefvehicles = new Array();
+		var alldefgarages = new Array();
+
+		$.each(zone_additional_info, function(each_zone,ward_info) {
+			zone_id = each_zone.split('_')[1]; 
+			if(default_zones.includes(zone_id)){
+				$.each(zone_additional_info[each_zone], function(each_ward,ward_info) {
+					if(zone_additional_info[each_zone][each_ward]['garages'].length ){
+						$.each(zone_additional_info[each_zone][each_ward]['garages'], function(each_garage_index,garage_info) {
+							$('#selectGarage').append($('<option></option>').val(garage_info.id).html(garage_info.name).attr("name",garage_info.name));
+							alldefgarages.push(garage_info.id);
+							$.each(garage_info.vehicles, function(index,each_stop_station_vehicle ) {
+							    $('#selectVehicle').append($('<option></option>').val(each_stop_station_vehicle.id).html(each_stop_station_vehicle.plate_number));
+							    alldefvehicles.push(each_stop_station_vehicle.id);
+							});
+						});
+					}
+				});
+			}
+		});
+
+		if ( alldefvehicles.length){
+			var alldefaultvehicles = alldefvehicles.join('_');
+			document.getElementsByName('defvehicle')[0].value = alldefaultvehicles;
+		}
+
+		if ( alldefgarages.length ){
+			var alldefaultgarages = alldefgarages.join('_');
+			document.getElementsByName('defgarages')[0].value = alldefaultgarages;
+		}
+	}
+}
+
+function onChangeGarage() {
+    	var selected_div  = $("#selectDiv").find('option:selected').attr("name") + '_' + $("#selectDiv").val() ;
+	var selected_zone = $("#selectZone").find('option:selected').attr("name") + '_'+ $("#selectZone").val();
+	var selected_ward = $("#selectWard").find('option:selected').attr("name") + '_'+ $("#selectWard").val();
+	var selected_garage = $("#selectGarage").find('option:selected').attr("name") + '_'+ $("#selectGarage").val();
+
+	var selected_garage_id = $("#selectGarage").val();
+
+	if (!selected_garage.includes("def")) {
+		$('#selectVehicle').empty();
+		$('#selectVehicle').append($('<option></option>').val(0).html('All Vehicles').attr("name", "defvehicle"));
+
+		var alldefvehicles = new Array();
+
+		if(garage_additional_info[selected_garage_id]['vehicles'].length ){
+			$.each(garage_additional_info[selected_garage_id]['vehicles'], function(each_vehicle_index,vehicle_info) {
+				$('#selectVehicle').append($('<option></option>').val(vehicle_info.id).html(vehicle_info.plate_number).attr("name",vehicle_info.plate_number));
+				alldefvehicles.push(vehicle_info.id);
+			});
+		}
+
+		if ( alldefvehicles.length){
+			var alldefaultvehicles = alldefvehicles.join('_');
+			document.getElementsByName('defvehicle')[0].value = alldefaultvehicles;
+		}
+	}
+	else{
+		var default_garages = selected_garage_id.split('_');
+		$('#selectVehicle').empty();
+		$('#selectVehicle').append($('<option></option>').val(0).html('All Vehicles').attr("name", "defvehicle"));
+
+		var alldefvehicles = new Array();
+
+		default_garages.forEach(function(each_garage_id,index){
+			if(garage_additional_info[each_garage_id]['vehicles'].length ){
+				$.each(garage_additional_info[each_garage_id]['vehicles'], function(each_vehicle_index,vehicle_info) {
+					$('#selectVehicle').append($('<option></option>').val(vehicle_info.id).html(vehicle_info.plate_number).attr("name",vehicle_info.plate_number));
+					alldefvehicles.push(vehicle_info.id);
+				});
+			}
+		});
+
+		var alldefaultvehicles = alldefvehicles.join('_');
+		document.getElementsByName('defvehicle')[0].value = alldefaultvehicles;
+	}
+}
+
+
+
+
+
+
+
+/* function generatepdf(){
+
+	$('#spinner').show();
+
+var HTML_Width = $(".canvas_div_pdf").width();
+var HTML_Height = $(".canvas_div_pdf").height();
+var top_left_margin = 15;
+var PDF_Width = HTML_Width+(top_left_margin*2);
+var PDF_Height = (PDF_Width*1.5)+(top_left_margin*2);
+var canvas_image_width = HTML_Width;
+var canvas_image_height = HTML_Height;
+
+var totalPDFPages = Math.ceil(HTML_Height/PDF_Height)-1;
+var img = new Image();
+//img.crossOrigin="anonymous";
+//img.src = 'mcgm-logo.png';
+console.log("totalPDFPages are"+ totalPDFPages);
+
+
+
+
+//var base64img = getBase64Image(img);
+
+
+
+html2canvas($(".canvas_div_pdf")[0],{allowTaint:true}).then(function(canvas) {
+    canvas.getContext('2d');
+    
+    console.log(canvas.height+"  "+canvas.width);
+    
+    
+    var imgData = canvas.toDataURL();
+	console.log(imgData);
+    var pdf = new jsPDF('p', 'pt',  [PDF_Width, PDF_Height]);
+    pdf.addImage(imgData, 'JPG', top_left_margin, top_left_margin,canvas_image_width,canvas_image_height);
+    //pdf.addImage(img, 'PNG', 85, 5, 40, 40);
+    //pdf.addImage(base64img, 'png', 10, 78, 12, 15);
+    
+    for (var i = 1; i <= totalPDFPages; i++) { 
+		//console.log("Now working on page number: "+i);
+        pdf.addPage(PDF_Width, PDF_Height);
+        pdf.addImage(imgData, 'JPG', top_left_margin, -(PDF_Height*i)+(top_left_margin*4),canvas_image_width,canvas_image_height);
+		
+    }
+    
+    pdf.save("HTML-Document.pdf");
+	$('#spinner').hide();	
+});
+
+} */
+
+populateVehicleListDropDown();
+function populateVehicleListDropDown(){
+
+var vehlist = document.getElementById("vehicleList");
+
+
+
+
+
+"{% for plate_no in plate_no_dict %}"
+var ind_plate_no = "{{ plate_no }}"
+vehlist.innerHTML = vehlist.innerHTML+"<option value=\""+ind_plate_no+"\" />";
+"{% endfor %}"
+
+
+// Prevent the user from going back
+history.pushState(null, null, location.href);
+window.addEventListener('popstate', function(event) {
+    history.pushState(null, null, location.href);
+});
+
+/*
+for (var key in localStorage) {
+    if (localStorage.hasOwnProperty(key)) {
+        //console.log(key + " -> " + localStorage[key]);
+		vehlist.innerHTML = vehlist.innerHTML+"<option value=\""+key+"\" />";
+    }
+}
+*/
+}
+
+
+
+
+
+
+
+  </script>
+{% endblock %}  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

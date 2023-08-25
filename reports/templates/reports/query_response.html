@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Query Response {% endblock %}
+{% block content_title %}Query Response{% endblock %}
+{% block content %}
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form | crispy }} 	
+    <button type="submit" class="btn btn-success mb-3">Enter</button>
+  </form>
+{% endblock %}
+
+
+{% block js %}
+  <script>
+    $(document).ready(function(){
+    });
+  </script>
+{% endblock %}  

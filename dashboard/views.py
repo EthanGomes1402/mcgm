@@ -19,7 +19,7 @@ import ast
 #import os
 import shutil
 import os.path
-
+# WILL ADDING MORE FEATURE
 
 
 # Create your views here.
@@ -259,7 +259,6 @@ def latest_vehicle_status_v2(request):
     #print(all_vth_record)
     #vehicles  = list(map(lambda vehicle : Vehicle.objects.get(pk=vehicle) , form_data['selectVehicle'].split("_")))
     return render(request,'dashboard/latest_vehicle_status.html',{ 'all_online_entries' : response_data['data']['online'],'all_offline_entries' : response_data['data']['offline'] , 'scvcount' : scvcount, 'lccount' : lccount, 'mccount' : mccount, 'swcount' : swcount, 'dwcount' : dwcount, 'wwcount': wwcount, 'othercount' : othercount,'totalvehiclecount' : totalcount })
-
 
 
 

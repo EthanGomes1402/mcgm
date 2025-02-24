@@ -27,7 +27,11 @@ urlpatterns = [
    path('latest_vehicle_status/',views.latest_vehicle_status_v3,name='latest_vehicle_status'),
    path('quick_view/',views.quick_view,name='quick_view'),
    path('get_quick_view_form_param/',views.get_quick_view_form_param,name='get_quick_view_form_param'),
-
+   
+   ########################
+    path('dashboard/generatePdfFor_MAP_vehicle_route_report/', views.generateps_2pdf, name = 'generatePdfFor_MAP_vehicle_route_report'),
+    path('dashboard/generatePdfFor_MAP/', views.generateps_2pdf_map, name = 'generatePdfFor_MAP'),
+   
 #   all ajax urls for bin route relations
 #    path('ajax/get_unallocated_bins_from_ward/',views.get_unallocated_bins_from_ward,name='get_unallocated_bins_from_ward'),
 #    path('ajax/allocate_bins_to_route/',views.allocate_bins_to_route,name='allocate_bins_to_route'),

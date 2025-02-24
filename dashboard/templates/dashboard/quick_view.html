@@ -18,6 +18,52 @@
     right: 0;
     margin: auto;
  }
+ #map {
+    width: 100%;
+    height: 100vh; /* or a fixed height */
+    position: relative;
+    overflow: hidden;
+}
+
+/* Loader container */
+.loader-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 999;
+    text-align: center; /* Center the text horizontally */
+    display: none; /* Hidden by default */
+}
+
+/* Loader */
+.loader_1 {
+    border: 8px solid #f3f3f3; /* Light grey */
+    border-top: 8px solid #111189; /* Dark blue */
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 2s linear infinite;
+    margin-bottom: 10px; /* Space between loader and text */
+    margin: auto;
+    display: block;
+}
+
+/* Animation for spinning */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Loader text */
+.loader-text {
+    font-size: 16px;
+    color: #111189; /* Dark blue text color */
+    font-weight: bold; /* Make the text bold */
+    margin-top: 5px; /* Space between loader and text */
+    display: inline-block; /* Ensures text respects horizontal centering */
+    text-align: center;
+}
  </style>
 {% endblock %}
 
@@ -106,11 +152,27 @@
 		    </div>
 		</form>
 		
+        <div class="form-group" id="generate_pdf_div" style="display:none;">
+            <button type="button" class="btn btn-secondary" id="generate_pdf_button">Generate Text Report</button>
+        </div>
+
+      <div class="form-group" id="generate_pdf" style="display:none;">
+         <button type="button" class="btn btn-secondary" id="generate_pdf_map">Generate Map Report</button>
+     </div>
+
 	  </div>
 	  <div id="spinner" style="display: none;" class="loader">
-                <img src="{% static 'img/loader.gif' %}" class="img-responsive">
-          </div>
-  </div> 
+                     <img src="{% static 'img/loader.gif' %}" class="img-responsive">
+               </div>
+      </div> 
+
+      <div id="loader-container" class="loader-container">
+         <div class="loader_1"></div>
+         <!-- <div class="loader-text">Loading Map Data, Please wait!</div> -->
+         <!-- <div class="loader-text" id="loader-text">Loading, Please wait!</div> -->
+         <div class="loader-text" id="loader-text"></div>
+     </div>
+     
   
 {% endblock %}
 
@@ -120,6 +182,7 @@
 
 
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.13/jspdf.plugin.autotable.min.js"></script>
 
 
   	<script src="{% static 'js/MovingMarker.js' %}"></script>
@@ -129,6 +192,11 @@
 		attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 		subdomain :['a','b','c']	
 		}).addTo(mymap);
+
+
+        // hari
+        let markersAdded = false; // Flag to track if markers are added
+
 
 		var bin_icon = L.icon({
 		    iconUrl: '{% static 'img/Bin.jpeg' %}',
@@ -164,6 +232,8 @@
 
 		var route_line;
 		var moving_marker;
+        var submitted_form_data;
+		var arrow;
 		$(document).ready(function(){
 			$("td.bins").click(function () {
 				if( route_line ){
@@ -440,302 +510,586 @@ console.log(res);
 				});
 			});
 
-			$("form#view_vehicle_form").submit(function(e) {
-				var vehicle_positions = new Array();
-				$('#spinner').show();
-				e.preventDefault();
-				if ( ! $('#selectVehicle').val() ){
-					alert('Please select vehicle');
-					return false;
-				}
-				/* if ( ! $('div#from_time input').val() ){
-			  		alert($('#from_time').val());
-					alert('Please Enter From Time');
-					return false;
-				}
-				if ( ! $('div#to_time input').val() ){
-					alert('Please Enter To Time');
-					return false;
-				} */
 
-				if( route_line ){
-					route_line.remove();
-				}
 
-				if( moving_marker ){
-					moving_marker.remove();
-				}
+
+			// changed by hari
+	$("form#view_vehicle_form").submit(function(e) {
+    var vehicle_positions = new Array();
+    e.preventDefault();
+    $('#loader-text').text('loading map, Please wait!');
+    $('#loader-container').show();
+    if (!$('#selectVehicle').val()) {
+        alert('Please select vehicle');
+        $('#loader-container').hide();
+        return false;
+    }
+
+    if (route_line) {
+        route_line.remove();
+    }
+
+    if (moving_marker) {
+        moving_marker.remove();
+    }
+
+    submitted_form_data = $('#view_vehicle_form').serialize();
+    $.ajax({
+        type: 'POST',
+        url: '{% url "get_vehicle_travel_history" %}',
+        data: {
+            'form_data': submitted_form_data
+        },
+        beforeSend: function(xhr) {
+            xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
+        },
+        success: function(res) {
+            if (res.data.length < 1) {
+                $('#loader-container').hide();
+                alert("No Vehicle history found");
+                return false;
+            }
+
+            arrow = res.data;
+            console.log("this is array to plot------->", arrow);
+            var arrow_markers = L.markerClusterGroup();
+            console.log(res.data);
+            markersAdded = false;
+
+            for (var i = 0; i < res.data.length; i++) {
+                var pop_data = 'Speed: ' + arrow[i].speed + 'km/hr <br> Vehicle Reg: ' + arrow[i].v_id + ' <br> Date: ' + arrow[i].time + '<br> Shift: ' + arrow[i].shift + '<br> Position: ' + arrow[i].lat + ',' + arrow[i].lon;
+                var num_heading = parseInt(arrow[i].heading);
+                round_heading = Math.round(num_heading / 22) * 22;
+                var arrowIcon;
+
+                switch (round_heading) {
+                    case 0:
+                        arrowIcon = L.icon({ iconUrl: '{% static "img/arrow_img/arrow_0.png" %}', iconSize: [20, 20] });
+                        break;
+                    case 22:
+                        arrowIcon = L.icon({ iconUrl: '{% static "img/arrow_img/arrow_22.png" %}', iconSize: [20, 20] });
+                        break;
+                    case 44:
+                        arrowIcon = L.icon({ iconUrl: '{% static "img/arrow_img/arrow_44.png" %}', iconSize: [20, 20] });
+                        break;
+                    case 66:
+                        arrowIcon = L.icon({ iconUrl: '{% static "img/arrow_img/arrow_66.png" %}', iconSize: [20, 20] });
+                        break;
+                    case 88:
+                        arrowIcon = L.icon({ iconUrl: '{% static "img/arrow_img/arrow_90.png" %}', iconSize: [20, 20] });
+                        break;
+                    case 110:
+                        arrowIcon = L.icon({ iconUrl: '{% static "img/arrow_img/arrow_110.png" %}', iconSize: [20, 20] });
+                        break;
+                    case 132:
+                        arrowIcon = L.icon({ iconUrl: '{% static "img/arrow_img/arrow_132.png" %}', iconSize: [20, 20] });
+                        break;
+                    case 154:
+                        arrowIcon = L.icon({ iconUrl: '{% static "img/arrow_img/arrow_154.png" %}', iconSize: [20, 20] });
+                        break;
+                    case 176:
+                        arrowIcon = L.icon({ iconUrl: '{% static "img/arrow_img/arrow_180.png" %}', iconSize: [20, 20] });
+                        break;
+                    case 198:
+                        arrowIcon = L.icon({ iconUrl: '{% static "img/arrow_img/arrow_198.png" %}', iconSize: [20, 20] });
+                        break;
+                    case 220:
+                        arrowIcon = L.icon({ iconUrl: '{% static "img/arrow_img/arrow_220.png" %}', iconSize: [20, 20] });
+                        break;
+                    case 242:
+                        arrowIcon = L.icon({ iconUrl: '{% static "img/arrow_img/arrow_242.png" %}', iconSize: [20, 20] });
+                        break;
+                    case 264:
+                        arrowIcon = L.icon({ iconUrl: '{% static "img/arrow_img/arrow_270.png" %}', iconSize: [20, 20] });
+                        break;
+                    case 286:
+                        arrowIcon = L.icon({ iconUrl: '{% static "img/arrow_img/arrow_286.png" %}', iconSize: [20, 20] });
+                        break;
+                    case 308:
+                        arrowIcon = L.icon({ iconUrl: '{% static "img/arrow_img/arrow_308.png" %}', iconSize: [20, 20] });
+                        break;
+                    case 330:
+                        arrowIcon = L.icon({ iconUrl: '{% static "img/arrow_img/arrow_330.png" %}', iconSize: [20, 20] });
+                        break;
+                    case 352:
+                        arrowIcon = L.icon({ iconUrl: '{% static "img/arrow_img/arrow_360.png" %}', iconSize: [20, 20] });
+                        break;
+                }
+
+                if (arrowIcon) {
+                    L.marker([arrow[i].lat, arrow[i].lon], { icon: arrowIcon })
+                        .bindPopup(pop_data)
+                        .addTo(mymap);
+                    markersAdded = true; // Set flag to true when a marker is added
+                }
+            }
+
+            $('#generate_pdf_div').show();
+            $('#generate_pdf').show();
+            $('#loader-container').hide();
+        },
+        error: function(a, b, c) {
+            alert(b);
+            alert(c);
+            $('#loader-container').hide();
+        }
+    });
+});
+
+
+
+// 			$("form#view_vehicle_form").submit(function(e) {
+// 				var vehicle_positions = new Array();
+// 				$('#spinner').show();
+// 				e.preventDefault();
+//             $('#loader-text').text('loading map, Please wait!');
+//             $('#loader-container').show();
+// 				if ( ! $('#selectVehicle').val() ){
+//                $('#loader-container').hide();
+// 					alert('Please select vehicle');
+// 					return false;
+// 				}
+// 				/* if ( ! $('div#from_time input').val() ){
+// 			  		alert($('#from_time').val());
+// 					alert('Please Enter From Time');
+// 					return false;
+// 				}
+// 				if ( ! $('div#to_time input').val() ){
+// 					alert('Please Enter To Time');
+// 					return false;
+// 				} */
+
+// 				if( route_line ){
+// 					route_line.remove();
+// 				}
+
+// 				if( moving_marker ){
+// 					moving_marker.remove();
+// 				}
  
-				var submitted_form_data = $('#view_vehicle_form').serialize();
+// 				submitted_form_data = $('#view_vehicle_form').serialize();
 
-				$.ajax({
-					type:'POST',
-					url:'{% url "get_vehicle_travel_history" %}',
-					data: {
-						'form_data'  : submitted_form_data 
-					},
-					beforeSend: function(xhr) {
-						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
-					},
-					success:function(res){
-						if( res.data.length < 1 ) {
-							$('#spinner').hide();
-							alert("No Vehicle history found");
-							return false;
-						}
+// 				$.ajax({
+// 					type:'POST',
+// 					url:'{% url "get_vehicle_travel_history" %}',
+// 					data: {
+// 						'form_data'  : submitted_form_data 
+// 					},
+// 					beforeSend: function(xhr) {
+// 						xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+// 					},
+// 					success:function(res){
+// 						if( res.data.length < 1 ) {
+// 							// $('#spinner').hide();
+//                      $('#loader-container').hide();
+// 							alert("No Vehicle history found");
+// 							return false;
+// 						}
 
 
-			var arrow = res.data; 
-			var arrow_markers = L.markerClusterGroup();
-			console.log(res.data);
+// 			arrow = res.data; 
+// 			console.log("this is array to plot------->", arrow);
+// 			var arrow_markers = L.markerClusterGroup();
+// 			console.log(res.data);
+//             markersAdded = false;
           
 			
-            for (var i = 0; i < res.data.length; i++) {
-				//console.log(arrow[i].lat);
-				//console.log(arrow[i].lon);
-			  //arrow_markers.addLayer(L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}));
-			     //var pop_data = 'Location is : <br> 72.3466 <br> Speed :- 20.567 km/hr ';
-                 //var pop_data = 'Location is :'+arrow[i].lat+','+arrow[i].lon+ '<br> Speed :'+ arrow[i].speed + 'km/hr ';
-				 var pop_data = 'Speed: '+ arrow[i].speed + 'km/hr <br> Vehicle Reg: '+ arrow[i].v_id + ' <br> Date: '+arrow[i].time + '<br> Shift: '+arrow[i].shift + '<br> Position: '+arrow[i].lat+','+arrow[i].lon;
-                 //console.log('Arrow Heading of  '+ i +' is : '+ arrow[i].heading);
-				 //console.log(typeof parseInt(arrow[i].heading));
-				 var num_heading = parseInt(arrow[i].heading);
-				 //console.log(num_heading);
-				 round_heading = Math.round(num_heading/22)*22;
-				 //console.log(round_heading);
-				 str_heading = String(round_heading);
-                 //console.log(typeof str_heading);   //string HEADING
+//             for (var i = 0; i < res.data.length; i++) {
+// 				//console.log(arrow[i].lat);
+// 				//console.log(arrow[i].lon);
+// 			  //arrow_markers.addLayer(L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}));
+// 			     //var pop_data = 'Location is : <br> 72.3466 <br> Speed :- 20.567 km/hr ';
+//                  //var pop_data = 'Location is :'+arrow[i].lat+','+arrow[i].lon+ '<br> Speed :'+ arrow[i].speed + 'km/hr ';
+// 				 var pop_data = 'Speed: '+ arrow[i].speed + 'km/hr <br> Vehicle Reg: '+ arrow[i].v_id + ' <br> Date: '+arrow[i].time + '<br> Shift: '+arrow[i].shift + '<br> Position: '+arrow[i].lat+','+arrow[i].lon;
+//                  //console.log('Arrow Heading of  '+ i +' is : '+ arrow[i].heading);
+// 				 //console.log(typeof parseInt(arrow[i].heading));
+// 				 var num_heading = parseInt(arrow[i].heading);
+// 				 //console.log(num_heading);
+// 				 round_heading = Math.round(num_heading/22)*22;
+// 				 //console.log(round_heading);
+// 				 str_heading = String(round_heading);
+//                  //console.log(typeof str_heading);   //string HEADING
                  
-				   //0------
-                 if(round_heading == 0){
-					console.log("THIS IS 0 DEG")
-					var arrowIcon = L.icon({
-						iconUrl: '{% static 'img/arrow_img/arrow_0.png' %}',
-						iconSize: [20,20],
-						});
-						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+// 				   //0------
+//                  if(round_heading == 0){
+// 					console.log("THIS IS 0 DEG")
+// 					var arrowIcon = L.icon({
+// 						iconUrl: '{% static 'img/arrow_img/arrow_0.png' %}',
+// 						iconSize: [20,20],
+// 						});
+// 						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
 
-				 }
-                 //***********
+// 				 }
+//                  //***********
 
-                  //22------
-				 else if(round_heading == 22){
-					console.log("THIS IS 22 DEG")
-                    var arrowIcon = L.icon({
-						iconUrl: '{% static 'img/arrow_img/arrow_22.png' %}',
-						iconSize: [20,20],
-						});
-						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
-				 }
-                 //***********  
+//                   //22------
+// 				 else if(round_heading == 22){
+// 					console.log("THIS IS 22 DEG")
+//                     var arrowIcon = L.icon({
+// 						iconUrl: '{% static 'img/arrow_img/arrow_22.png' %}',
+// 						iconSize: [20,20],
+// 						});
+// 						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+// 				 }
+//                  //***********  
                   
-				 //44------
-				 else if(round_heading == 44){
-					console.log("THIS IS 44 DEG")
-                    var arrowIcon = L.icon({
-						iconUrl: '{% static 'img/arrow_img/arrow_44.png' %}',
-						iconSize: [20,20],
-						});
-						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
-				 }
-				 //***********
+// 				 //44------
+// 				 else if(round_heading == 44){
+// 					console.log("THIS IS 44 DEG")
+//                     var arrowIcon = L.icon({
+// 						iconUrl: '{% static 'img/arrow_img/arrow_44.png' %}',
+// 						iconSize: [20,20],
+// 						});
+// 						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+// 				 }
+// 				 //***********
 
-				 //66------
-				 else if(round_heading == 66){
-					console.log("THIS IS 66 DEG")
-                    var arrowIcon = L.icon({
-						iconUrl: '{% static 'img/arrow_img/arrow_66.png' %}',
-						iconSize: [20,20],
-						});
-						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
-				 }
-				 //***********
+// 				 //66------
+// 				 else if(round_heading == 66){
+// 					console.log("THIS IS 66 DEG")
+//                     var arrowIcon = L.icon({
+// 						iconUrl: '{% static 'img/arrow_img/arrow_66.png' %}',
+// 						iconSize: [20,20],
+// 						});
+// 						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+// 				 }
+// 				 //***********
                   
 
-                 //90------
-				 else if(round_heading == 88){
-					console.log("THIS IS 90 DEG")
-                    var arrowIcon = L.icon({
-						iconUrl: '{% static 'img/arrow_img/arrow_90.png' %}',
-						iconSize: [20,20],
-						});
-						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
-				 }
-				 //***********
+//                  //90------
+// 				 else if(round_heading == 88){
+// 					console.log("THIS IS 90 DEG")
+//                     var arrowIcon = L.icon({
+// 						iconUrl: '{% static 'img/arrow_img/arrow_90.png' %}',
+// 						iconSize: [20,20],
+// 						});
+// 						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+// 				 }
+// 				 //***********
 
-				 //110------
-				 else if(round_heading == 110){
-					console.log("THIS IS 110 DEG")
-                    var arrowIcon = L.icon({
-						iconUrl: '{% static 'img/arrow_img/arrow_110.png' %}',
-						iconSize: [20,20],
-						});
-						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
-				 }
-				 //***********
+// 				 //110------
+// 				 else if(round_heading == 110){
+// 					console.log("THIS IS 110 DEG")
+//                     var arrowIcon = L.icon({
+// 						iconUrl: '{% static 'img/arrow_img/arrow_110.png' %}',
+// 						iconSize: [20,20],
+// 						});
+// 						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+// 				 }
+// 				 //***********
                  
-				 //132------
-				 else if(round_heading == 132){
-					console.log("THIS IS 132 DEG")
-                    var arrowIcon = L.icon({
-						iconUrl: '{% static 'img/arrow_img/arrow_132.png' %}',
-						iconSize: [20,20],
-						});
-						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
-				 }
-				 //***********
+// 				 //132------
+// 				 else if(round_heading == 132){
+// 					console.log("THIS IS 132 DEG")
+//                     var arrowIcon = L.icon({
+// 						iconUrl: '{% static 'img/arrow_img/arrow_132.png' %}',
+// 						iconSize: [20,20],
+// 						});
+// 						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+// 				 }
+// 				 //***********
                  
 
-				 //154------
-				 else if(round_heading == 154){
-					console.log("THIS IS 154 DEG")
-                    var arrowIcon = L.icon({
-						iconUrl: '{% static 'img/arrow_img/arrow_154.png' %}',
-						iconSize: [20,20],
-						});
-						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
-				 }
-				 //***********
+// 				 //154------
+// 				 else if(round_heading == 154){
+// 					console.log("THIS IS 154 DEG")
+//                     var arrowIcon = L.icon({
+// 						iconUrl: '{% static 'img/arrow_img/arrow_154.png' %}',
+// 						iconSize: [20,20],
+// 						});
+// 						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+// 				 }
+// 				 //***********
 
-				 //180-----
-				 else if(round_heading == 176){
-					console.log("THIS IS 180 DEG")
-					var arrowIcon = L.icon({
-						iconUrl: '{% static 'img/arrow_img/arrow_180.png' %}',
-						iconSize: [20,20],
-						});
-						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
-				 }
-
-
-				//198------
-				 else if(round_heading == 198){
-					console.log("THIS IS 198 DEG")
-                    var arrowIcon = L.icon({
-						iconUrl: '{% static 'img/arrow_img/arrow_198.png' %}',
-						iconSize: [20,20],
-						});
-						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
-				 }
-				 //***********
+// 				 //180-----
+// 				 else if(round_heading == 176){
+// 					console.log("THIS IS 180 DEG")
+// 					var arrowIcon = L.icon({
+// 						iconUrl: '{% static 'img/arrow_img/arrow_180.png' %}',
+// 						iconSize: [20,20],
+// 						});
+// 						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+// 				 }
 
 
-				 //220------
-				 else if(round_heading == 220){
-					console.log("THIS IS 220 DEG")
-                    var arrowIcon = L.icon({
-						iconUrl: '{% static 'img/arrow_img/arrow_220.png' %}',
-						iconSize: [20,20],
-						});
-						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
-				 }
-				 //***********
+// 				//198------
+// 				 else if(round_heading == 198){
+// 					console.log("THIS IS 198 DEG")
+//                     var arrowIcon = L.icon({
+// 						iconUrl: '{% static 'img/arrow_img/arrow_198.png' %}',
+// 						iconSize: [20,20],
+// 						});
+// 						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+// 				 }
+// 				 //***********
 
-				 //242------
-				 else if(round_heading == 242){
-					console.log("THIS IS 242 DEG")
-                    var arrowIcon = L.icon({
-						iconUrl: '{% static 'img/arrow_img/arrow_242.png' %}',
-						iconSize: [20,20],
-						});
-						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
-				 }
-				 //***********
+
+// 				 //220------
+// 				 else if(round_heading == 220){
+// 					console.log("THIS IS 220 DEG")
+//                     var arrowIcon = L.icon({
+// 						iconUrl: '{% static 'img/arrow_img/arrow_220.png' %}',
+// 						iconSize: [20,20],
+// 						});
+// 						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+// 				 }
+// 				 //***********
+
+// 				 //242------
+// 				 else if(round_heading == 242){
+// 					console.log("THIS IS 242 DEG")
+//                     var arrowIcon = L.icon({
+// 						iconUrl: '{% static 'img/arrow_img/arrow_242.png' %}',
+// 						iconSize: [20,20],
+// 						});
+// 						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+// 				 }
+// 				 //***********
 
                  
-				 //270---------
-                 else if(round_heading == 264){
-					console.log("THIS IS 270 DEG")
-					var arrowIcon = L.icon({
-						iconUrl: '{% static 'img/arrow_img/arrow_270.png' %}',
-						iconSize: [20,20],
-						});
-						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
-				 }
-                 //************
+// 				 //270---------
+//                  else if(round_heading == 264){
+// 					console.log("THIS IS 270 DEG")
+// 					var arrowIcon = L.icon({
+// 						iconUrl: '{% static 'img/arrow_img/arrow_270.png' %}',
+// 						iconSize: [20,20],
+// 						});
+// 						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+// 				 }
+//                  //************
 
-				 //286------
-				 else if(round_heading == 286){
-					console.log("THIS IS 286 DEG")
-                    var arrowIcon = L.icon({
-						iconUrl: '{% static 'img/arrow_img/arrow_286.png' %}',
-						iconSize: [20,20],
-						});
-						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
-				 }
-				 //***********
+// 				 //286------
+// 				 else if(round_heading == 286){
+// 					console.log("THIS IS 286 DEG")
+//                     var arrowIcon = L.icon({
+// 						iconUrl: '{% static 'img/arrow_img/arrow_286.png' %}',
+// 						iconSize: [20,20],
+// 						});
+// 						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+// 				 }
+// 				 //***********
 
 
-				 //308------
-				 else if(round_heading == 308){
-					console.log("THIS IS 308 DEG")
-                    var arrowIcon = L.icon({
-						iconUrl: '{% static 'img/arrow_img/arrow_308.png' %}',
-						iconSize: [20,20],
-						});
-						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
-				 }
-				 //***********
+// 				 //308------
+// 				 else if(round_heading == 308){
+// 					console.log("THIS IS 308 DEG")
+//                     var arrowIcon = L.icon({
+// 						iconUrl: '{% static 'img/arrow_img/arrow_308.png' %}',
+// 						iconSize: [20,20],
+// 						});
+// 						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+// 				 }
+// 				 //***********
                  
-				 //330------
-				 else if(round_heading == 330){
-					console.log("THIS IS 330 DEG")
-                    var arrowIcon = L.icon({
-						iconUrl: '{% static 'img/arrow_img/arrow_330.png' %}',
-						iconSize: [20,20],
-						});
-						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
-				 }
-				 //***********
+// 				 //330------
+// 				 else if(round_heading == 330){
+// 					console.log("THIS IS 330 DEG")
+//                     var arrowIcon = L.icon({
+// 						iconUrl: '{% static 'img/arrow_img/arrow_330.png' %}',
+// 						iconSize: [20,20],
+// 						});
+// 						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+// 				 }
+// 				 //***********
 
 				
-				 //360-----------
-				 else if(round_heading == 352){
-					console.log("THIS IS 360 DEG")
-					var arrowIcon = L.icon({
-						iconUrl: '{% static 'img/arrow_img/arrow_360.png' %}',
-						iconSize: [20,20],
-						});
-						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
-				 }
+// 				 //360-----------
+// 				 else if(round_heading == 352){
+// 					console.log("THIS IS 360 DEG")
+// 					var arrowIcon = L.icon({
+// 						iconUrl: '{% static 'img/arrow_img/arrow_360.png' %}',
+// 						iconSize: [20,20],
+// 						});
+// 						L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+// 				 }
+
+//                                  //  changed by hari
+//                                  if (arrowIcon) {
+//                                     L.marker([arrow[i].lat, arrow[i].lon], { icon: arrowIcon })
+//                                         .bindPopup(pop_data)
+//                                         .addTo(mymap);
+//                                     markersAdded = true; // Set flag to true when a marker is added
+//                                 }
 
 
-//#$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+// //#$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-				// var arr_icon = [];
-				 //var icon_line = "{% static 'arrow_img/arrow_"+str_heading+".png' %}"
-                // var icon_line = "arrow_"+str_heading+".png";
-                 //console.log(icon_line);
-               //  arr_icon.push(icon_line);
-				 //console.log(arr_icon[0]);
+// 				// var arr_icon = [];
+// 				 //var icon_line = "{% static 'arrow_img/arrow_"+str_heading+".png' %}"
+//                 // var icon_line = "arrow_"+str_heading+".png";
+//                  //console.log(icon_line);
+//                //  arr_icon.push(icon_line);
+// 				 //console.log(arr_icon[0]);
       
-			   // var full = '{% static '+str_heading+' %}';
-				//var full = "'"+'{% static '+"'"+icon_line+"'";
-				//var full = "{% static '" + icon_line + "' %}";
-				//var full = 
-				//console.log(full);
+// 			   // var full = '{% static '+str_heading+' %}';
+// 				//var full = "'"+'{% static '+"'"+icon_line+"'";
+// 				//var full = "{% static '" + icon_line + "' %}";
+// 				//var full = 
+// 				//console.log(full);
    
-				//var correct = "{% static 'img/arrow_180.png' %}";
-				//console.log(correct);
-                //Icon Set
-				//var arrowIcon = L.icon({
-				//	iconUrl: '{% static 'img/arrow_180.png' %}',
-				//	iconSize: [16,20],
-				//	});
+// 				//var correct = "{% static 'img/arrow_180.png' %}";
+// 				//console.log(correct);
+//                 //Icon Set
+// 				//var arrowIcon = L.icon({
+// 				//	iconUrl: '{% static 'img/arrow_180.png' %}',
+// 				//	iconSize: [16,20],
+// 				//	});
 
-                // L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
-			}
+//                 // L.marker([arrow[i].lat,arrow[i].lon],{icon: arrowIcon}).bindPopup(pop_data).addTo(mymap);
+// 			}
+//             $('#loader-container').hide();
+//             $('#generate_pdf_div').show();
+//             $('#generate_pdf').show();
 
 		
-					},
-					error:function(a,b,c){
-						alert(b);
-						alert(c);
-					}
-				});
+// 					},
+// 					error:function(a,b,c){
+// 						alert(b);
+// 						alert(c);
+//                   $('#loader-container').hide();
+// 					}
+// 				});
 
-			});
-		});
+// 			});
+
+
+			
+
+         $('#generate_pdf_button').click(function() {
+            if (!markersAdded) {
+                alert('No markers on the map to capture.');
+                return false;
+            }
+            $('#loader-text').text('Generating Map Data, Please wait!');
+            $('#loader-container').show();
+            // Check if the map is fully rendered before capturing
+            setTimeout(function() {
+                var timedelay = 2;
+                var selectedVehicle = $('#selectVehicle').find('option:selected');
+                var plateNumber = selectedVehicle.text(); 
+        
+                submitted_form_data += '&vehicle=' + encodeURIComponent(plateNumber);
+                submitted_form_data += '&timedelay=' + encodeURIComponent(timedelay);
+        
+                console.log("------->", submitted_form_data);
+        
+                // Capture the map
+              window.scrollTo(0, 0);
+              html2canvas(document.getElementById('map'), {
+                 scale: 5,
+                 useCORS: true,
+                 width: $('#map').width(),
+                 height: $('#map').height()
+              }).then(canvas => {
+                 const imgData = canvas.toDataURL('image/png');
+        
+                    if (imgData && imgData.length > 1000) {
+                        console.log('Map capture is accurate');
+        
+                        // Send the captured image to your server for PDF generation
+                        $.ajax({
+                            type: 'POST',
+                            url: '{% url "generatePdfFor_MAP_vehicle_route_report" %}',
+                            data: {
+                                'form_data': submitted_form_data,
+                                'map_image': imgData
+                            },
+                            beforeSend: function(xhr) {
+                                xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
+                            },
+                            success: function(res) {
+                              $('#loader-container').hide();
+                                console.log("Raw Response:", res);
+                                if (typeof res === 'string' && res.startsWith('http')) {
+                                    window.open(res, '_blank');
+                                } else {
+                                    console.error("Unexpected response format:", res);
+                                }
+                            },
+                            error: function(xhr, status, error) {
+                                console.log("Error: " + status + " " + error);
+                                $('#loader-container').hide();
+                                alert("An error occurred: " + error);
+                            }
+                        });
+        
+                    } else {
+                        console.log('Map capture is not accurate');
+                        $('#loader-container').hide();
+                        alert('Error capturing the map image.');
+                    }
+                });
+            }, 2000); // Adjust the delay as necessary
+        });
+        
+
+        $('#generate_pdf_map').click(function() {
+         if (!markersAdded) {
+             alert('No markers on the map to capture.');
+             return false;
+         }
+         $('#loader-text').text('Generating map, Please wait!');
+         $('#loader-container').show();
+         // Check if the map is fully rendered before capturing
+         setTimeout(function() {
+             var timedelay = 2;
+             var selectedVehicle = $('#selectVehicle').find('option:selected');
+             var plateNumber = selectedVehicle.text(); 
+     
+             submitted_form_data += '&vehicle=' + encodeURIComponent(plateNumber);
+             submitted_form_data += '&timedelay=' + encodeURIComponent(timedelay);
+     
+             console.log("------->", submitted_form_data);
+     
+             // Capture the map
+           window.scrollTo(0, 0);
+           html2canvas(document.getElementById('map'), {
+              scale: 5,
+              useCORS: true,
+              width: $('#map').width(),
+              height: $('#map').height()
+           }).then(canvas => {
+              const imgData = canvas.toDataURL('image/png');
+     
+                 if (imgData && imgData.length > 1000) {
+                     console.log('Map capture is accurate');
+     
+                     // Send the captured image to your server for PDF generation
+                     $.ajax({
+                         type: 'POST',
+                         url: '{% url "generatePdfFor_MAP" %}',
+                         data: {
+                             'form_data': submitted_form_data,
+                             'map_image': imgData
+                         },
+                         beforeSend: function(xhr) {
+                             xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
+                         },
+                         success: function(res) {
+                           $('#loader-container').hide();
+                             console.log("Raw Response:", res);
+                             if (typeof res === 'string' && res.startsWith('http')) {
+                                 window.open(res, '_blank');
+                             } else {
+                                 console.error("Unexpected response format:", res);
+                             }
+                         },
+                         error: function(xhr, status, error) {
+                             console.log("Error: " + status + " " + error);
+                             alert("An error occurred: " + error);
+                             $('#loader-container').hide();
+                           }
+                     });
+     
+                 } else {
+                     console.log('Map capture is not accurate');
+                     alert('Error capturing the map image.');
+                     $('#loader-container').hide();
+                 }
+             });
+         }, 2000); // Adjust the delay as necessary
+     });
+});
 
 function onChangeVehType() {
     	var selected_veh_type = $('#selectVehType').val();
@@ -764,5 +1118,10 @@ $('#fromdate, #todate').datetimepicker({
 
 
 
-	</script>
-{% endblock %}
+
+
+
+    </script>
+
+
+    {% endblock %}
